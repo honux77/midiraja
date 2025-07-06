@@ -9,7 +9,7 @@
 
 ## Phase 2: Cross-Platform Native Compilation
 - [x] Task: Configure matrix strategy to build on `macos-latest`, `windows-latest`, and `ubuntu-latest`. 1ca8d2b
-- [ ] Task: Ensure required native build tools are available in each runner.
+- [x] Task: Ensure required native build tools are available in each runner. 17e16e7
 - [ ] Task: Add the `nativeCompile` step to the workflow.
 - [ ] Task: Verify that the native executable is generated for each platform.
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Cross-Platform Native Compilation' (Protocol in workflow.md)
