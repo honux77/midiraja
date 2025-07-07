@@ -39,3 +39,6 @@ jobs:
         
       - name: Run Tests
         run: ./gradlew test
+
+      - name: Build Native Image
+        run: ./gradlew nativeCompile
