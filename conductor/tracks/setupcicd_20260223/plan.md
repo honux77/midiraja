@@ -15,7 +15,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Cross-Platform Native Compilation' (Protocol in workflow.md) [checkpoint: 0318a73]
 
 ## Phase 3: Release Automation
-- [ ] Task: Create a new workflow for release automation (`.github/workflows/release.yml`) triggered on tag pushes.
+- [x] Task: Create a new workflow for release automation (`.github/workflows/release.yml`) triggered on tag pushes. ed76b8e
 - [ ] Task: Add steps to build the cross-platform native executables.
 - [ ] Task: Configure the workflow to create a GitHub Release and upload the generated binaries as artifacts.
 - [ ] Task: Conductor - User Manual Verification 'Phase 3: Release Automation' (Protocol in workflow.md)
