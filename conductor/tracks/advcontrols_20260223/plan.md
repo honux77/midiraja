@@ -1,0 +1,30 @@
+# Implementation Plan: Advanced MIDI Controls (Volume & Transpose)
+
+## Phase 1: CLI Arguments & Parameter Validation
+- [ ] Task: Define new CLI options in `MidrajaCommand.java`.
+    - [ ] Write Tests: Create `MidrajaCommandTest` to verify that `--volume` and `--transpose` arguments are correctly parsed.
+    - [ ] Implement: Add `@Option` for volume and transpose in `MidrajaCommand.java`.
+    - [ ] Code Review: Submit changes for review to improve design and naming.
+- [ ] Task: Implement input validation for volume and transpose.
+    - [ ] Write Tests: Add test cases for out-of-range volume (e.g., 150) and invalid transpose formats.
+    - [ ] Implement: Add validation logic in the `call()` method or via Picocli validation.
+    - [ ] Code Review: Submit changes for review to improve validation logic.
+- [ ] Task: Conductor - User Manual Verification 'Phase 1: CLI Arguments & Parameter Validation' (Protocol in workflow.md)
+
+## Phase 2: Volume Control Implementation
+- [ ] Task: Implement global volume setting in `MidiOutProvider`.
+    - [ ] Write Tests: Create a mock `MidiOutProvider` and verify that `openPort` sends CC 7 messages to all 16 channels when a volume is set.
+    - [ ] Implement: Update `MidiOutProvider` interface and OS-specific implementations to handle initial volume.
+    - [ ] Code Review: Submit changes for review to improve the abstraction and OS-specific implementations.
+- [ ] Task: Integrate volume control into playback flow.
+    - [ ] Write Tests: Verify that the playback loop initializes volume before sending the first note.
+    - [ ] Implement: Update `MidrajaCommand.playMidiWithProvider` to call volume initialization.
+    - [ ] Code Review: Submit changes for review to ensure clean integration into the playback loop.
+- [ ] Task: Conductor - User Manual Verification 'Phase 2: Volume Control Implementation' (Protocol in workflow.md)
+
+## Phase 3: Transposition Implementation
+- [ ] Task: Implement note transposition logic in the playback loop.
+    - [ ] Write Tests: Create a test case that verifies a Note On message (e.g., 60) is shifted to 62 when transpose is +2, and remains 60 on Channel 10.
+    - [ ] Implement: Modify the message processing logic in `MidrajaCommand.playMidiWithProvider` to apply the transpose offset to Note On/Off messages.
+    - [ ] Code Review: Submit changes for review to improve transposition logic and "smart" channel handling.
+- [ ] Task: Conductor - User Manual Verification 'Phase 3: Transposition Implementation' (Protocol in workflow.md)
