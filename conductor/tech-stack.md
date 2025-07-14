@@ -11,3 +11,7 @@
 ## Build System
 -   **Tool:** Gradle
 -   **Plugins:** `application`, `org.graalvm.buildtools.native`
+
+## CI/CD
+-   **Platform:** GitHub Actions
+-   **Capabilities:** Automated testing, cross-platform native compilation (macOS, Windows, Ubuntu), and automated release generation.
