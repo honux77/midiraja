@@ -11,6 +11,12 @@ dependencies {
     implementation 'info.picocli:picocli:4.7.5'
     annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
     implementation 'net.java.dev.jna:jna:5.14.0'
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.0'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 application {

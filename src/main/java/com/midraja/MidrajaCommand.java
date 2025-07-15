@@ -30,6 +30,12 @@ public class MidrajaCommand implements Callable<Integer> {
     @Option(names = {"-p", "--port"}, description = "Index of the MIDI output port")
     private Integer portIndex;
 
+    @Option(names = {"-v", "--volume"}, description = "Global playback volume (0-127)")
+    private Integer volume;
+
+    @Option(names = {"-t", "--transpose"}, description = "Transpose notes by semitones (+/-)")
+    private Integer transpose;
+
     @Parameters(index = "0", description = "The MIDI file to play", arity = "0..1")
     private File midiFile;
 
