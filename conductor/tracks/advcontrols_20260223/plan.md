@@ -5,7 +5,7 @@
     - [ ] Write Tests: Create `MidrajaCommandTest` to verify that `--volume` and `--transpose` arguments are correctly parsed.
     - [ ] Implement: Add `@Option` for volume and transpose in `MidrajaCommand.java`.
     - [ ] Code Review: Submit changes for review to improve design and naming.
-- [ ] Task: Implement input validation for volume and transpose.
+- [x] Task: Implement input validation for volume and transpose. b1f5306
     - [ ] Write Tests: Add test cases for out-of-range volume (e.g., 150) and invalid transpose formats.
     - [ ] Implement: Add validation logic in the `call()` method or via Picocli validation.
     - [ ] Code Review: Submit changes for review to improve validation logic.
