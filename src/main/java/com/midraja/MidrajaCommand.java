@@ -59,6 +59,11 @@ public class MidrajaCommand implements Callable<Integer> {
             return 0;
         }
 
+        if (volume != null && (volume < 0 || volume > 127)) {
+            System.err.println("Error: Volume must be between 0 and 127.");
+            return 1;
+        }
+
         if (midiFile == null || !midiFile.exists()) {
             System.err.println("Error: Missing or invalid MIDI file.");
             new CommandLine(this).usage(System.err);
