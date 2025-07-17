@@ -9,7 +9,7 @@
     - [ ] Write Tests: Add test cases for out-of-range volume (e.g., 150) and invalid transpose formats.
     - [ ] Implement: Add validation logic in the `call()` method or via Picocli validation.
     - [ ] Code Review: Submit changes for review to improve validation logic.
-- [~] Task: Conductor - User Manual Verification 'Phase 1: CLI Arguments & Parameter Validation' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: CLI Arguments & Parameter Validation' (Protocol in workflow.md) [checkpoint: 89e614e]
 
 ## Phase 2: Volume Control Implementation
 - [ ] Task: Implement global volume setting in `MidiOutProvider`.
