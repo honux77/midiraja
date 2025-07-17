@@ -4,5 +4,5 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: Advanced MIDI Controls (Volume & Transpose)**
+- [~] **Track: Advanced MIDI Controls (Volume & Transpose)**
 *Link: [./tracks/advcontrols_20260223/](./tracks/advcontrols_20260223/)*
