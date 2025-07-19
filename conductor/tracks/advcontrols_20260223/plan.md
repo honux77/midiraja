@@ -16,7 +16,7 @@
     - [ ] Write Tests: Create a mock `MidiOutProvider` and verify that `openPort` sends CC 7 messages to all 16 channels when a volume is set.
     - [ ] Implement: Update `MidiOutProvider` interface and OS-specific implementations to handle initial volume.
     - [ ] Code Review: Submit changes for review to improve the abstraction and OS-specific implementations.
-- [ ] Task: Integrate volume control into playback flow.
+- [x] Task: Integrate volume control into playback flow. cc22ff1
     - [ ] Write Tests: Verify that the playback loop initializes volume before sending the first note.
     - [ ] Implement: Update `MidrajaCommand.playMidiWithProvider` to call volume initialization.
     - [ ] Code Review: Submit changes for review to ensure clean integration into the playback loop.
