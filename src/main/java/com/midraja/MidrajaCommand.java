@@ -143,6 +143,17 @@ public class MidrajaCommand implements Callable<Integer> {
                         raw[2] = (byte) Math.max(0, Math.min(127, scaledVol));
                     }
                 }
+                
+                // Transpose 처리 (Note On: 0x90, Note Off: 0x80)
+                int channel = status & 0x0F;
+                if (transpose != null && channel != 9 && raw.length >= 2) {
+                    int cmd = status & 0xF0;
+                    if (cmd == 0x90 || cmd == 0x80) {
+                        int note = raw[1] & 0xFF;
+                        int transposedNote = Math.max(0, Math.min(127, note + transpose));
+                        raw[1] = (byte) transposedNote;
+                    }
+                }
 
                 long tickDiff = event.getTick() - lastTick;
                 if (tickDiff > 0 && !isTestMode) {

@@ -64,6 +64,47 @@ class MidrajaCommandTest {
     }
 
     @Test
+    void testPlayMidiWithTranspose() throws Exception {
+        // Create a temporary MIDI file
+        File tempMidi = File.createTempFile("test", ".mid");
+        tempMidi.deleteOnExit();
+        javax.sound.midi.Sequence seq = new javax.sound.midi.Sequence(javax.sound.midi.Sequence.PPQ, 24);
+        javax.sound.midi.Track t = seq.createTrack();
+        
+        // Note On, Ch 1 (0x90), Note 60
+        t.add(new javax.sound.midi.MidiEvent(new javax.sound.midi.ShortMessage(0x90, 0, 60, 100), 0));
+        // Note On, Ch 10 (0x99), Note 60
+        t.add(new javax.sound.midi.MidiEvent(new javax.sound.midi.ShortMessage(0x90, 9, 60, 100), 0));
+        javax.sound.midi.MidiSystem.write(seq, 1, tempMidi);
+
+        MidrajaCommand app = new MidrajaCommand();
+        CommandLine cmd = new CommandLine(app);
+        cmd.parseArgs("--transpose", "2", "--port", "0", tempMidi.getAbsolutePath());
+
+        MockMidiProvider provider = new MockMidiProvider();
+        app.isTestMode = true;
+        app.playMidiWithProvider(tempMidi, 0, provider);
+
+        boolean foundCh1Note = false;
+        boolean foundCh10Note = false;
+        
+        for (byte[] msg : provider.sentMessages) {
+            if (msg.length == 3) {
+                if ((msg[0] & 0xFF) == 0x90) { // Ch 1
+                    assertEquals(62, msg[1]); // Transposed 60 -> 62
+                    foundCh1Note = true;
+                } else if ((msg[0] & 0xFF) == 0x99) { // Ch 10
+                    assertEquals(60, msg[1]); // Not transposed
+                    foundCh10Note = true;
+                }
+            }
+        }
+        
+        assertTrue(foundCh1Note);
+        assertTrue(foundCh10Note);
+    }
+
+    @Test
     void testPlayMidiWithVolumeScaling() throws Exception {
         MidrajaCommand app = new MidrajaCommand();
         CommandLine cmd = new CommandLine(app);
