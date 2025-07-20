@@ -23,7 +23,7 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 2: Volume Control Implementation' (Protocol in workflow.md) [checkpoint: 7508a3b]
 
 ## Phase 3: Transposition Implementation
-- [ ] Task: Implement note transposition logic in the playback loop.
+- [x] Task: Implement note transposition logic in the playback loop. 8ed1b92
     - [ ] Write Tests: Create a test case that verifies a Note On message (e.g., 60) is shifted to 62 when transpose is +2, and remains 60 on Channel 10.
     - [ ] Implement: Modify the message processing logic in `MidrajaCommand.playMidiWithProvider` to apply the transpose offset to Note On/Off messages.
     - [ ] Code Review: Submit changes for review to improve transposition logic and "smart" channel handling.
