@@ -4,7 +4,7 @@
 - [x] Task: Modify `MidirajaCommand` to accept `--port` as a `String` instead of an `Integer`. 0ead0ba
     - [ ] Update field type.
     - [ ] Add `findPortIndex` method that accepts the input string and a list of `MidiPort`s, and returns the matching index.
-- [ ] Task: Implement partial matching (Smart Matching) logic in `findPortIndex`.
+- [x] Task: Implement partial matching (Smart Matching) logic in `findPortIndex`. 99f75b8
     - [ ] Handle exact integer matching.
     - [ ] Handle partial case-insensitive string matching.
     - [ ] Add validation to fail on ambiguous matches (multiple matches found).
