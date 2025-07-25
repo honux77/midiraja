@@ -71,8 +71,35 @@ public class MidirajaCommand implements Callable<Integer> {
         }
 
         if (portSpec == null) {
-            System.err.println("Error: Please specify a MIDI port with --port.");
-            return 1;
+            List<MidiPort> ports = midiProvider.getOutputPorts();
+            if (ports.isEmpty()) {
+                System.err.println("Error: No MIDI output devices found.");
+                return 1;
+            }
+            System.out.println("Available MIDI Output Devices:");
+            ports.forEach(System.out::println);
+            System.out.print("Select a port by number or name: ");
+            
+            try {
+                if (System.console() != null) {
+                    portSpec = System.console().readLine();
+                } else {
+                    // Fallback for IDEs or environments without a standard console
+                    java.util.Scanner scanner = new java.util.Scanner(System.in);
+                    if (scanner.hasNextLine()) {
+                        portSpec = scanner.nextLine();
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("Error reading input. Exiting.");
+                return 1;
+            }
+
+            if (portSpec == null || portSpec.trim().isEmpty()) {
+                System.err.println("No port selected. Exiting.");
+                return 1;
+            }
+            portSpec = portSpec.trim();
         }
 
         int portIndex;
