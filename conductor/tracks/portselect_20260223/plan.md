@@ -16,4 +16,4 @@
     - [ ] Prompt the user using `System.console().readLine()` or `Scanner(System.in)`.
     - [ ] Read the user's input, parse it as an integer, and attempt to open the corresponding port.
     - [ ] Handle `Ctrl+C` or invalid integer input during the prompt.
-- [~] Task: Conductor - User Manual Verification 'Phase 2: Interactive CLI Prompts' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Interactive CLI Prompts' (Protocol in workflow.md) [checkpoint: 0904006]
