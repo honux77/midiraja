@@ -78,28 +78,22 @@ public class MidirajaCommand implements Callable<Integer> {
             }
             System.out.println("Available MIDI Output Devices:");
             ports.forEach(System.out::println);
-            System.out.print("Select a port by number or name: ");
             
-            try {
-                if (System.console() != null) {
-                    portSpec = System.console().readLine();
-                } else {
-                    // Fallback for IDEs or environments without a standard console
-                    java.util.Scanner scanner = new java.util.Scanner(System.in);
-                    if (scanner.hasNextLine()) {
-                        portSpec = scanner.nextLine();
+            java.util.Scanner scanner = new java.util.Scanner(System.in);
+            while (portSpec == null || portSpec.trim().isEmpty()) {
+                System.out.print("Select a port by number or name (or type 'q' to quit): ");
+                if (scanner.hasNextLine()) {
+                    portSpec = scanner.nextLine().trim();
+                    if ("q".equalsIgnoreCase(portSpec)) {
+                        System.out.println("Exiting.");
+                        return 1;
                     }
+                } else {
+                    // EOF 도달 시 (예: 파이프라이닝 환경)
+                    System.err.println("\nError: Could not read standard input.");
+                    return 1;
                 }
-            } catch (Exception e) {
-                System.err.println("Error reading input. Exiting.");
-                return 1;
             }
-
-            if (portSpec == null || portSpec.trim().isEmpty()) {
-                System.err.println("No port selected. Exiting.");
-                return 1;
-            }
-            portSpec = portSpec.trim();
         }
 
         int portIndex;
