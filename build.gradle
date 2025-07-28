@@ -39,6 +39,9 @@ graalvmNative {
             buildArgs.add('-H:+UnlockExperimentalVMOptions')
             // JNA와 CoreMIDI 동적 로딩을 위해 런타임 초기화 설정
             buildArgs.add('--initialize-at-run-time=com.sun.jna.Native,com.sun.jna.Pointer')
+            // 바이너리 크기 최적화 옵션 추가
+            buildArgs.add('-Os') // Optimize for size
+            buildArgs.add('--install-exit-handlers') // 안전한 에러 핸들링 (크기 증가 미미함)
         }
     }
 }
