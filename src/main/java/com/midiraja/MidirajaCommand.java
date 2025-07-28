@@ -168,10 +168,15 @@ public class MidirajaCommand implements Callable<Integer> {
             provider.setVolume(initialMidiVol);
         }
 
+        // 정상 종료 플래그 (배열을 사용하여 익명 클래스 내에서 접근)
+        final boolean[] isFinished = {false};
+
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            System.out.println("\n[Midiraja] Stopping playback and clearing MIDI notes...");
-            provider.panic();
-            provider.closePort();
+            if (!isFinished[0]) {
+                System.out.println("\n[Midiraja] Stopping playback and clearing MIDI notes...");
+                provider.panic();
+                provider.closePort();
+            }
         }));
 
         System.out.println("Started playing: " + file.getName() + " to " + targetPort.name());
@@ -232,14 +237,17 @@ public class MidirajaCommand implements Callable<Integer> {
 
                 provider.sendMessage(raw);
                 lastTick = event.getTick();
-
-                // 100틱마다 진행률 표시 (화면 깜빡임 방지)
-                if (lastTick % 100 == 0) {
-                    printProgressBar(lastTick, totalTicks, tempoBPM);
-                }
+            }
+            
+            // 프로그레스 바는 틱에 상관없이, 특정 이벤트 횟수 단위(예: 50 이벤트)로 갱신하여 
+            // 너무 잦은 IO 호출을 막으면서도 확실하게 변하도록 합니다.
+            int eventIndex = allEvents.indexOf(event);
+            if (eventIndex % 50 == 0 || eventIndex == allEvents.size() - 1) {
+                printProgressBar(lastTick, totalTicks, tempoBPM);
             }
         }
 
+        isFinished[0] = true;
         System.out.println("\nPlayback finished.");
         provider.panic();
         provider.closePort();

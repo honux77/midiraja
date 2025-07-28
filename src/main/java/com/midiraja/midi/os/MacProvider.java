@@ -94,8 +94,15 @@ public class MacProvider implements MidiOutProvider {
 
     @Override
     public void closePort() {
-        if (clientName != null) CoreFoundation.INSTANCE.CFRelease(clientName);
-        if (portName != null) CoreFoundation.INSTANCE.CFRelease(portName);
-        // Note: CoreMIDI handles cleanup when client is closed or app exits.
+        if (clientName != null) {
+            CoreFoundation.INSTANCE.CFRelease(clientName);
+            clientName = null;
+        }
+        if (portName != null) {
+            CoreFoundation.INSTANCE.CFRelease(portName);
+            portName = null;
+        }
+        outPort = null;
+        destination = null;
     }
 }
