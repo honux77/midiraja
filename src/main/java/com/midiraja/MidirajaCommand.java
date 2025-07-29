@@ -193,7 +193,43 @@ public class MidirajaCommand implements Callable<Integer> {
         }
         Collections.sort(allEvents, Comparator.comparingLong(MidiEvent::getTick));
 
-        // 3. 재생 루프 및 진행률 표시
+        // 3. UI 렌더링용 공유 변수
+        final double[] channelLevels = new double[16];
+        final long[] currentTickRef = {0};
+        final float[] currentBpmRef = {120.0f};
+        final boolean[] isPlaying = {true};
+
+        // UI 렌더링 데몬 스레드 시작
+        Thread uiThread = new Thread(() -> {
+            String[] blocks = {" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
+            while (isPlaying[0]) {
+                StringBuilder sb = new StringBuilder("\rVol:[");
+                for (int i = 0; i < 16; i++) {
+                    int levelIndex = (int) Math.round(channelLevels[i] * 8);
+                    if (levelIndex < 0) levelIndex = 0;
+                    if (levelIndex > 8) levelIndex = 8;
+                    sb.append(blocks[levelIndex]);
+                    
+                    // 자연스러운 감쇄 (Decay): 약 33ms마다 0.15 감소
+                    channelLevels[i] -= 0.15;
+                    if (channelLevels[i] < 0) channelLevels[i] = 0;
+                }
+                sb.append("] ");
+                
+                double pct = totalTicks > 0 ? (double) currentTickRef[0] / totalTicks : 0;
+                sb.append(String.format("%3d%% (BPM: %5.1f)   ", (int) (pct * 100), currentBpmRef[0]));
+                
+                System.out.print(sb.toString());
+                
+                try {
+                    Thread.sleep(33); // ~30 FPS
+                } catch (InterruptedException ignored) {}
+            }
+        });
+        uiThread.setDaemon(true);
+        uiThread.start();
+        
+        // 4. 재생 루프 및 상태 갱신
         long lastTick = 0;
         for (MidiEvent event : allEvents) {
             MidiMessage msg = event.getMessage();
@@ -203,14 +239,18 @@ public class MidirajaCommand implements Callable<Integer> {
             if (raw.length >= 6 && (raw[0] & 0xFF) == 0xFF && (raw[1] & 0xFF) == 0x51) {
                 int microsecPerQuarterNote = ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
                 tempoBPM = 60000000.0f / microsecPerQuarterNote;
+                currentBpmRef[0] = tempoBPM;
                 continue;
             }
 
             // 일반 메시지 전송 (Meta 및 SysEx 제외한 짧은 메시지들)
             int status = raw[0] & 0xFF;
             if (status < 0xF0) {
+                int cmd = status & 0xF0;
+                int channel = status & 0x0F;
+
                 // CC 7 (Main Volume) 가로채기 및 스케일링
-                if ((status & 0xF0) == 0xB0 && raw.length >= 3 && raw[1] == 7) {
+                if (cmd == 0xB0 && raw.length >= 3 && raw[1] == 7) {
                     if (volume != null) {
                         int originalVol = raw[2] & 0xFF;
                         int scaledVol = (int) (originalVol * (volume / 100.0));
@@ -219,13 +259,20 @@ public class MidirajaCommand implements Callable<Integer> {
                 }
                 
                 // Transpose 처리 (Note On: 0x90, Note Off: 0x80)
-                int channel = status & 0x0F;
                 if (transpose != null && channel != 9 && raw.length >= 2) {
-                    int cmd = status & 0xF0;
                     if (cmd == 0x90 || cmd == 0x80) {
                         int note = raw[1] & 0xFF;
                         int transposedNote = Math.max(0, Math.min(127, note + transpose));
                         raw[1] = (byte) transposedNote;
+                    }
+                }
+
+                // SC-55 레벨 미터 업데이트 (Note On with velocity > 0)
+                if (cmd == 0x90 && raw.length >= 3) {
+                    int noteVelocity = raw[2] & 0xFF;
+                    if (noteVelocity > 0) {
+                        // 동시에 여러 노트가 눌릴 수 있으므로, 기존 값보다 클 때만 갱신
+                        channelLevels[channel] = Math.max(channelLevels[channel], noteVelocity / 127.0);
                     }
                 }
 
@@ -237,32 +284,16 @@ public class MidirajaCommand implements Callable<Integer> {
 
                 provider.sendMessage(raw);
                 lastTick = event.getTick();
-            }
-            
-            // 프로그레스 바는 틱에 상관없이, 특정 이벤트 횟수 단위(예: 50 이벤트)로 갱신하여 
-            // 너무 잦은 IO 호출을 막으면서도 확실하게 변하도록 합니다.
-            int eventIndex = allEvents.indexOf(event);
-            if (eventIndex % 50 == 0 || eventIndex == allEvents.size() - 1) {
-                printProgressBar(lastTick, totalTicks, tempoBPM);
+                currentTickRef[0] = lastTick;
             }
         }
 
         isFinished[0] = true;
+        isPlaying[0] = false;
+        try { uiThread.join(200); } catch (InterruptedException ignored) {}
         System.out.println("\nPlayback finished.");
         provider.panic();
         provider.closePort();
     }
 
-    private void printProgressBar(long current, long total, float bpm) {
-        int barLength = 40;
-        double progress = (double) current / total;
-        int completed = (int) (progress * barLength);
-        
-        StringBuilder bar = new StringBuilder("\r[");
-        for (int i = 0; i < barLength; i++) {
-            bar.append(i < completed ? "=" : (i == completed ? ">" : " "));
-        }
-        bar.append(String.format("] %d%% (BPM: %.1f)", (int) (progress * 100), bpm));
-        System.out.print(bar.toString());
-    }
 }
