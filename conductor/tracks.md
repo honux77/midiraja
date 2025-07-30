@@ -8,4 +8,7 @@ This file tracks all major tracks for the project. Each track has its own detail
 *Link: [./archive/portselect_20260223/](./archive/portselect_20260223/)*
 
 - [x] **Track: SC-55 Style Real-Time Part Level Meter**
-*Link: [./tracks/sc55_display_20260223/](./tracks/sc55_display_20260223/)*
+*Link: [./archive/sc55_display_20260223/](./archive/sc55_display_20260223/)*
+
+- [~] **Track: MIDI Metadata Extraction & Display**
+*Link: [./tracks/metadata_display_20260223/](./tracks/metadata_display_20260223/)*
