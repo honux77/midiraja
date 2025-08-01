@@ -37,6 +37,7 @@ public class MidirajaCommand implements Callable<Integer> {
 
     private boolean isTestMode = false;
     private MidiOutProvider provider;
+    private TerminalIO terminalIO;
 
     public void setTestMode(boolean testMode) {
         this.isTestMode = testMode;
@@ -44,6 +45,10 @@ public class MidirajaCommand implements Callable<Integer> {
 
     public void setProvider(MidiOutProvider provider) {
         this.provider = provider;
+    }
+
+    public void setTerminalIO(TerminalIO terminalIO) {
+        this.terminalIO = terminalIO;
     }
 
     public static void main(String[] args) {
@@ -152,14 +157,14 @@ public class MidirajaCommand implements Callable<Integer> {
         System.out.println("Started playing: " + file.getName() + " to " + targetPort.name());
         extractAndPrintMetadata(sequence);
 
-        TerminalIO terminalIO = new JLineTerminalIO();
-        terminalIO.init();
+        TerminalIO activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
+        activeIO.init();
         
         try {
-            PlaybackEngine engine = new PlaybackEngine(sequence, provider, terminalIO, volume);
+            PlaybackEngine engine = new PlaybackEngine(sequence, provider, activeIO, volume);
             engine.start();
         } finally {
-            terminalIO.close();
+            activeIO.close();
         }
     }
 

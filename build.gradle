@@ -1,6 +1,7 @@
 plugins {
     id 'application'
     id 'org.graalvm.buildtools.native' version '0.10.1'
+    id 'jacoco'
 }
 
 repositories {
@@ -18,8 +19,25 @@ dependencies {
     testImplementation 'org.mockito:mockito-junit-jupiter:5.5.0'
 }
 
+jacoco {
+    // Note: JaCoCo 0.8.11 currently does not fully support Java 25 (Class version 69).
+    // Tests will run fine, but jacocoTestReport may fail until a newer version is released.
+    toolVersion = "0.8.11"
+}
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        csv.required = true
+        html.required = true
+    }
+}
+
 test {
     useJUnitPlatform()
+    // Coverage report generation is enabled but might fail on Java 25.
+    finalizedBy jacocoTestReport
 }
 
 application {

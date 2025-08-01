@@ -35,6 +35,7 @@ class MidirajaCommandTest {
         app = new MidirajaCommand();
         provider = new MockMidiProvider();
         app.setProvider(provider);
+        app.setTerminalIO(new com.midiraja.io.MockTerminalIO());
     }
 
     @Test

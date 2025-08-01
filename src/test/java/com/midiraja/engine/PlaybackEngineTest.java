@@ -51,7 +51,37 @@ class PlaybackEngineTest {
         
         PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, mockIO, 100);
         
+        // Seek forward multiple times beyond end
         mockIO.injectKey(TerminalIO.TerminalKey.SEEK_FORWARD);
+        mockIO.injectKey(TerminalIO.TerminalKey.SEEK_FORWARD);
+        mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
+        
+        assertDoesNotThrow(() -> engine.start());
+    }
+
+    @Test
+    void testSeekBackwardToZero() throws Exception {
+        mockSequence = new Sequence(Sequence.PPQ, 24);
+        mockSequence.createTrack();
+        
+        PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, mockIO, 100);
+        
+        // Seek backward early in the song (should stay at 0)
+        mockIO.injectKey(TerminalIO.TerminalKey.SEEK_BACKWARD);
+        mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
+        
+        assertDoesNotThrow(() -> engine.start());
+    }
+
+    @Test
+    void testVolumeBoundaries() throws Exception {
+        PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, mockIO, 100);
+        
+        // Volume down multiple times (should clamp at 0%)
+        for(int i=0; i<30; i++) mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_DOWN);
+        // Volume up multiple times (should clamp at 100%)
+        for(int i=0; i<30; i++) mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_UP);
+        
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
         
         assertDoesNotThrow(() -> engine.start());

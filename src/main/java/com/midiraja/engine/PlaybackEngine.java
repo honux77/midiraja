@@ -64,6 +64,8 @@ public class PlaybackEngine {
     private void playLoop() throws Exception {
         long lastTick = 0;
         int eventIndex = 0;
+        long startTimeNanos = System.nanoTime();
+        double ticksToNanos = (60000000000.0 / (currentBpm * resolution));
 
         while (isPlaying && eventIndex < sortedEvents.size()) {
             // Check if an external seek was requested
@@ -90,6 +92,10 @@ public class PlaybackEngine {
                 currentTick = target;
                 lastTick = target;
                 eventIndex = newIndex;
+                
+                // Reset timing reference after seek
+                ticksToNanos = (60000000000.0 / (currentBpm * resolution));
+                startTimeNanos = System.nanoTime() - (long) (currentTick * ticksToNanos);
                 continue;
             }
 
@@ -97,14 +103,28 @@ public class PlaybackEngine {
             long tick = event.getTick();
             
             if (tick > lastTick) {
-                long sleepMs = (long) ((tick - lastTick) * (60000.0 / (currentBpm * resolution)));
-                if (sleepMs > 0) Thread.sleep(sleepMs);
+                long targetNanos = startTimeNanos + (long) (tick * ticksToNanos);
+                
+                // High-resolution delay
+                long currentNanos = System.nanoTime();
+                while (currentNanos < targetNanos) {
+                    long remainingMs = (targetNanos - currentNanos) / 1000000;
+                    if (remainingMs > 1) {
+                        Thread.sleep(remainingMs - 1);
+                    } else {
+                        Thread.yield(); // Spin-wait for the last millisecond for accuracy
+                    }
+                    currentNanos = System.nanoTime();
+                }
             }
 
             processEvent(event);
             lastTick = tick;
             currentTick = tick;
             eventIndex++;
+            
+            // Recalculate timing ratio if BPM changed during processEvent
+            ticksToNanos = (60000000000.0 / (currentBpm * resolution));
         }
     }
 
@@ -116,7 +136,9 @@ public class PlaybackEngine {
         // Meta Tempo
         if (status == 0xFF && raw.length >= 6 && (raw[1] & 0xFF) == 0x51) {
             int mspqn = ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
-            currentBpm = 60000000.0f / mspqn;
+            if (mspqn > 0) {
+                currentBpm = 60000000.0f / mspqn;
+            }
             return;
         }
 
@@ -143,7 +165,9 @@ public class PlaybackEngine {
 
         if (status == 0xFF && raw.length >= 6 && (raw[1] & 0xFF) == 0x51) {
             int mspqn = ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
-            currentBpm = 60000000.0f / mspqn;
+            if (mspqn > 0) {
+                currentBpm = 60000000.0f / mspqn;
+            }
             return;
         }
 

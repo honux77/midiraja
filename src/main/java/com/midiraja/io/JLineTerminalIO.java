@@ -23,7 +23,11 @@ public class JLineTerminalIO implements TerminalIO {
     @Override
     public void close() throws IOException {
         if (terminal != null) {
-            terminal.close();
+            try {
+                terminal.close();
+            } catch (IOException ignored) {
+                // Ignore errors during terminal cleanup to prevent masking main exceptions
+            }
         }
     }
 
