@@ -29,7 +29,7 @@ public class PlaybackEngine {
         this.volumeScale = initialVolumePercent / 100.0;
         this.resolution = sequence.getResolution();
         
-        List<MidiEvent> events = new ArrayList<>();
+        var events = new ArrayList<MidiEvent>();
         for (Track track : sequence.getTracks()) {
             for (int i = 0; i < track.size(); i++) events.add(track.get(i));
         }
@@ -41,12 +41,12 @@ public class PlaybackEngine {
         isPlaying = true;
         
         // Start UI Thread (30 FPS)
-        Thread uiThread = new Thread(this::uiLoop);
+        var uiThread = new Thread(this::uiLoop);
         uiThread.setDaemon(true);
         uiThread.start();
 
         // Start Input Thread (Async IoC)
-        Thread inputThread = new Thread(this::inputLoop);
+        var inputThread = new Thread(this::inputLoop);
         inputThread.setDaemon(true);
         inputThread.start();
 
@@ -99,7 +99,7 @@ public class PlaybackEngine {
                 continue;
             }
 
-            MidiEvent event = sortedEvents.get(eventIndex);
+            var event = sortedEvents.get(eventIndex);
             long tick = event.getTick();
             
             if (tick > lastTick) {
@@ -129,8 +129,8 @@ public class PlaybackEngine {
     }
 
     private void processChaseEvent(MidiEvent event) {
-        MidiMessage msg = event.getMessage();
-        byte[] raw = msg.getMessage();
+        var msg = event.getMessage();
+        var raw = msg.getMessage();
         int status = raw[0] & 0xFF;
 
         // Meta Tempo
@@ -153,14 +153,14 @@ public class PlaybackEngine {
                 }
                 try {
                     provider.sendMessage(raw);
-                } catch (Exception ignored) {}
+                } catch (Exception _) {}
             }
         }
     }
 
     private void processEvent(MidiEvent event) {
-        MidiMessage msg = event.getMessage();
-        byte[] raw = msg.getMessage();
+        var msg = event.getMessage();
+        var raw = msg.getMessage();
         int status = raw[0] & 0xFF;
 
         if (status == 0xFF && raw.length >= 6 && (raw[1] & 0xFF) == 0x51) {
@@ -186,40 +186,39 @@ public class PlaybackEngine {
 
             try {
                 provider.sendMessage(raw);
-            } catch (Exception ignored) {}
+            } catch (Exception _) {}
         }
     }
 
     private void inputLoop() {
         try {
             while (isPlaying) {
-                TerminalIO.TerminalKey key = terminalIO.readKey();
+                var key = terminalIO.readKey();
                 switch (key) {
-                    case VOLUME_UP:
+                    case VOLUME_UP -> {
                         volumeScale = Math.min(1.0, volumeScale + 0.05);
                         applyVolumeInstantly();
-                        break;
-                    case VOLUME_DOWN:
+                    }
+                    case VOLUME_DOWN -> {
                         volumeScale = Math.max(0.0, volumeScale - 0.05);
                         applyVolumeInstantly();
-                        break;
-                    case SEEK_FORWARD:
+                    }
+                    case SEEK_FORWARD -> {
                         // Seek roughly +10 seconds based on current BPM
                         long ticksToSeekFwd = (long) ((10000.0 * currentBpm * resolution) / 60000.0);
                         long targetF = currentTick + ticksToSeekFwd;
                         seekTarget = Math.min(targetF, sequence.getTickLength());
-                        break;
-                    case SEEK_BACKWARD:
+                    }
+                    case SEEK_BACKWARD -> {
                         // Seek roughly -10 seconds based on current BPM
                         long ticksToSeekBwd = (long) ((10000.0 * currentBpm * resolution) / 60000.0);
                         seekTarget = Math.max(0, currentTick - ticksToSeekBwd);
-                        break;
-                    case QUIT:
-                        isPlaying = false;
-                        break;
+                    }
+                    case QUIT -> isPlaying = false;
+                    default -> {}
                 }
             }
-        } catch (IOException ignored) {}
+        } catch (IOException _) {}
     }
 
     private void applyVolumeInstantly() {
@@ -229,14 +228,14 @@ public class PlaybackEngine {
             byte[] msg = new byte[]{(byte) (0xB0 | ch), 7, (byte) Math.max(0, Math.min(127, vol))};
             try {
                 provider.sendMessage(msg);
-            } catch (Exception ignored) {}
+            } catch (Exception _) {}
         }
     }
 
     private void uiLoop() {
         String[] blocks = {" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
         while (isPlaying) {
-            StringBuilder sb = new StringBuilder("\rVol:[");
+            var sb = new StringBuilder("\rVol:[");
             for (int i = 0; i < 16; i++) {
                 int lv = (int) Math.round(channelLevels[i] * 8);
                 sb.append(blocks[Math.max(0, Math.min(8, lv))]);
@@ -247,7 +246,7 @@ public class PlaybackEngine {
             sb.append(String.format("%3d%% (BPM: %5.1f, Vol: %3d%%) ", 
                 (int)(pct*100), currentBpm, (int)(volumeScale*100)));
             terminalIO.print(sb.toString());
-            try { Thread.sleep(50); } catch (InterruptedException ignored) {}
+            try { Thread.sleep(50); } catch (InterruptedException _) {}
         }
         terminalIO.println("");
     }

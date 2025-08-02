@@ -61,7 +61,7 @@ public class MidirajaCommand implements Callable<Integer> {
         if (provider == null) {
             provider = MidiProviderFactory.createProvider();
         }
-        List<MidiPort> ports = provider.getOutputPorts();
+        var ports = provider.getOutputPorts();
 
         if (listDevices) {
             System.out.println("Available MIDI Output Devices:");
@@ -112,10 +112,10 @@ public class MidirajaCommand implements Callable<Integer> {
             for (MidiPort p : ports) {
                 if (p.index() == idx) return idx;
             }
-        } catch (NumberFormatException ignored) {}
+        } catch (NumberFormatException _) {}
 
-        String lowerQuery = query.toLowerCase();
-        List<MidiPort> matches = new ArrayList<>();
+        var lowerQuery = query.toLowerCase();
+        var matches = new ArrayList<MidiPort>();
         for (MidiPort p : ports) {
             if (p.name().toLowerCase().contains(lowerQuery)) {
                 matches.add(p);
@@ -138,7 +138,7 @@ public class MidirajaCommand implements Callable<Integer> {
             System.out.println(p);
         }
 
-        Scanner scanner = new Scanner(System.in);
+        var scanner = new Scanner(System.in);
         while (true) {
             System.out.print("Select a port by number or name (or type 'q' to quit): ");
             if (!scanner.hasNextLine()) return -1;
@@ -152,16 +152,16 @@ public class MidirajaCommand implements Callable<Integer> {
     }
 
     private void playMidiWithProvider(File file, MidiOutProvider provider, MidiPort targetPort) throws Exception {
-        Sequence sequence = MidiSystem.getSequence(file);
+        var sequence = MidiSystem.getSequence(file);
         
         System.out.println("Started playing: " + file.getName() + " to " + targetPort.name());
         extractAndPrintMetadata(sequence);
 
-        TerminalIO activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
+        var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
         activeIO.init();
         
         try {
-            PlaybackEngine engine = new PlaybackEngine(sequence, provider, activeIO, volume);
+            var engine = new PlaybackEngine(sequence, provider, activeIO, volume);
             engine.start();
         } finally {
             activeIO.close();
