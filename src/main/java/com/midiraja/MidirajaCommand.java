@@ -109,34 +109,27 @@ public class MidirajaCommand implements Callable<Integer> {
     int findPortIndex(List<MidiPort> ports, String query) {
         try {
             int idx = Integer.parseInt(query);
-            for (MidiPort p : ports) {
-                if (p.index() == idx) return idx;
+            if (ports.stream().anyMatch(p -> p.index() == idx)) {
+                return idx;
             }
         } catch (NumberFormatException _) {}
 
         var lowerQuery = query.toLowerCase();
-        var matches = new ArrayList<MidiPort>();
-        for (MidiPort p : ports) {
-            if (p.name().toLowerCase().contains(lowerQuery)) {
-                matches.add(p);
-            }
-        }
+        var matches = ports.stream()
+                .filter(p -> p.name().toLowerCase().contains(lowerQuery))
+                .toList();
 
         if (matches.size() == 1) return matches.get(0).index();
         if (matches.size() > 1) {
             System.err.println("Ambiguous port name. Matches:");
-            for (MidiPort m : matches) {
-                System.err.println("  [" + m.index() + "] " + m.name());
-            }
+            matches.forEach(m -> System.err.println("  [" + m.index() + "] " + m.name()));
         }
         return -1;
     }
 
     private int interactivePortSelection(List<MidiPort> ports) {
         System.out.println("Available MIDI Output Devices:");
-        for (MidiPort p : ports) {
-            System.out.println(p);
-        }
+        ports.forEach(System.out::println);
 
         var scanner = new Scanner(System.in);
         while (true) {
@@ -194,6 +187,6 @@ public class MidirajaCommand implements Callable<Integer> {
 
         if (title != null) System.out.println("  Title: " + title);
         if (copyright != null) System.out.println("  Copyright: " + copyright);
-        for (String info : texts) System.out.println("  Info: " + info);
+        texts.forEach(info -> System.out.println("  Info: " + info));
     }
 }

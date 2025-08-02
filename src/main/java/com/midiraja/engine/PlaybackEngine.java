@@ -6,6 +6,7 @@ import com.midiraja.midi.MidiOutProvider;
 import javax.sound.midi.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.stream.IntStream;
 
 public class PlaybackEngine {
     private final Sequence sequence;
@@ -29,12 +30,10 @@ public class PlaybackEngine {
         this.volumeScale = initialVolumePercent / 100.0;
         this.resolution = sequence.getResolution();
         
-        var events = new ArrayList<MidiEvent>();
-        for (Track track : sequence.getTracks()) {
-            for (int i = 0; i < track.size(); i++) events.add(track.get(i));
-        }
-        events.sort(Comparator.comparingLong(MidiEvent::getTick));
-        this.sortedEvents = Collections.unmodifiableList(events);
+        this.sortedEvents = Arrays.stream(sequence.getTracks())
+                .flatMap(track -> IntStream.range(0, track.size()).mapToObj(track::get))
+                .sorted(Comparator.comparingLong(MidiEvent::getTick))
+                .toList();
     }
 
     public void start() throws Exception {
@@ -222,14 +221,14 @@ public class PlaybackEngine {
     }
 
     private void applyVolumeInstantly() {
-        for (int ch = 0; ch < 16; ch++) {
-            // Send default volume 100 scaled by our volumeScale
-            int vol = (int) (100 * volumeScale); 
-            byte[] msg = new byte[]{(byte) (0xB0 | ch), 7, (byte) Math.max(0, Math.min(127, vol))};
+        int vol = (int) (100 * volumeScale);
+        byte volByte = (byte) Math.max(0, Math.min(127, vol));
+        
+        IntStream.range(0, 16).forEach(ch -> {
             try {
-                provider.sendMessage(msg);
+                provider.sendMessage(new byte[]{(byte) (0xB0 | ch), 7, volByte});
             } catch (Exception _) {}
-        }
+        });
     }
 
     private void uiLoop() {
