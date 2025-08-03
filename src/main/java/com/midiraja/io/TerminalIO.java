@@ -22,6 +22,11 @@ public interface TerminalIO {
     }
 
     /**
+     * @return true if the terminal supports advanced interactions like cursor movement and raw mode.
+     */
+    boolean isInteractive();
+
+    /**
      * Initializes the terminal in raw mode for non-blocking key reads.
      */
     void init() throws IOException;

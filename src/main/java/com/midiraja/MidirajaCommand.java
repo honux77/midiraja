@@ -11,6 +11,10 @@ import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.NonBlockingReader;
+
 import javax.sound.midi.*;
 import java.io.File;
 import java.util.*;
@@ -130,7 +134,80 @@ public class MidirajaCommand implements Callable<Integer> {
         return -1;
     }
 
-    private int interactivePortSelection(List<MidiPort> ports) {
+    private int interactivePortSelection(List<MidiPort> ports) throws Exception {
+        if (ports.isEmpty()) return -1;
+        
+        var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
+        activeIO.init();
+        boolean isInteractive = activeIO.isInteractive();
+        activeIO.close(); // JLine Terminal 객체 상태만 확인하고 다시 닫음.
+
+        if (isInteractive) {
+            return dynamicPortSelection(ports);
+        } else {
+            return fallbackPortSelection(ports);
+        }
+    }
+
+    private int dynamicPortSelection(List<MidiPort> ports) throws Exception {
+        int selectedIndex = 0;
+        int numPorts = ports.size();
+
+        try (org.jline.terminal.Terminal terminal = org.jline.terminal.TerminalBuilder.builder().system(true).build()) {
+            terminal.enterRawMode();
+            var reader = terminal.reader();
+            
+            terminal.writer().print("\033[?25l"); // 커서 숨김
+            boolean firstDraw = true;
+
+            while (true) {
+                if (!firstDraw) {
+                    terminal.writer().print("\033[" + (numPorts + 1) + "A"); // 메뉴 위로 커서 이동
+                }
+                firstDraw = false;
+
+                terminal.writer().println("Available MIDI Output Devices:");
+                for (int i = 0; i < numPorts; i++) {
+                    String prefix = (i == selectedIndex) ? " > " : "   ";
+                    terminal.writer().println(prefix + ports.get(i).name());
+                }
+                terminal.writer().flush();
+
+                int ch = reader.read(10);
+                if (ch <= 0) continue; // Timeout
+
+                if (ch == 'q' || ch == 'Q') {
+                    clearMenu(terminal, numPorts);
+                    return -1;
+                } else if (ch == 27) { // ESC 또는 방향키
+                    int next1 = reader.read(10);
+                    if (next1 == '[') {
+                        int next2 = reader.read(10);
+                        if (next2 == 'A') { // UP
+                            selectedIndex = Math.max(0, selectedIndex - 1);
+                        } else if (next2 == 'B') { // DOWN
+                            selectedIndex = Math.min(numPorts - 1, selectedIndex + 1);
+                        }
+                    } else if (next1 <= 0) { // 단순 ESC
+                        clearMenu(terminal, numPorts);
+                        return -1;
+                    }
+                } else if (ch == 10 || ch == 13) { // ENTER
+                    clearMenu(terminal, numPorts);
+                    return ports.get(selectedIndex).index();
+                }
+            }
+        }
+    }
+
+    private void clearMenu(org.jline.terminal.Terminal terminal, int numPorts) {
+        terminal.writer().print("\033[" + (numPorts + 1) + "A"); // 메뉴 시작점
+        terminal.writer().print("\033[J"); // 커서 아래로 화면 모두 지우기
+        terminal.writer().print("\033[?25h"); // 커서 다시 표시
+        terminal.writer().flush();
+    }
+
+    private int fallbackPortSelection(List<MidiPort> ports) {
         println("Available MIDI Output Devices:");
         ports.forEach(java.lang.IO::println);
 

@@ -17,6 +17,11 @@ public class MockTerminalIO implements TerminalIO {
     }
 
     @Override
+    public boolean isInteractive() {
+        return false;
+    }
+
+    @Override
     public void init() throws IOException {}
 
     @Override

@@ -232,6 +232,11 @@ public class PlaybackEngine {
     }
 
     private void uiLoop() {
+        if (!terminalIO.isInteractive()) {
+            terminalIO.println("Playing (Interactive UI disabled)...");
+            return; // UI 루프 종료, 시스템 자원 절약
+        }
+
         String[] blocks = {" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
         while (isPlaying) {
             var sb = new StringBuilder("\rVol:[");

@@ -13,6 +13,13 @@ public class JLineTerminalIO implements TerminalIO {
     private NonBlockingReader reader;
 
     @Override
+    public boolean isInteractive() {
+        if (terminal == null) return false;
+        String type = terminal.getType();
+        return !Terminal.TYPE_DUMB.equals(type) && !Terminal.TYPE_DUMB_COLOR.equals(type);
+    }
+
+    @Override
     public void init() throws IOException {
         // Create terminal in raw mode
         terminal = TerminalBuilder.builder()
