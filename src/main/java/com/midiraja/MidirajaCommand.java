@@ -20,8 +20,11 @@ import java.io.File;
 import java.util.*;
 import java.util.concurrent.Callable;
 
+import static java.lang.System.out;
 import static java.lang.System.err;
-import static java.lang.IO.*;
+import static java.lang.System.in;
+
+
 
 @Command(name = "midra", mixinStandardHelpOptions = true, version = "midra 1.1",
         description = "Midiraja: A high-performance MIDI player for CLI.")
@@ -71,11 +74,11 @@ public class MidirajaCommand implements Callable<Integer> {
         var ports = provider.getOutputPorts();
 
         if (listDevices) {
-            println("Available MIDI Output Devices:");
+            out.println("Available MIDI Output Devices:");
             if (ports.isEmpty()) {
-                println("No MIDI output devices found.");
+                out.println("No MIDI output devices found.");
             } else {
-                ports.forEach(java.lang.IO::println);
+                ports.forEach(out::println);
             }
             return 0;
         }
@@ -217,13 +220,15 @@ public class MidirajaCommand implements Callable<Integer> {
     }
 
     private int fallbackPortSelection(List<MidiPort> ports) {
-        println("Available MIDI Output Devices:");
-        ports.forEach(java.lang.IO::println);
+        out.println("Available MIDI Output Devices:");
+        ports.forEach(out::println);
 
+        var scanner = new Scanner(in);
         while (true) {
-            String input = readln("Select a port by number or name (or type 'q' to quit): ");
-            if (input == null || input.trim().equalsIgnoreCase("q")) return -1;
-            input = input.trim();
+            out.print("Select a port by number or name (or type 'q' to quit): ");
+            if (!scanner.hasNextLine()) return -1;
+            var input = scanner.nextLine().trim();
+            if (input.equalsIgnoreCase("q")) return -1;
             if (input.isEmpty()) continue;
 
             int idx = findPortIndex(ports, input);
@@ -234,7 +239,7 @@ public class MidirajaCommand implements Callable<Integer> {
     private void playMidiWithProvider(File file, MidiOutProvider provider, MidiPort targetPort) throws Exception {
         var sequence = MidiSystem.getSequence(file);
         
-        println("Started playing: " + file.getName() + " to " + targetPort.name());
+        out.println("Started playing: " + file.getName() + " to " + targetPort.name());
         extractAndPrintMetadata(sequence);
 
         var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
@@ -272,8 +277,8 @@ public class MidirajaCommand implements Callable<Integer> {
             }
         }
 
-        if (title != null) println("  Title: " + title);
-        if (copyright != null) println("  Copyright: " + copyright);
-        texts.forEach(info -> println("  Info: " + info));
+        if (title != null) out.println("  Title: " + title);
+        if (copyright != null) out.println("  Copyright: " + copyright);
+        texts.forEach(info -> out.println("  Info: " + info));
     }
 }

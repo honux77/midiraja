@@ -34,16 +34,20 @@ jacocoTestReport {
     }
 }
 
+tasks.withType(JavaCompile).configureEach {
+    options.compilerArgs.add('--enable-preview')
+}
+
 test {
     useJUnitPlatform()
-    jvmArgs('--enable-native-access=ALL-UNNAMED')
+    jvmArgs('--enable-native-access=ALL-UNNAMED', '--enable-preview')
     // Coverage report generation is enabled but might fail on Java 25.
     finalizedBy jacocoTestReport
 }
 
 application {
     mainClass = 'com.midiraja.MidirajaCommand'
-    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
+    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED', '--enable-preview']
 }
 
 run {

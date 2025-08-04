@@ -6,7 +6,7 @@ import org.jline.utils.NonBlockingReader;
 
 import java.io.IOException;
 
-import static java.lang.IO.*;
+import static java.lang.System.out;
 
 public class JLineTerminalIO implements TerminalIO {
     private Terminal terminal;
