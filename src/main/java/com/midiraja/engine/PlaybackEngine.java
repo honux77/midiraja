@@ -25,7 +25,7 @@ public class PlaybackEngine {
     private final List<MidiEvent> sortedEvents;
     private final int resolution;
 
-    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, TerminalIO terminalIO, int initialVolumePercent, double initialSpeed) {
+    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, TerminalIO terminalIO, int initialVolumePercent, double initialSpeed, String startTimeStr) {
         this.sequence = sequence;
         this.provider = provider;
         this.terminalIO = terminalIO;
@@ -37,6 +37,10 @@ public class PlaybackEngine {
                 .flatMap(track -> IntStream.range(0, track.size()).mapToObj(track::get))
                 .sorted(Comparator.comparingLong(MidiEvent::getTick))
                 .toList();
+
+        if (startTimeStr != null && !startTimeStr.isBlank()) {
+            this.seekTarget = getTickForTime(parseTimeToMicroseconds(startTimeStr));
+        }
     }
 
     public void start() throws Exception {
@@ -61,6 +65,51 @@ public class PlaybackEngine {
         }
         
         uiThread.join(500);
+    }
+
+    private long parseTimeToMicroseconds(String timeStr) {
+        try {
+            String[] parts = timeStr.trim().split(":");
+            long seconds = 0;
+            for (String part : parts) {
+                seconds = seconds * 60 + Long.parseLong(part);
+            }
+            return seconds * 1000000L;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
+    }
+
+    private long getTickForTime(long targetMicroseconds) {
+        if (targetMicroseconds <= 0) return -1;
+        long targetNanos = targetMicroseconds * 1000;
+        long currentNanos = 0;
+        long lastTick = 0;
+        float bpm = 120.0f;
+        double ticksToNanos = (60000000000.0 / (bpm * resolution)); // Absolute time logic ignores speed multiplier
+
+        for (MidiEvent ev : sortedEvents) {
+            long t = ev.getTick();
+            long nextNanos = currentNanos + (long) ((t - lastTick) * ticksToNanos);
+            if (nextNanos >= targetNanos) {
+                long remainingNanos = targetNanos - currentNanos;
+                return lastTick + (long) (remainingNanos / ticksToNanos);
+            }
+            
+            currentNanos = nextNanos;
+            lastTick = t;
+
+            var msg = ev.getMessage().getMessage();
+            int status = msg[0] & 0xFF;
+            if (status == 0xFF && msg.length >= 6 && (msg[1] & 0xFF) == 0x51) {
+                int mspqn = ((msg[3] & 0xFF) << 16) | ((msg[4] & 0xFF) << 8) | (msg[5] & 0xFF);
+                if (mspqn > 0) {
+                    bpm = 60000000.0f / mspqn;
+                    ticksToNanos = (60000000000.0 / (bpm * resolution));
+                }
+            }
+        }
+        return sequence.getTickLength();
     }
 
     private void playLoop() throws Exception {

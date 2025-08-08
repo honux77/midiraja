@@ -47,6 +47,9 @@ public class MidirajaCommand implements Callable<Integer> {
     @Option(names = {"-s", "--speed"}, description = "Playback speed multiplier (e.g. 1.0, 1.2).", defaultValue = "1.0")
     private Double speed;
 
+    @Option(names = {"-st", "--start"}, description = "Playback start time (e.g. 01:30 or 90).")
+    private String startTime;
+
     @Option(names = {"-t", "--transpose"}, description = "Transpose semitones (+/-).")
     private Integer transpose;
 
@@ -262,7 +265,7 @@ public class MidirajaCommand implements Callable<Integer> {
         activeIO.init();
         
         try {
-            var engine = new PlaybackEngine(sequence, provider, activeIO, volume, speed);
+            var engine = new PlaybackEngine(sequence, provider, activeIO, volume, speed, startTime);
             engine.start();
         } finally {
             activeIO.close();
