@@ -20,6 +20,10 @@ public interface TerminalIO {
         VOLUME_DOWN,
         SPEED_UP,
         SPEED_DOWN,
+        TRANSPOSE_UP,
+        TRANSPOSE_DOWN,
+        NEXT_TRACK,
+        PREV_TRACK,
         QUIT
     }
 

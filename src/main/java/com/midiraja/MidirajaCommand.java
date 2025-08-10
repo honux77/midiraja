@@ -273,9 +273,9 @@ public class MidirajaCommand implements Callable<Integer> {
                     if (next1 == '[') {
                         int next2 = reader.read(10);
                         if (next2 == 'A') { // UP
-                            selectedIndex = Math.max(0, selectedIndex - 1);
+                            selectedIndex = (selectedIndex - 1 + numPorts) % numPorts;
                         } else if (next2 == 'B') { // DOWN
-                            selectedIndex = Math.min(numPorts - 1, selectedIndex + 1);
+                            selectedIndex = (selectedIndex + 1) % numPorts;
                         }
                     } else if (next1 <= 0) { // 단순 ESC
                         clearMenu(terminal, numPorts);
