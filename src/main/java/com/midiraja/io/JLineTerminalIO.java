@@ -2,6 +2,7 @@ package com.midiraja.io;
 
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.terminal.Attributes;
 import org.jline.utils.NonBlockingReader;
 
 import java.io.IOException;
@@ -26,6 +27,9 @@ public class JLineTerminalIO implements TerminalIO {
                 .system(true)
                 .build();
         terminal.enterRawMode();
+        Attributes attr = terminal.getAttributes();
+        attr.setLocalFlag(Attributes.LocalFlag.ECHO, false);
+        terminal.setAttributes(attr);
         reader = terminal.reader();
     }
 
@@ -52,11 +56,25 @@ public class JLineTerminalIO implements TerminalIO {
             return TerminalKey.QUIT;
         }
 
-        if (ch == '+' || ch == '=' || ch == ']') {
+        if (ch == 'n' || ch == 'N' || ch == ']') {
+            return TerminalKey.NEXT_TRACK;
+        }
+        if (ch == 'p' || ch == 'P' || ch == '[') {
+            return TerminalKey.PREV_TRACK;
+        }
+
+        if (ch == '+' || ch == '=') {
             return TerminalKey.SPEED_UP;
         }
-        if (ch == '-' || ch == '_' || ch == '[') {
+        if (ch == '-' || ch == '_') {
             return TerminalKey.SPEED_DOWN;
+        }
+
+        if (ch == '.' || ch == '>') {
+            return TerminalKey.TRANSPOSE_UP;
+        }
+        if (ch == ',' || ch == '<') {
+            return TerminalKey.TRANSPOSE_DOWN;
         }
 
         // Handle ESC and Arrow Keys (typically ESC [ A, B, C, D)

@@ -9,6 +9,10 @@ import java.util.*;
 import java.util.stream.IntStream;
 
 public class PlaybackEngine {
+    public enum PlaybackStatus {
+        FINISHED, NEXT, PREVIOUS, QUIT_ALL
+    }
+
     private final Sequence sequence;
     private final MidiOutProvider provider;
     private final TerminalIO terminalIO;
@@ -18,19 +22,22 @@ public class PlaybackEngine {
     private volatile long seekTarget = -1;
     private volatile float currentBpm = 120.0f;
     private volatile double currentSpeed = 1.0;
+    private volatile int currentTranspose = 0;
     private volatile double volumeScale = 1.0;
     private volatile boolean isPlaying = false;
+    private volatile PlaybackStatus endStatus = PlaybackStatus.FINISHED;
     
     private final double[] channelLevels = new double[16];
     private final List<MidiEvent> sortedEvents;
     private final int resolution;
 
-    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, TerminalIO terminalIO, int initialVolumePercent, double initialSpeed, String startTimeStr) {
+    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, TerminalIO terminalIO, int initialVolumePercent, double initialSpeed, String startTimeStr, Integer initialTranspose) {
         this.sequence = sequence;
         this.provider = provider;
         this.terminalIO = terminalIO;
         this.volumeScale = initialVolumePercent / 100.0;
         this.currentSpeed = initialSpeed;
+        this.currentTranspose = initialTranspose != null ? initialTranspose : 0;
         this.resolution = sequence.getResolution();
         
         this.sortedEvents = Arrays.stream(sequence.getTracks())
@@ -43,8 +50,9 @@ public class PlaybackEngine {
         }
     }
 
-    public void start() throws Exception {
+    public PlaybackStatus start() throws Exception {
         isPlaying = true;
+        endStatus = PlaybackStatus.FINISHED;
         
         // Start UI Thread (30 FPS)
         var uiThread = new Thread(this::uiLoop);
@@ -65,6 +73,7 @@ public class PlaybackEngine {
         }
         
         uiThread.join(500);
+        return endStatus;
     }
 
     private long parseTimeToMicroseconds(String timeStr) {
@@ -243,6 +252,12 @@ public class PlaybackEngine {
             int cmd = status & 0xF0;
             int ch = status & 0x0F;
 
+            // Transpose Note On (0x90) and Note Off (0x80), but skip channel 10 (drums, index 9)
+            if (ch != 9 && (cmd == 0x90 || cmd == 0x80)) {
+                int note = (raw[1] & 0xFF) + currentTranspose;
+                raw[1] = (byte) Math.max(0, Math.min(127, note));
+            }
+
             if (cmd == 0xB0 && raw.length >= 3 && raw[1] == 7) {
                 int vol = (int) ((raw[2] & 0xFF) * volumeScale);
                 raw[2] = (byte) Math.max(0, Math.min(127, vol));
@@ -277,6 +292,14 @@ public class PlaybackEngine {
                     case SPEED_DOWN -> {
                         currentSpeed = Math.max(0.1, currentSpeed - 0.1);
                     }
+                    case TRANSPOSE_UP -> {
+                        provider.panic();
+                        currentTranspose++;
+                    }
+                    case TRANSPOSE_DOWN -> {
+                        provider.panic();
+                        currentTranspose--;
+                    }
                     case SEEK_FORWARD -> {
                         // Seek roughly +10 seconds based on current BPM
                         long ticksToSeekFwd = (long) ((10000.0 * currentBpm * resolution) / 60000.0);
@@ -288,7 +311,18 @@ public class PlaybackEngine {
                         long ticksToSeekBwd = (long) ((10000.0 * currentBpm * resolution) / 60000.0);
                         seekTarget = Math.max(0, currentTick - ticksToSeekBwd);
                     }
-                    case QUIT -> isPlaying = false;
+                    case NEXT_TRACK -> {
+                        endStatus = PlaybackStatus.NEXT;
+                        isPlaying = false;
+                    }
+                    case PREV_TRACK -> {
+                        endStatus = PlaybackStatus.PREVIOUS;
+                        isPlaying = false;
+                    }
+                    case QUIT -> {
+                        endStatus = PlaybackStatus.QUIT_ALL;
+                        isPlaying = false;
+                    }
                     default -> {}
                 }
             }
@@ -329,11 +363,11 @@ public class PlaybackEngine {
                 }
                 sb.append("] ");
                 
-                String currentTimeStr = formatTime(currentMicroseconds, includeHours);
-                sb.append(String.format("%s/%s (BPM: %5.1f x%.1f, Vol: %3d%%) ", 
-                    currentTimeStr, totalTimeStr, currentBpm, currentSpeed, (int)(volumeScale*100)));
-                terminalIO.print(sb.toString());
-                try { Thread.sleep(50); } catch (InterruptedException _) {}
+                                        String currentTimeStr = formatTime(currentMicroseconds, includeHours);
+                                        String transStr = currentTranspose == 0 ? "" : String.format(" %+d", currentTranspose);
+                                        sb.append(String.format("%s/%s (BPM: %5.1f x%.1f, Vol: %3d%%%s) \033[K", 
+                                            currentTimeStr, totalTimeStr, currentBpm, currentSpeed, (int)(volumeScale*100), transStr));
+                                        terminalIO.print(sb.toString());                try { Thread.sleep(50); } catch (InterruptedException _) {}
             }
         } finally {
             terminalIO.print("\033[?25h\n"); // 커서 보이기 및 줄바꿈
