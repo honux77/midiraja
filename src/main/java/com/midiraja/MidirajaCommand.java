@@ -151,10 +151,22 @@ public class MidirajaCommand implements Callable<Integer> {
 
             int currentTrackIdx = 0;
             String currentStartTime = startTime;
+            boolean isFirstTrack = true;
+            int lastPrintedLines = 0;
 
             while (currentTrackIdx >= 0 && currentTrackIdx < playlist.size()) {
+                if (!isFirstTrack && lastPrintedLines > 0 && 
+                    (this.terminalIO != null && this.terminalIO.isInteractive() || 
+                    (this.terminalIO == null && playlist.size() > 1 && System.console() != null))) {
+                    out.print("\033[" + lastPrintedLines + "A\033[J");
+                    out.flush();
+                }
+                isFirstTrack = false;
+
                 var file = playlist.get(currentTrackIdx);
-                var status = playMidiWithProvider(file, provider, ports.get(portIndex), currentStartTime);
+                var result = playMidiWithProvider(file, provider, ports.get(portIndex), currentStartTime);
+                lastPrintedLines = result.linesPrinted();
+                var status = result.status();
                 
                 // After the first track, clear start time
                 currentStartTime = null;
@@ -289,25 +301,36 @@ public class MidirajaCommand implements Callable<Integer> {
         }
     }
 
-    private PlaybackEngine.PlaybackStatus playMidiWithProvider(File file, MidiOutProvider provider, MidiPort targetPort, String currentStartTime) throws Exception {
+    private record PlaybackResult(PlaybackEngine.PlaybackStatus status, int linesPrinted) {}
+
+    private PlaybackResult playMidiWithProvider(File file, MidiOutProvider provider, MidiPort targetPort, String currentStartTime) throws Exception {
         var sequence = MidiSystem.getSequence(file);
         
+        int lines = 0;
         out.println("Playing: " + file.getName() + " [" + targetPort.name() + "]");
-        extractAndPrintMetadata(sequence);
-        out.println("Controls: [↑/↓] Vol  [←/→] Skip 10s  [p/n] Track  [q] Quit ('midra -h' for more)");
+        lines++;
+        
+        lines += extractAndPrintMetadata(sequence);
+        
+        out.println("[↑/↓] Vol  [←/→] Skip 10s  [p/n] Track  [q] Quit ('midra -h' for more)");
+        lines++;
+        
+        // The PlaybackEngine prints the progress bar on a single line using \r.
+        // It appends a newline when finished. So we add 1 for the progress bar line.
+        lines++;
 
         var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
         activeIO.init();
         
         try {
             var engine = new PlaybackEngine(sequence, provider, activeIO, volume, speed, currentStartTime, transpose);
-            return engine.start();
+            return new PlaybackResult(engine.start(), lines);
         } finally {
             activeIO.close();
         }
     }
 
-    private void extractAndPrintMetadata(Sequence sequence) {
+    private int extractAndPrintMetadata(Sequence sequence) {
         String title = null;
         String copyright = null;
         List<String> texts = new ArrayList<>();
@@ -331,8 +354,13 @@ public class MidirajaCommand implements Callable<Integer> {
             }
         }
 
-        if (title != null) out.println("  Title: " + title);
-        if (copyright != null) out.println("  Copyright: " + copyright);
-        texts.forEach(info -> out.println("  Info: " + info));
+        int linesPrinted = 0;
+        if (title != null) { out.println("  Title: " + title); linesPrinted++; }
+        if (copyright != null) { out.println("  Copyright: " + copyright); linesPrinted++; }
+        for (String info : texts) {
+            out.println("  Info: " + info);
+            linesPrinted++;
+        }
+        return linesPrinted;
     }
 }
