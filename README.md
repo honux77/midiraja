@@ -1,37 +1,79 @@
 # Midiraja (midra) 🎵
 
-A high-performance, cross-platform CLI tool for playing MIDI files directly to native OS MIDI synthesizers using GraalVM Native Image.
+**Midiraja** (command: `midra`) is a lightweight, interactive MIDI player for your terminal. 
 
-## 🚀 Installation
+Whether you want to quickly preview a `.mid` file, practice an instrument by changing the key and tempo on the fly, or just listen to a folder full of retro game soundtracks, `midra` makes it incredibly easy.
 
-### 🍺 Option 1: macOS via Homebrew (Recommended)
-You can install `midra` using a custom Homebrew tap:
+## ✨ Features
+* **Zero Config**: Automatically detects and plays through your native OS MIDI synthesizers (like Apple DLS Synth on macOS or ALSA/FluidSynth on Linux).
+* **Interactive UI**: No need to memorize port numbers. Just run `midra` and use your arrow keys to select where the sound should go.
+* **Live Controls**: Change the playback speed, transpose the key, or tweak the volume *while* the music is playing.
+* **Playlists**: Toss in a bunch of files. Shuffle, loop, and skip tracks with a single keystroke.
 
+---
+
+## 🚀 Installation (macOS & Linux)
+
+### 🍺 Option 1: macOS via Homebrew (Recommended for Mac)
 ```bash
 brew tap YOUR_GITHUB_USERNAME/tap
 brew install midra
 ```
 
-### ⚡ Option 2: Direct Install via Curl
-Run the following script to automatically download and install the latest binary for your OS and architecture:
-
+### ⚡ Option 2: Quick Install via Curl (Mac & Linux)
+Run the following script in your terminal to automatically download and install the latest version:
 ```bash
-curl -sL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/playmidi/master/install.sh | bash
+curl -sL https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/midiraja/master/install.sh | bash
 ```
+*(Note for Linux users: `midra` uses ALSA under the hood, which is pre-installed on almost all Linux distributions.)*
 
 ### 📦 Option 3: Manual Download
-1. Head over to the [Releases](https://github.com/YOUR_GITHUB_USERNAME/playmidi/releases) page.
-2. Download the `.tar.gz` file for your platform (`darwin-arm64`, `linux-amd64`, etc.).
-3. Extract the archive: `tar -xzf midra-*.tar.gz`.
-4. Move the binary to your PATH: `sudo mv midra /usr/local/bin/`.
+1. Go to the [Releases](https://github.com/YOUR_GITHUB_USERNAME/midiraja/releases) page.
+2. Download the `.tar.gz` file for your computer (e.g., `darwin-arm64` for Apple Silicon Mac, `linux-amd64` for Intel/AMD Linux).
+3. Extract it and move the `midra` file to `/usr/local/bin/`.
 
-## 🎮 Usage
+---
+
+## 🎮 How to Use
+
+### Quick Start
+Just type `midra` followed by the file you want to play. If you have multiple MIDI devices, a menu will pop up asking you to choose one.
 ```bash
 midra PASSPORT.MID
-midra --volume 50 --transpose +2 my_song.mid
-midra --list
 ```
-Interactive Controls during playback:
-* `UP` / `DOWN`: Adjust Volume
-* `LEFT` / `RIGHT`: Seek ±10 seconds
-* `q` or `ESC`: Quit instantly (Panic)
+
+### Playlists & Folders
+You can pass multiple files at once. `midra` will play them one after another.
+```bash
+# Play all MIDI files in the current folder
+midra *.mid
+
+# Play a playlist endlessly in a random order
+midra --loop --shuffle *.mid
+```
+
+### Starting with Specific Settings
+You can set the starting volume, tempo, key, or even jump to a specific time right from the command line:
+```bash
+# Start at 1 minute and 30 seconds
+midra --start 01:30 song.mid
+
+# Play at 1.5x speed
+midra --speed 1.5 song.mid
+
+# Transpose the song one octave up (+12 semitones) and lower volume
+midra --transpose 12 --volume 50 song.mid
+```
+
+---
+
+## 🎛️ Live Playback Controls
+
+While a song is playing, you don't need to restart the app to make changes. Just press these keys:
+
+* **`↑` / `↓`** : Volume Up / Down
+* **`←` / `→`** : Skip backward / forward 10 seconds
+* **`+` / `-`** : Speed Up / Down
+* **`>` / `<`** : Transpose Key Up / Down (You can also use `.` / `,`)
+* **`n` / `p`** : Next / Previous Track (You can also use `]` / `[`)
+* **`q`** : Stop playback and Quit
