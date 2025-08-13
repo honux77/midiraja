@@ -12,7 +12,7 @@ As a high-performance CLI tool built with Java and compiled natively using Graal
 *   **Predictable Performance:** MIDI playback requires precise timing. Avoid heavy garbage collection (GC) allocations inside the hot paths (like `playLoop`).
 
 ## 2. Java Language & Style
-*   **Language Level:** Java 25 (with `--enable-preview` if necessary for specific modern features).
+*   **Language Level:** Java 25.
 *   **Naming Conventions:**
     *   Classes and Interfaces: `PascalCase` (e.g., `PlaybackEngine`)
     *   Methods and Variables: `camelCase` (e.g., `playLoop`, `currentTick`)

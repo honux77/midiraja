@@ -58,19 +58,18 @@ jacocoTestReport {
 }
 
 tasks.withType(JavaCompile).configureEach {
-    // options.compilerArgs.add('--enable-preview')
 }
 
 test {
     useJUnitPlatform()
-    jvmArgs('--enable-native-access=ALL-UNNAMED', '--enable-preview')
+    jvmArgs('--enable-native-access=ALL-UNNAMED')
     // Coverage report generation is enabled but might fail on Java 25.
     finalizedBy jacocoTestReport
 }
 
 application {
     mainClass = 'com.midiraja.MidirajaCommand'
-    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED', '--enable-preview']
+    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
 }
 
 run {
@@ -86,7 +85,6 @@ graalvmNative {
             imageName = 'midra'
             buildArgs.add('--no-fallback')
             buildArgs.add('--enable-native-access=ALL-UNNAMED')
-            buildArgs.add('--enable-preview')
             buildArgs.add('-H:+UnlockExperimentalVMOptions')
             // JNA 동적 로딩을 위해 런타임 초기화 설정
             buildArgs.add('--initialize-at-run-time=com.sun.jna.Native,com.sun.jna.Pointer')
