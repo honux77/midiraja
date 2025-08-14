@@ -54,15 +54,11 @@ public class PlaybackEngine {
         isPlaying = true;
         endStatus = PlaybackStatus.FINISHED;
         
-        // Start UI Thread (30 FPS)
-        var uiThread = new Thread(this::uiLoop);
-        uiThread.setDaemon(true);
-        uiThread.start();
+        // Start UI Thread (Virtual, 30 FPS)
+        var uiThread = Thread.ofVirtual().name("ui-loop").start(this::uiLoop);
 
-        // Start Input Thread (Async IoC)
-        var inputThread = new Thread(this::inputLoop);
-        inputThread.setDaemon(true);
-        inputThread.start();
+        // Start Input Thread (Virtual, Async IoC)
+        var inputThread = Thread.ofVirtual().name("input-loop").start(this::inputLoop);
 
         try {
             playLoop();

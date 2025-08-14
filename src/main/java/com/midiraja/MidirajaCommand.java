@@ -171,27 +171,29 @@ public class MidirajaCommand implements Callable<Integer> {
                 lastPrintedLines = result.linesPrinted();
                 var status = result.status();
                 
-                // After the first track, clear start time
-                currentStartTime = null;
-
-                if (status == PlaybackEngine.PlaybackStatus.QUIT_ALL) {
-                    break;
-                } else if (status == PlaybackEngine.PlaybackStatus.PREVIOUS) {
-                    currentTrackIdx--;
-                    if (loop && currentTrackIdx < 0) {
-                        currentTrackIdx = playlist.size() - 1;
-                    } else {
-                        currentTrackIdx = Math.max(0, currentTrackIdx);
-                    }
-                } else {
-                    // FINISHED or NEXT
-                    currentTrackIdx++;
-                    if (loop && currentTrackIdx >= playlist.size()) {
-                        currentTrackIdx = 0;
-                        if (shuffle) Collections.shuffle(playlist); // Reshuffle for next iteration
-                    }
-                }
-            }
+                                    // After the first track, clear start time
+                                    currentStartTime = null;
+                
+                                    switch (status) {
+                                        case QUIT_ALL -> {
+                                            currentTrackIdx = -1; // Force exit
+                                        }
+                                        case PREVIOUS -> {
+                                            currentTrackIdx--;
+                                            if (loop && currentTrackIdx < 0) {
+                                                currentTrackIdx = playlist.size() - 1;
+                                            } else {
+                                                currentTrackIdx = Math.max(0, currentTrackIdx);
+                                            }
+                                        }
+                                        case FINISHED, NEXT -> {
+                                            currentTrackIdx++;
+                                            if (loop && currentTrackIdx >= playlist.size()) {
+                                                currentTrackIdx = 0;
+                                                if (shuffle) Collections.shuffle(playlist); // Reshuffle for next iteration
+                                            }
+                                        }
+                                    }            }
         } catch (Exception e) {
             err.println("Error during playback: " + e.getMessage());
             return 1;
