@@ -5,17 +5,21 @@ import com.midiraja.midi.os.MacProvider;
 import com.midiraja.midi.os.WindowsProvider;
 
 public class MidiProviderFactory {
+    private enum OS { MAC, WINDOWS, LINUX, UNKNOWN }
+
     public static MidiOutProvider createProvider() {
-        String os = System.getProperty("os.name").toLowerCase();
+        String osName = System.getProperty("os.name").toLowerCase();
         
-        if (os.contains("mac")) {
-            return new MacProvider();
-        } else if (os.contains("win")) {
-            return new WindowsProvider();
-        } else if (os.contains("nix") || os.contains("nux") || os.contains("aix")) {
-            return new LinuxProvider();
-        } else {
-            throw new UnsupportedOperationException("Unsupported OS for native MIDI: " + os);
-        }
+        OS os = osName.contains("mac") ? OS.MAC :
+                osName.contains("win") ? OS.WINDOWS :
+                osName.contains("nix") || osName.contains("nux") || osName.contains("aix") ? OS.LINUX : 
+                OS.UNKNOWN;
+
+        return switch (os) {
+            case MAC -> new MacProvider();
+            case WINDOWS -> new WindowsProvider();
+            case LINUX -> new LinuxProvider();
+            case UNKNOWN -> throw new UnsupportedOperationException("Unsupported OS for native MIDI: " + osName);
+        };
     }
 }

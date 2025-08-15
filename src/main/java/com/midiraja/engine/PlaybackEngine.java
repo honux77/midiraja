@@ -6,6 +6,7 @@ import com.midiraja.midi.MidiOutProvider;
 import javax.sound.midi.*;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.StructuredTaskScope;
 import java.util.stream.IntStream;
 
 public class PlaybackEngine {
@@ -54,21 +55,24 @@ public class PlaybackEngine {
         isPlaying = true;
         endStatus = PlaybackStatus.FINISHED;
         
-        // Start UI Thread (Virtual, 30 FPS)
-        var uiThread = Thread.ofVirtual().name("ui-loop").start(this::uiLoop);
-
-        // Start Input Thread (Virtual, Async IoC)
-        var inputThread = Thread.ofVirtual().name("input-loop").start(this::inputLoop);
-
-        try {
-            playLoop();
-        } finally {
-            // Ensure all notes are silenced when playLoop exits (e.g., 'q' pressed or song finished)
-            provider.panic();
-            isPlaying = false;
+        try (var scope = StructuredTaskScope.open()) {
+            // Start UI and Input as concurrent subtasks
+            scope.fork(() -> { uiLoop(); return null; });
+            scope.fork(() -> { inputLoop(); return null; });
+            
+            // Run the main playback loop in the current thread (or fork it too)
+            try {
+                playLoop();
+            } finally {
+                // Ensure all notes are silenced and stop signal is sent
+                isPlaying = false;
+                provider.panic();
+            }
+            
+            // Wait for UI and Input threads to notice isPlaying = false and exit cleanly
+            scope.join();
         }
-        
-        uiThread.join(500);
+
         return endStatus;
     }
 
