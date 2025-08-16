@@ -161,7 +161,7 @@ public class MidirajaCommand implements Callable<Integer> {
             while (currentTrackIdx >= 0 && currentTrackIdx < playlist.size()) {
                 if (!isFirstTrack && lastPrintedLines > 0 && 
                     (this.terminalIO != null && this.terminalIO.isInteractive() || 
-                    (this.terminalIO == null && playlist.size() > 1 && System.console() != null))) {
+                    (this.terminalIO == null && System.console() != null))) {
                     out.print("\033[" + lastPrintedLines + "A\033[J");
                     out.flush();
                 }
