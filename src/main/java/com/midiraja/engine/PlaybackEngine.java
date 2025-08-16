@@ -16,7 +16,6 @@ public class PlaybackEngine {
 
     private final Sequence sequence;
     private final MidiOutProvider provider;
-    private final TerminalIO terminalIO;
     
     private volatile long currentTick = 0;
     private volatile long currentMicroseconds = 0;
@@ -32,10 +31,9 @@ public class PlaybackEngine {
     private final List<MidiEvent> sortedEvents;
     private final int resolution;
 
-    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, TerminalIO terminalIO, int initialVolumePercent, double initialSpeed, String startTimeStr, Integer initialTranspose) {
+    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, int initialVolumePercent, double initialSpeed, String startTimeStr, Integer initialTranspose) {
         this.sequence = sequence;
         this.provider = provider;
-        this.terminalIO = terminalIO;
         this.volumeScale = initialVolumePercent / 100.0;
         this.currentSpeed = initialSpeed;
         this.currentTranspose = initialTranspose != null ? initialTranspose : 0;
@@ -274,6 +272,7 @@ public class PlaybackEngine {
     }
 
     private void inputLoop() {
+        var terminalIO = TerminalIO.CONTEXT.get();
         try {
             while (isPlaying) {
                 var key = terminalIO.readKey();
@@ -341,6 +340,7 @@ public class PlaybackEngine {
     }
 
     private void uiLoop() {
+        var terminalIO = TerminalIO.CONTEXT.get();
         if (!terminalIO.isInteractive()) {
             terminalIO.println("Playing (Interactive UI disabled)...");
             return; // UI 루프 종료, 시스템 자원 절약

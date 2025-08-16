@@ -1,6 +1,7 @@
 package com.midiraja.io;
 
 import java.io.IOException;
+import java.lang.ScopedValue;
 
 /**
  * Dependency Inversion Principle (DIP) abstraction for terminal interaction.
@@ -8,6 +9,8 @@ import java.io.IOException;
  * facilitating easy unit testing with Mock implementations.
  */
 public interface TerminalIO {
+    
+    ScopedValue<TerminalIO> CONTEXT = ScopedValue.newInstance();
     
     /**
      * Enum representing high-level interactive commands triggered by the user.

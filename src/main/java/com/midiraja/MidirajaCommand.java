@@ -17,6 +17,7 @@ import org.jline.utils.NonBlockingReader;
 
 import javax.sound.midi.*;
 import java.io.File;
+import java.lang.ScopedValue;
 import java.util.*;
 import java.util.concurrent.Callable;
 
@@ -337,8 +338,9 @@ public class MidirajaCommand implements Callable<Integer> {
         activeIO.init();
         
         try {
-            var engine = new PlaybackEngine(sequence, provider, activeIO, volume, speed, currentStartTime, transpose);
-            return new PlaybackResult(engine.start(), lines);
+            var engine = new PlaybackEngine(sequence, provider, volume, speed, currentStartTime, transpose);
+            int finalLines = lines;
+            return ScopedValue.where(TerminalIO.CONTEXT, activeIO).call(() -> new PlaybackResult(engine.start(), finalLines));
         } finally {
             activeIO.close();
         }
