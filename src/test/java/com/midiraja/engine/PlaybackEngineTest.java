@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2026, Park, Sungchul
- * All rights reserved.
+ * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
  */
 
 package com.midiraja.engine;
@@ -22,20 +21,36 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class PlaybackEngineTest {
+class PlaybackEngineTest
+{
     private Sequence mockSequence;
     private MockMidiProvider mockProvider;
     private MockTerminalIO mockIO;
 
-    static class MockMidiProvider implements MidiOutProvider {
-        @Override public List<MidiPort> getOutputPorts() { return new ArrayList<>(); }
-        @Override public void openPort(int portIndex) throws Exception { }
-        @Override public void sendMessage(byte[] data) throws Exception { }
-        @Override public void closePort() { }
+    static class MockMidiProvider implements MidiOutProvider
+    {
+        @Override
+        public List<MidiPort> getOutputPorts()
+        {
+            return new ArrayList<>();
+        }
+
+        @Override
+        public void openPort(int portIndex) throws Exception
+        {}
+
+        @Override
+        public void sendMessage(byte[] data) throws Exception
+        {}
+
+        @Override
+        public void closePort()
+        {}
     }
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() throws Exception
+    {
         mockSequence = new Sequence(Sequence.PPQ, 24);
         mockSequence.createTrack();
         mockProvider = new MockMidiProvider();
@@ -43,55 +58,65 @@ class PlaybackEngineTest {
     }
 
     @Test
-    void testVolumeControl() throws Exception {
+    void testVolumeControl() throws Exception
+    {
         PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, 100, 1.0, null, 0);
-        
+
         mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_DOWN);
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
-        
-        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO).call(() -> engine.start()));
+
+        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
+                .call(() -> engine.start()));
     }
 
     @Test
-    void testSeekBeyondBoundary() throws Exception {
+    void testSeekBeyondBoundary() throws Exception
+    {
         mockSequence = new Sequence(Sequence.PPQ, 24);
         mockSequence.createTrack();
-        
+
         PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, 100, 1.0, null, 0);
-        
+
         // Seek forward multiple times beyond end
         mockIO.injectKey(TerminalIO.TerminalKey.SEEK_FORWARD);
         mockIO.injectKey(TerminalIO.TerminalKey.SEEK_FORWARD);
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
-        
-        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO).call(() -> engine.start()));
+
+        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
+                .call(() -> engine.start()));
     }
 
     @Test
-    void testSeekBackwardToZero() throws Exception {
+    void testSeekBackwardToZero() throws Exception
+    {
         mockSequence = new Sequence(Sequence.PPQ, 24);
         mockSequence.createTrack();
-        
+
         PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, 100, 1.0, null, 0);
-        
+
         // Seek backward early in the song (should stay at 0)
         mockIO.injectKey(TerminalIO.TerminalKey.SEEK_BACKWARD);
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
-        
-        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO).call(() -> engine.start()));
+
+        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
+                .call(() -> engine.start()));
     }
 
     @Test
-    void testVolumeBoundaries() throws Exception {
+    void testVolumeBoundaries() throws Exception
+    {
         PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, 100, 1.0, null, 0);
-        
+
         // Volume down multiple times (should clamp at 0%)
-        for(int i=0; i<30; i++) mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_DOWN);
+        for (int i = 0; i < 30; i++)
+            mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_DOWN);
         // Volume up multiple times (should clamp at 100%)
-        for(int i=0; i<30; i++) mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_UP);
-        
+        for (int i = 0; i < 30; i++)
+            mockIO.injectKey(TerminalIO.TerminalKey.VOLUME_UP);
+
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
-        
-        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO).call(() -> engine.start()));
+
+        assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
+                .call(() -> engine.start()));
     }
 }

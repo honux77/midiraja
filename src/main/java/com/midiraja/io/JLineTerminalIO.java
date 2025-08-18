@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2026, Park, Sungchul
- * All rights reserved.
+ * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
  */
 
 package com.midiraja.io;
@@ -17,23 +16,24 @@ import java.io.IOException;
 
 import static java.lang.System.out;
 
-public class JLineTerminalIO implements TerminalIO {
+public class JLineTerminalIO implements TerminalIO
+{
     private Terminal terminal;
     private NonBlockingReader reader;
 
     @Override
-    public boolean isInteractive() {
+    public boolean isInteractive()
+    {
         if (terminal == null) return false;
         String type = terminal.getType();
         return !Terminal.TYPE_DUMB.equals(type) && !Terminal.TYPE_DUMB_COLOR.equals(type);
     }
 
     @Override
-    public void init() throws IOException {
+    public void init() throws IOException
+    {
         // Create terminal in raw mode
-        terminal = TerminalBuilder.builder()
-                .system(true)
-                .build();
+        terminal = TerminalBuilder.builder().system(true).build();
         terminal.enterRawMode();
         Attributes attr = terminal.getAttributes();
         attr.setLocalFlag(Attributes.LocalFlag.ECHO, false);
@@ -42,62 +42,80 @@ public class JLineTerminalIO implements TerminalIO {
     }
 
     @Override
-    public void close() throws IOException {
-        if (terminal != null) {
-            try {
+    public void close() throws IOException
+    {
+        if (terminal != null)
+        {
+            try
+            {
                 terminal.close();
-            } catch (IOException _) {
+            }
+            catch (IOException _)
+            {
                 // Ignore errors during terminal cleanup to prevent masking main exceptions
             }
         }
     }
 
     @Override
-    public TerminalKey readKey() throws IOException {
+    public TerminalKey readKey() throws IOException
+    {
         if (reader == null) return TerminalKey.NONE;
 
         // Non-blocking read (returns -2 if no input is available)
         int ch = reader.read(10); // small timeout to avoid tight loop
         if (ch <= 0) return TerminalKey.NONE;
 
-        if (ch == 'q' || ch == 'Q') {
+        if (ch == 'q' || ch == 'Q')
+        {
             return TerminalKey.QUIT;
         }
 
-        if (ch == 'n' || ch == 'N' || ch == ']') {
+        if (ch == 'n' || ch == 'N' || ch == ']')
+        {
             return TerminalKey.NEXT_TRACK;
         }
-        if (ch == 'p' || ch == 'P' || ch == '[') {
+        if (ch == 'p' || ch == 'P' || ch == '[')
+        {
             return TerminalKey.PREV_TRACK;
         }
 
-        if (ch == '+' || ch == '=') {
+        if (ch == '+' || ch == '=')
+        {
             return TerminalKey.SPEED_UP;
         }
-        if (ch == '-' || ch == '_') {
+        if (ch == '-' || ch == '_')
+        {
             return TerminalKey.SPEED_DOWN;
         }
 
-        if (ch == '.' || ch == '>') {
+        if (ch == '.' || ch == '>')
+        {
             return TerminalKey.TRANSPOSE_UP;
         }
-        if (ch == ',' || ch == '<') {
+        if (ch == ',' || ch == '<')
+        {
             return TerminalKey.TRANSPOSE_DOWN;
         }
 
         // Handle ESC and Arrow Keys (typically ESC [ A, B, C, D)
-        if (ch == 27) { // 27 is ESC
+        if (ch == 27)
+        { // 27 is ESC
             int next1 = reader.read(10);
-            if (next1 == '[') { // It's an escape sequence!
+            if (next1 == '[')
+            { // It's an escape sequence!
                 int next2 = reader.read(10);
-                return switch (next2) {
+                return switch (next2)
+                {
                     case 'A' -> TerminalKey.VOLUME_UP;
                     case 'B' -> TerminalKey.VOLUME_DOWN;
                     case 'C' -> TerminalKey.SEEK_FORWARD;
                     case 'D' -> TerminalKey.SEEK_BACKWARD;
-                    default  -> TerminalKey.NONE;
+                    default -> TerminalKey.NONE;
                 };
-            } else if (next1 <= 0) {
+            }
+            else if (next1 <= 0)
+            {
                 // It was just a pure ESC key press (no sequence followed)
                 return TerminalKey.QUIT;
             }
@@ -107,21 +125,29 @@ public class JLineTerminalIO implements TerminalIO {
     }
 
     @Override
-    public void print(String str) {
-        if (terminal != null) {
+    public void print(String str)
+    {
+        if (terminal != null)
+        {
             terminal.writer().print(str);
             terminal.writer().flush();
-        } else {
+        }
+        else
+        {
             print(str);
         }
     }
 
     @Override
-    public void println(String str) {
-        if (terminal != null) {
+    public void println(String str)
+    {
+        if (terminal != null)
+        {
             terminal.writer().println(str);
             terminal.writer().flush();
-        } else {
+        }
+        else
+        {
             println(str);
         }
     }

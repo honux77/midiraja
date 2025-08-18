@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2026, Park, Sungchul
- * All rights reserved.
+ * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
  */
 
 package com.midiraja.io;
@@ -12,38 +11,30 @@ import java.io.IOException;
 import java.lang.ScopedValue;
 
 /**
- * Dependency Inversion Principle (DIP) abstraction for terminal interaction.
- * Allows decoupling the playback engine from standard system streams and JLine,
- * facilitating easy unit testing with Mock implementations.
+ * Dependency Inversion Principle (DIP) abstraction for terminal interaction. Allows decoupling the
+ * playback engine from standard system streams and JLine, facilitating easy unit testing with Mock
+ * implementations.
  */
-public interface TerminalIO {
-    
+public interface TerminalIO
+{
+
     /**
-     * Context propagation for the active terminal session, preventing the need
-     * to pass TerminalIO instances down the call stack or across virtual threads.
+     * Context propagation for the active terminal session, preventing the need to pass TerminalIO
+     * instances down the call stack or across virtual threads.
      */
     ScopedValue<TerminalIO> CONTEXT = ScopedValue.newInstance();
-    
+
     /**
      * Enum representing high-level interactive commands triggered by the user.
      */
-    enum TerminalKey {
-        NONE,
-        SEEK_FORWARD,
-        SEEK_BACKWARD,
-        VOLUME_UP,
-        VOLUME_DOWN,
-        SPEED_UP,
-        SPEED_DOWN,
-        TRANSPOSE_UP,
-        TRANSPOSE_DOWN,
-        NEXT_TRACK,
-        PREV_TRACK,
-        QUIT
+    enum TerminalKey
+    {
+        NONE, SEEK_FORWARD, SEEK_BACKWARD, VOLUME_UP, VOLUME_DOWN, SPEED_UP, SPEED_DOWN, TRANSPOSE_UP, TRANSPOSE_DOWN, NEXT_TRACK, PREV_TRACK, QUIT
     }
 
     /**
-     * @return true if the terminal supports advanced interactions like cursor movement and raw mode.
+     * @return true if the terminal supports advanced interactions like cursor movement and raw
+     *         mode.
      */
     boolean isInteractive();
 
@@ -58,8 +49,8 @@ public interface TerminalIO {
     void close() throws IOException;
 
     /**
-     * Reads a single keystroke and maps it to a TerminalKey.
-     * Non-blocking if the underlying implementation supports it.
+     * Reads a single keystroke and maps it to a TerminalKey. Non-blocking if the underlying
+     * implementation supports it.
      */
     TerminalKey readKey() throws IOException;
 

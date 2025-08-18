@@ -2,6 +2,7 @@ plugins {
     id 'application'
     id 'org.graalvm.buildtools.native' version '0.10.1'
     id 'jacoco'
+    
 }
 
 version = '0.1'
@@ -95,4 +96,6 @@ graalvmNative {
             buildArgs.add('--install-exit-handlers')
         }
     }
+}
+
 }

@@ -1,9 +1,8 @@
 /*
- * Copyright (c) 2026, Park, Sungchul
- * All rights reserved.
+ * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the
- * LICENSE file in the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
  */
 
 package com.midiraja.midi;
@@ -11,10 +10,11 @@ package com.midiraja.midi;
 import java.util.List;
 
 /**
- * Abstraction layer for native OS MIDI capabilities.
- * Decouples the playback engine from operating system specifics (ALSA, WinMM, CoreMIDI).
+ * Abstraction layer for native OS MIDI capabilities. Decouples the playback engine from operating
+ * system specifics (ALSA, WinMM, CoreMIDI).
  */
-public interface MidiOutProvider {
+public interface MidiOutProvider
+{
     /**
      * @return an immutable list of available MIDI output devices on the host OS.
      */
@@ -38,25 +38,38 @@ public interface MidiOutProvider {
     /**
      * Transmits a master volume Control Change (CC 7) to all 16 MIDI channels.
      */
-    default void setVolume(int volume) {
+    default void setVolume(int volume)
+    {
         if (volume < 0 || volume > 127) return;
-        for (int ch = 0; ch < 16; ch++) {
-            try {
-                sendMessage(new byte[]{(byte) (0xB0 | ch), 7, (byte) volume});
-            } catch (Exception ignored) {}
+        for (int ch = 0; ch < 16; ch++)
+        {
+            try
+            {
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 7, (byte) volume});
+            }
+            catch (Exception ignored)
+            {
+            }
         }
     }
 
     /**
-     * Instantly silences all active notes to prevent stuck sounds across track changes or abrupt exits.
+     * Instantly silences all active notes to prevent stuck sounds across track changes or abrupt
+     * exits.
      */
-    default void panic() {
-        for (int ch = 0; ch < 16; ch++) {
-            try {
+    default void panic()
+    {
+        for (int ch = 0; ch < 16; ch++)
+        {
+            try
+            {
                 // All Notes Off (123) and All Sound Off (120)
-                sendMessage(new byte[]{(byte) (0xB0 | ch), 123, 0});
-                sendMessage(new byte[]{(byte) (0xB0 | ch), 120, 0});
-            } catch (Exception ignored) {}
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 123, 0});
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 120, 0});
+            }
+            catch (Exception ignored)
+            {
+            }
         }
     }
 }
