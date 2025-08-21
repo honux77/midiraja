@@ -101,7 +101,7 @@ graalvmNative {
             buildArgs.add('--enable-preview')
             buildArgs.add('-H:+UnlockExperimentalVMOptions')
             // Required for dynamic loading of JNA
-            buildArgs.add('--initialize-at-run-time=com.sun.jna.Native,com.sun.jna.Pointer')
+            buildArgs.add('-H:+SharedArenaSupport')
             // Optimize binary size
             buildArgs.add('-Os') 
             buildArgs.add('--install-exit-handlers')
