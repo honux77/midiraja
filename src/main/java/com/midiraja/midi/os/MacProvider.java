@@ -151,10 +151,10 @@ public class MacProvider implements MidiOutProvider
             MemorySegment clientRef = sessionArena.allocate(ValueLayout.ADDRESS);
             MemorySegment portRef = sessionArena.allocate(ValueLayout.ADDRESS);
 
-            MIDIClientCreate.invokeExact(clientName, MemorySegment.NULL, MemorySegment.NULL, clientRef);
+            int _clientStatus = (int) MIDIClientCreate.invokeExact(clientName, MemorySegment.NULL, MemorySegment.NULL, clientRef);
             client = clientRef.get(ValueLayout.ADDRESS, 0);
             
-            MIDIOutputPortCreate.invokeExact(client, portName, portRef);
+            int _portStatus = (int) MIDIOutputPortCreate.invokeExact(client, portName, portRef);
             outPort = portRef.get(ValueLayout.ADDRESS, 0);
             
             pktListMem = sessionArena.allocate(512, 1); // Buffer for MIDI packets

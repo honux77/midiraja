@@ -134,7 +134,7 @@ public class JLineTerminalIO implements TerminalIO
         }
         else
         {
-            print(str);
+            System.out.print(str);
         }
     }
 
@@ -148,7 +148,7 @@ public class JLineTerminalIO implements TerminalIO
         }
         else
         {
-            println(str);
+            System.out.println(str);
         }
     }
 }
