@@ -457,6 +457,13 @@ public class PlaybackEngine
         return "Unknown";
     }
 
+    private String truncate(String text, int maxLength)
+    {
+        if (text == null) return "";
+        if (text.length() <= maxLength) return text;
+        return text.substring(0, Math.max(0, maxLength - 3)) + "...";
+    }
+
     private void uiLoop()
     {
         var term = TerminalIO.CONTEXT.get();
@@ -470,10 +477,29 @@ public class PlaybackEngine
         boolean includeHours = (totalMicroseconds / 1000000) >= 3600;
         String totalTimeStr = formatTime(totalMicroseconds, includeHours);
 
+        final int MIN_WIDTH = 70;
+        final int MIN_HEIGHT = 20;
+
         try
         {
             while (isPlaying)
             {
+                int termWidth = term.getWidth();
+                int termHeight = term.getHeight();
+
+                StringBuilder sb = new StringBuilder();
+                sb.append("\033[H"); // Cursor Home
+
+                if (termWidth < MIN_WIDTH || termHeight < MIN_HEIGHT)
+                {
+                    sb.append("\033[J"); // Clear screen
+                    sb.append(String.format("Terminal too small. Minimum size: %dx%d. Current: %dx%d\n", MIN_WIDTH, MIN_HEIGHT, termWidth, termHeight));
+                    sb.append("Please resize the terminal window.\n");
+                    term.print(sb.toString());
+                    Thread.sleep(500);
+                    continue;
+                }
+
                 // Decay channel levels
                 for (int i = 0; i < 16; i++) {
                     channelLevels[i] = Math.max(0, channelLevels[i] - 0.05); // decay
@@ -484,7 +510,9 @@ public class PlaybackEngine
                 int percent = (int) (totalMicroseconds > 0 ? (currentMicros * 100 / totalMicroseconds) : 0);
                 percent = Math.min(100, Math.max(0, percent));
                 
-                int barWidth = 30;
+                // Dynamic Bar Width based on available terminal width
+                // Fixed parts: "  Time:      00:00 / 00:00  []  100%" (approx 35 chars)
+                int barWidth = Math.max(10, termWidth - 40); 
                 int filled = (int) ((percent / 100.0) * barWidth);
                 StringBuilder bar = new StringBuilder("[");
                 for (int i = 0; i < barWidth; i++) {
@@ -494,16 +522,16 @@ public class PlaybackEngine
                 }
                 bar.append("]");
 
-                StringBuilder sb = new StringBuilder();
-                sb.append("\033[H"); // Cursor Home
-                
-                sb.append("================================================================================\n");
+                String horizontalDoubleLine = "=".repeat(termWidth);
+                String horizontalSingleLine = "-".repeat(termWidth);
+
+                sb.append(horizontalDoubleLine).append("\n");
                 sb.append("  Midiraja v").append(com.midiraja.Version.VERSION).append(" - Java 25 Native MIDI Player\n");
-                sb.append("================================================================================\n\n");
+                sb.append(horizontalDoubleLine).append("\n\n");
                 
                 sb.append(" [NOW PLAYING]\n");
-                String title = context.sequenceTitle() != null ? context.sequenceTitle() : context.files().get(context.currentIndex()).getName();
-                if (title.length() > 60) title = title.substring(0, 57) + "...";
+                String rawTitle = context.sequenceTitle() != null ? context.sequenceTitle() : context.files().get(context.currentIndex()).getName();
+                String title = truncate(rawTitle, termWidth - 15);
                 sb.append(String.format("  Title:     %s\n", title));
                 sb.append(String.format("  Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", currentBpm, currentSpeed));
                 sb.append(String.format("  Time:      %s / %s  %s  %3d%%\n", currentTimeStr, totalTimeStr, bar, percent));
@@ -511,40 +539,56 @@ public class PlaybackEngine
                 sb.append(String.format("  Volume:    %d%%\n", (int)(volumeScale * 100)));
                 sb.append(String.format("  Port:      [%d] %s\n\n", context.targetPort().index(), context.targetPort().name()));
                 
-                sb.append("--------------------------------------------------------------------------------\n");
+                sb.append(horizontalSingleLine).append("\n");
                 sb.append(" [MIDI CHANNELS ACTIVITY] (Real-time)\n\n");
 
+                // Dynamic Meter Width
+                // Fixed parts: "  CH 01 (Piano        ) : " (approx 26 chars)
+                int maxMeterLength = Math.max(10, termWidth - 28);
+
                 for (int i = 0; i < 16; i++) {
-                    int meterLength = (int)(channelLevels[i] * 20); // max 20
-                    String meter = "█".repeat(meterLength) + " ".repeat(20 - meterLength);
+                    int meterLength = (int)(channelLevels[i] * maxMeterLength);
+                    String meter = "█".repeat(meterLength) + " ".repeat(maxMeterLength - meterLength);
                     String chName = getChannelName(i);
                     sb.append(String.format("  CH %02d %-13s : %s\n", i + 1, "(" + chName + ")", meter));
                 }
                 sb.append("\n");
                 
-                sb.append("--------------------------------------------------------------------------------\n");
-                sb.append(" [PLAYLIST]\n\n");
-                
-                int listSize = context.files().size();
-                int idx = context.currentIndex();
-                int startIdx = Math.max(0, idx - 2);
-                int endIdx = Math.min(listSize - 1, startIdx + 4);
-                startIdx = Math.max(0, endIdx - 4);
-                
-                for (int i = startIdx; i <= endIdx; i++) {
-                    String marker = (i == idx) ? " >" : "  ";
-                    String name = context.files().get(i).getName();
-                    if (name.length() > 50) name = name.substring(0, 47) + "...";
-                    String status = (i == idx) ? "  (Playing)" : "";
-                    sb.append(String.format("%s %d. %-50s%s\n", marker, i + 1, name, status));
+                // Calculate available vertical space for playlist
+                // Dashboard headers/controls take approx 30 lines
+                int availablePlaylistLines = termHeight - 32;
+
+                if (availablePlaylistLines > 0)
+                {
+                    sb.append(horizontalSingleLine).append("\n");
+                    sb.append(" [PLAYLIST]\n\n");
+                    
+                    int listSize = context.files().size();
+                    int idx = context.currentIndex();
+                    
+                    int half = availablePlaylistLines / 2;
+                    int startIdx = Math.max(0, idx - half);
+                    int endIdx = Math.min(listSize - 1, startIdx + availablePlaylistLines - 1);
+                    startIdx = Math.max(0, endIdx - availablePlaylistLines + 1);
+                    
+                    for (int i = startIdx; i <= endIdx; i++) {
+                        String marker = (i == idx) ? " >" : "  ";
+                        String name = context.files().get(i).getName();
+                        
+                        String status = (i == idx) ? "  (Playing)" : "";
+                        name = truncate(name, termWidth - status.length() - 10);
+                        
+                        // We use exactly one line per playlist item to avoid wrapping
+                        sb.append(String.format("%s %d. %s%s\n", marker, i + 1, name, status));
+                    }
+                    sb.append("\n");
                 }
-                sb.append("\n");
                 
-                sb.append("--------------------------------------------------------------------------------\n");
+                sb.append(horizontalSingleLine).append("\n");
                 sb.append(" [CONTROLS]\n");
                 sb.append("  [Space] Pause/Resume  |  [<] [>] Prev/Next Track  |  [+] [-] Transpose\n");
                 sb.append("  [Up] [Down] Volume    |  [Q] Quit                 |\n");
-                sb.append("================================================================================\n");
+                sb.append(horizontalDoubleLine).append("\n");
                 sb.append("\033[J"); // clear remainder
 
                 term.print(sb.toString());
