@@ -184,8 +184,9 @@ public class MidirajaCommand implements Callable<Integer>
             Optional<String> currentStartTime = startTime;
 
             var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
-            if (activeIO.isInteractive()) {
-                activeIO.init();
+            activeIO.init();
+            boolean isInteractive = activeIO.isInteractive();
+            if (isInteractive) {
                 out.print("\033[?1049h\033[?25l"); // Alt screen, hide cursor
                 out.flush();
             }
@@ -198,7 +199,7 @@ public class MidirajaCommand implements Callable<Integer>
                     String title = extractSequenceTitle(sequence);
                     var context = new PlaylistContext(playlist, currentTrackIdx, ports.get(portIndex), title);
                     
-                    var result = playMidiWithProvider(context, provider, currentStartTime);
+                    var result = playMidiWithProvider(context, provider, currentStartTime, activeIO);
                     var status = result.status();
                     currentStartTime = Optional.empty();
 
@@ -230,6 +231,7 @@ public class MidirajaCommand implements Callable<Integer>
         catch (Exception e)
         {
             err.println("Error during playback: " + e.getMessage());
+            e.printStackTrace(err);
             return 1;
         }
         finally
@@ -388,12 +390,10 @@ public class MidirajaCommand implements Callable<Integer>
     }
 
     private PlaybackResult playMidiWithProvider(PlaylistContext context, MidiOutProvider provider,
-            Optional<String> currentStartTime) throws Exception
+            Optional<String> currentStartTime, TerminalIO activeIO) throws Exception
     {
         var file = context.files().get(context.currentIndex());
         var sequence = MidiSystem.getSequence(file);
-
-        var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
 
         try
         {

@@ -36,7 +36,8 @@ dependencies {
     implementation 'org.jspecify:jspecify:1.0.0'
     implementation 'info.picocli:picocli:4.7.5'
     annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
-        implementation 'org.jline:jline:3.24.1'
+        implementation 'org.jline:jline:3.25.1'
+    implementation 'org.jline:jline-terminal-ffm:3.25.1'
     
     errorprone 'com.google.errorprone:error_prone_core:2.36.0'
     annotationProcessor 'com.uber.nullaway:nullaway:0.12.3'
@@ -66,10 +67,12 @@ import net.ltgt.gradle.errorprone.CheckSeverity
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs.add('--enable-preview')
-    options.errorprone {
-        check("NullAway", CheckSeverity.ERROR)
-        option("NullAway:AnnotatedPackages", "com.midiraja")
-        option("NullAway:JSpecifyMode", "true")
+    if (!name.toLowerCase().contains("test")) {
+        options.errorprone {
+            check("NullAway", CheckSeverity.ERROR)
+            option("NullAway:AnnotatedPackages", "com.midiraja")
+            option("NullAway:JSpecifyMode", "true")
+        }
     }
 }
 

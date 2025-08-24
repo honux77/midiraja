@@ -55,8 +55,8 @@ class MidirajaCommandTest
     {
         app = new MidirajaCommand();
         provider = new MockMidiProvider();
-        app.setProvider(provider);
-        app.setTerminalIO(new com.midiraja.io.MockTerminalIO());
+        app.setTestEnvironment(provider, new com.midiraja.io.MockTerminalIO(), System.out, System.err);
+        
     }
 
     @Test
@@ -65,7 +65,7 @@ class MidirajaCommandTest
         File midiFile = createTestMidi(tempDir, "test.mid");
 
         CommandLine cmd = new CommandLine(app);
-        app.setTestMode(true);
+        
         int exitCode = cmd.execute(midiFile.getAbsolutePath(), "--volume", "50", "--port", "0");
 
         assertEquals(0, exitCode);
