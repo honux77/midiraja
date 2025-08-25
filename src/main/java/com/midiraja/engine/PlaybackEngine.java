@@ -76,7 +76,7 @@ public class PlaybackEngine
      * @return the terminal state indicating what the user requested next (e.g., NEXT, QUIT_ALL)
      */
     @SuppressWarnings({"ThreadPriorityCheck", "NonAtomicVolatileUpdate"})
-    public PlaybackStatus start() throws Exception
+    public PlaybackStatus start(com.midiraja.ui.PlaybackUI ui) throws Exception
     {
         isPlaying = true;
         endStatus = PlaybackStatus.FINISHED;
@@ -84,11 +84,11 @@ public class PlaybackEngine
         try (var scope = StructuredTaskScope.open())
         {
             scope.fork(() -> {
-                uiLoop();
+                ui.runRenderLoop(this);
                 return Boolean.TRUE;
             });
             scope.fork(() -> {
-                inputLoop();
+                ui.runInputLoop(this);
                 return Boolean.TRUE;
             });
 
@@ -353,285 +353,73 @@ public class PlaybackEngine
         }
     }
 
-    private void inputLoop()
-    {
-        var terminalIO = TerminalIO.CONTEXT.get();
-        try
-        {
-            while (isPlaying)
-            {
-                var key = terminalIO.readKey();
-                switch (key)
-                {
-                    case VOLUME_UP ->
-                    {
-                        volumeScale = Math.min(1.0, volumeScale + 0.05);
-                        applyVolumeInstantly();
-                    }
-                    case VOLUME_DOWN ->
-                    {
-                        volumeScale = Math.max(0.0, volumeScale - 0.05);
-                        applyVolumeInstantly();
-                    }
-                    case SPEED_UP -> currentSpeed = Math.min(2.0, currentSpeed + 0.1);
-                    case SPEED_DOWN -> currentSpeed = Math.max(0.5, currentSpeed - 0.1);
-                    case TRANSPOSE_UP ->
-                    {
-                        currentTranspose++;
-                        provider.panic();
-                    }
-                    case TRANSPOSE_DOWN ->
-                    {
-                        currentTranspose--;
-                        provider.panic();
-                    }
-                    case SEEK_FORWARD ->
-                    {
-                        if (seekTarget == -1)
-                        { // Avoid overlapping seeks
-                            seekTarget = getTickForTime(currentMicroseconds + 10000000L); // +10 sec
-                        }
-                    }
-                    case SEEK_BACKWARD ->
-                    {
-                        if (seekTarget == -1)
-                        {
-                            seekTarget =
-                                    getTickForTime(Math.max(0, currentMicroseconds - 10000000L)); // -10 sec
-                        }
-                    }
-                    case QUIT ->
-                    {
-                        isPlaying = false;
-                        endStatus = PlaybackStatus.QUIT_ALL;
-                    }
-                    case NEXT_TRACK ->
-                    {
-                        isPlaying = false;
-                        endStatus = PlaybackStatus.NEXT;
-                    }
-                    case PREV_TRACK ->
-                    {
-                        isPlaying = false;
-                        endStatus = PlaybackStatus.PREVIOUS;
-                    }
-                    case NONE ->
-                    {
-                        // non-blocking
-                        Thread.sleep(50);
-                    }
-                }
-            }
-        }
-        catch (IOException | InterruptedException _)
-        {
-            isPlaying = false;
-        }
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    // --- Engine API (For UI and External Control) ---
+
+    public PlaylistContext getContext() { return context; }
+    
+    public long getCurrentMicroseconds() { return currentMicroseconds; }
+    
+    public long getTotalMicroseconds() { return sequence.getMicrosecondLength(); }
+    
+    public double[] getChannelLevels() { return channelLevels; }
+    
+    public int[] getChannelPrograms() { return channelPrograms; }
+    
+    public float getCurrentBpm() { return currentBpm; }
+    
+    public double getCurrentSpeed() { return currentSpeed; }
+    
+    public int getCurrentTranspose() { return currentTranspose; }
+    
+    public double getVolumeScale() { return volumeScale; }
+    
+    public boolean isPlaying() { return isPlaying; }
+
+    public void requestStop(PlaybackStatus status) {
+        this.isPlaying = false;
+        this.endStatus = status;
     }
 
-    private void applyVolumeInstantly()
-    {
-        for (int ch = 0; ch < 16; ch++)
-        {
+    public void adjustVolume(double delta) {
+        volumeScale = Math.max(0.0, Math.min(1.0, volumeScale + delta));
+        for (int ch = 0; ch < 16; ch++) {
             byte[] msg = new byte[] {(byte) (0xB0 | ch), 7, (byte) (100 * volumeScale)};
-            try
-            {
-                provider.sendMessage(msg);
-            }
-            catch (Exception _)
-            {
-            }
+            try { provider.sendMessage(msg); } catch (Exception _) {}
         }
     }
 
-    private static final String[] GM_FAMILIES = {
-            "Piano", "Chrom Perc", "Organ", "Guitar", "Bass", "Strings", "Ensemble", "Brass",
-            "Reed", "Pipe", "Synth Lead", "Synth Pad", "Synth FX", "Ethnic", "Percussive", "SFX"
-    };
-
-    private String getChannelName(int ch)
-    {
-        if (ch == 9) return "Drums";
-        int family = channelPrograms[ch] / 8;
-        if (family >= 0 && family < GM_FAMILIES.length) return GM_FAMILIES[family];
-        return "Unknown";
+    public void adjustSpeed(double delta) {
+        currentSpeed = Math.max(0.5, Math.min(2.0, currentSpeed + delta));
     }
 
-    private String truncate(String text, int maxLength)
-    {
-        if (text == null) return "";
-        if (text.length() <= maxLength) return text;
-        return text.substring(0, Math.max(0, maxLength - 3)) + "...";
+    public void adjustTranspose(int delta) {
+        currentTranspose += delta;
+        try { provider.panic(); } catch (Exception _) {}
     }
 
-    private void uiLoop()
-    {
-        var term = TerminalIO.CONTEXT.get();
-        if (!term.isInteractive())
-        {
-            term.println("Playing (Interactive UI disabled)...");
-            return;
-        }
-
-        long totalMicroseconds = sequence.getMicrosecondLength();
-        boolean includeHours = (totalMicroseconds / 1000000) >= 3600;
-        String totalTimeStr = formatTime(totalMicroseconds, includeHours);
-
-        final int MIN_WIDTH = 80;
-        final int MIN_HEIGHT = 28;
-
-        try
-        {
-            while (isPlaying)
-            {
-                int termWidth = term.getWidth();
-                int termHeight = term.getHeight();
-
-                StringBuilder sb = new StringBuilder();
-                sb.append("\033[H"); // Cursor Home
-                // We add \033[K to every line to clear to end of line preventing horizontal ghosting
-
-
-                if (termWidth < MIN_WIDTH || termHeight < MIN_HEIGHT)
-                {
-                    sb.append("\033[J"); // Clear screen
-                    sb.append(String.format("Terminal too small. Minimum size: %dx%d. Current: %dx%d\n", MIN_WIDTH, MIN_HEIGHT, termWidth, termHeight));
-                    sb.append("Please resize the terminal window.\n");
-                    String finalStr = sb.toString().replace("\n", "\033[K\n");
-                term.print(finalStr);
-                    Thread.sleep(500);
-                    continue;
-                }
-
-                // Decay channel levels
-                for (int i = 0; i < 16; i++) {
-                    channelLevels[i] = Math.max(0, channelLevels[i] - 0.05); // decay
-                }
-
-                long currentMicros = currentMicroseconds;
-                String currentTimeStr = formatTime(currentMicros, includeHours);
-                int percent = (int) (totalMicroseconds > 0 ? (currentMicros * 100 / totalMicroseconds) : 0);
-                percent = Math.min(100, Math.max(0, percent));
-                
-                // Dynamic Bar Width
-                int barWidth = Math.max(10, termWidth - 40); 
-                int filled = (int) ((percent / 100.0) * barWidth);
-                StringBuilder bar = new StringBuilder("[");
-                for (int i = 0; i < barWidth; i++) {
-                    if (i < filled) bar.append("=");
-                    else if (i == filled) bar.append(">");
-                    else bar.append("-");
-                }
-                bar.append("]");
-
-                String horizontalDoubleLine = "=".repeat(termWidth);
-                String horizontalSingleLine = "-".repeat(termWidth);
-
-                sb.append(horizontalDoubleLine).append("\n");
-                sb.append("  Midiraja v").append(com.midiraja.Version.VERSION).append(" - Java 25 Native MIDI Player\n");
-                sb.append(horizontalDoubleLine).append("\n\n");
-                
-                // [NOW PLAYING] Expanded vertical spacing
-                sb.append("  [NOW PLAYING]\n\n");
-                String rawTitle = context.sequenceTitle() != null ? context.sequenceTitle() : context.files().get(context.currentIndex()).getName();
-                String title = truncate(rawTitle, termWidth - 15);
-                sb.append(String.format("    Title:     %s\n\n", title));
-                sb.append(String.format("    Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", currentBpm, currentSpeed));
-                sb.append(String.format("    Time:      %s / %s  %s  %3d%%\n", currentTimeStr, totalTimeStr, bar, percent));
-                sb.append(String.format("    Transpose: %+d\n", currentTranspose));
-                sb.append(String.format("    Volume:    %d%%\n", (int)(volumeScale * 100)));
-                sb.append(String.format("    Port:      [%d] %s\n\n", context.targetPort().index(), context.targetPort().name()));
-                
-                sb.append(horizontalSingleLine).append("\n");
-
-                // TWO-COLUMN LAYOUT PREPARATION
-                int leftColWidth = Math.max(35, termWidth / 2);
-                int rightColWidth = termWidth - leftColWidth;
-                
-                // Header row for columns
-                String leftHeader = " [MIDI CHANNELS ACTIVITY]";
-                String rightHeader = " [PLAYLIST]";
-                sb.append(String.format("%-" + leftColWidth + "s%s\n\n", leftHeader, rightHeader));
-
-                // Dynamic Meter Width (fitted to left column)
-                int maxMeterLength = Math.max(5, leftColWidth - 26);
-                
-                // Playlist logic
-                int listSize = context.files().size();
-                int idx = context.currentIndex();
-                int availablePlaylistLines = 16; // Fix playlist height to match the 16 channels
-                
-                int half = availablePlaylistLines / 2;
-                int startIdx = Math.max(0, idx - half);
-                int endIdx = Math.min(listSize - 1, startIdx + availablePlaylistLines - 1);
-                startIdx = Math.max(0, endIdx - availablePlaylistLines + 1);
-
-                // Print the 16 rows (Left: Channels, Right: Playlist)
-                for (int i = 0; i < 16; i++) {
-                    // LEFT COLUMN (Channels)
-                    int meterLength = (int)(channelLevels[i] * maxMeterLength);
-                    String meter = "█".repeat(meterLength) + " ".repeat(maxMeterLength - meterLength);
-                    String chName = getChannelName(i);
-                    String leftStr = String.format("  CH %02d %-11s : %s", i + 1, "(" + chName + ")", meter);
-                    
-                    // Pad leftStr precisely to leftColWidth to ensure right column aligns perfectly
-                    if (leftStr.length() > leftColWidth) leftStr = leftStr.substring(0, leftColWidth);
-                    else leftStr = leftStr + " ".repeat(leftColWidth - leftStr.length());
-                    sb.append(leftStr);
-
-                    // RIGHT COLUMN (Playlist)
-                    int pIdx = startIdx + i;
-                    if (pIdx >= 0 && pIdx <= endIdx && pIdx < listSize) {
-                        String marker = (pIdx == idx) ? ">" : " ";
-                        String name = context.files().get(pIdx).getName();
-                        String status = (pIdx == idx) ? " (Playing)" : "";
-                        name = truncate(name, rightColWidth - status.length() - 8);
-                        sb.append(String.format(" %s %d. %s%s", marker, pIdx + 1, name, status));
-                    }
-                    sb.append("\n");
-                }
-                sb.append("\n");
-
-                // Add empty padding lines to push controls to the bottom
-                int usedLines = 12 + 16 + 5; // Approx header + 16 rows + controls
-                int paddingLines = Math.max(0, termHeight - usedLines - 2); // leave room for safety
-                sb.append("\n".repeat(paddingLines));
-
-                // Bottom Controls
-                sb.append(horizontalSingleLine).append("\n");
-                sb.append(" [CONTROLS]\n");
-                sb.append("  [Space] Pause/Resume  |  [<] [>] Prev/Next Track  |  [+] [-] Transpose\n");
-                sb.append("  [Up] [Down] Volume    |  [Q] Quit                 |\n");
-                sb.append(horizontalDoubleLine).append("\n");
-                
-                // Clear the rest of the screen to prevent ghosting/flickering below the UI
-                sb.append("\033[J");
-
-                String finalStr = sb.toString().replace("\n", "\033[K\n");
-                term.print(finalStr);
-                Thread.sleep(50); // 20 FPS
-            }
-        }
-        catch (InterruptedException _)
-        {
-            // normal exit
+    public void seekRelative(long microsecondsDelta) {
+        if (seekTarget == -1) {
+            seekTarget = getTickForTime(Math.max(0, currentMicroseconds + microsecondsDelta));
         }
     }
 
-    private String formatTime(long microseconds, boolean includeHours)
-    {
-        long totalSeconds = microseconds / 1000000;
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-
-        if (includeHours)
-        {
-            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
-        }
-        else
-        {
-            return String.format("%02d:%02d", minutes, seconds);
+    public void decayChannelLevels(double decayAmount) {
+        for (int i = 0; i < 16; i++) {
+            channelLevels[i] = Math.max(0, channelLevels[i] - decayAmount);
         }
     }
 }

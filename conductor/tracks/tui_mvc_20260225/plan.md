@@ -3,17 +3,17 @@
 This plan executes the refactoring of `midra`'s TUI from procedural code into a responsive Model-View-Controller (MVC) architecture with independent, layout-managed Panels.
 
 ## Phase 1: Engine and UI Decoupling (MVC Foundation)
-- [ ] Task: Create `src/main/java/com/midiraja/ui/` package.
-- [ ] Task: Define the `PlaybackUI` interface with `runRenderLoop(PlaybackEngine engine)` and `runInputLoop(PlaybackEngine engine)`.
-- [ ] Task: Refactor `PlaybackEngine.java`:
+- [x] Task: Create `src/main/java/com/midiraja/ui/` package.
+- [x] Task: Define the `PlaybackUI` interface with `runRenderLoop(PlaybackEngine engine)` and `runInputLoop(PlaybackEngine engine)`.
+- [x] Task: Refactor `PlaybackEngine.java`:
     - [ ] Remove `uiLoop()` and `inputLoop()` methods completely.
     - [ ] Create public getter methods for all necessary state variables (e.g., `getCurrentMicroseconds()`, `getChannelLevels()`, `getCurrentBpm()`, etc.).
     - [ ] Create public action methods for UI control (e.g., `adjustVolume(double delta)`, `adjustSpeed(double delta)`, `seekRelative(long micros)`, `requestStop(PlaybackStatus status)`).
     - [ ] Modify `start()` to accept a `PlaybackUI` instance and execute its render and input loops within the `StructuredTaskScope`.
-- [ ] Task: Update `MidirajaCommand.java`:
+- [x] Task: Update `MidirajaCommand.java`:
     - [ ] Add the `--ui <mode>` command-line option (`auto`, `tui`, `line`, `dumb`).
     - [ ] Instantiate the selected UI implementation (`DumbUI`, `LineUI`, or `DashboardUI`) and pass it to `engine.start(ui)`.
-- [ ] Task: Conductor - User Manual Verification 'Engine and UI Decoupling (MVC Foundation)' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Engine and UI Decoupling (MVC Foundation)' (Protocol in workflow.md)
 
 ## Phase 2: Component Architecture & Responsive Panels
 - [ ] Task: Define a `Panel` interface in the `ui` package:

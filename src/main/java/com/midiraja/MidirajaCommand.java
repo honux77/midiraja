@@ -69,6 +69,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"-l", "--list-ports"}, description = "List all available MIDI output ports.")
     private boolean listPorts;
 
+    @Option(names = {"--ui"}, description = "UI mode: auto, tui, line, dumb", defaultValue = "auto")
+    private String uiMode = "auto";
+
     // Optional overrides for testing
     @Nullable private MidiOutProvider provider;
     @Nullable private TerminalIO terminalIO;
@@ -186,7 +189,20 @@ public class MidirajaCommand implements Callable<Integer>
             var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
             activeIO.init();
             boolean isInteractive = activeIO.isInteractive();
-            if (isInteractive) {
+            
+            com.midiraja.ui.PlaybackUI ui;
+            boolean useAltScreen = false;
+
+            if ("dumb".equalsIgnoreCase(uiMode) || (!isInteractive && "auto".equalsIgnoreCase(uiMode))) {
+                ui = new com.midiraja.ui.DumbUI();
+            } else if ("line".equalsIgnoreCase(uiMode)) {
+                ui = new com.midiraja.ui.LineUI();
+            } else {
+                ui = new com.midiraja.ui.DashboardUI();
+                useAltScreen = true;
+            }
+
+            if (useAltScreen && isInteractive) {
                 out.print("\033[?1049h\033[?25l"); // Alt screen, hide cursor
                 out.flush();
             }
@@ -199,7 +215,7 @@ public class MidirajaCommand implements Callable<Integer>
                     String title = extractSequenceTitle(sequence);
                     var context = new PlaylistContext(playlist, currentTrackIdx, ports.get(portIndex), title);
                     
-                    var result = playMidiWithProvider(context, provider, currentStartTime, activeIO);
+                    var result = playMidiWithProvider(context, provider, currentStartTime, activeIO, ui);
                     var status = result.status();
                     currentStartTime = Optional.empty();
 
@@ -221,11 +237,11 @@ public class MidirajaCommand implements Callable<Integer>
                     }
                 }
             } finally {
-                if (activeIO.isInteractive()) {
+                if (useAltScreen && isInteractive) {
                     out.print("\033[?25h\033[?1049l"); // Show cursor, exit alt screen
                     out.flush();
-                    activeIO.close();
                 }
+                activeIO.close();
             }
         }
         catch (Exception e)
@@ -390,7 +406,7 @@ public class MidirajaCommand implements Callable<Integer>
     }
 
     private PlaybackResult playMidiWithProvider(PlaylistContext context, MidiOutProvider provider,
-            Optional<String> currentStartTime, TerminalIO activeIO) throws Exception
+            Optional<String> currentStartTime, TerminalIO activeIO, com.midiraja.ui.PlaybackUI ui) throws Exception
     {
         var file = context.files().get(context.currentIndex());
         var sequence = MidiSystem.getSequence(file);
@@ -400,7 +416,7 @@ public class MidirajaCommand implements Callable<Integer>
             var engine = new PlaybackEngine(sequence, provider, context, volume, speed, currentStartTime,
                     transpose);
             return ScopedValue.where(TerminalIO.CONTEXT, activeIO)
-                    .call(() -> new PlaybackResult(engine.start(), 0));
+                    .call(() -> new PlaybackResult(engine.start(ui), 0));
         }
         finally
         {
