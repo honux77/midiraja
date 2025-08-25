@@ -489,13 +489,16 @@ public class PlaybackEngine
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("\033[H"); // Cursor Home
+                // We add \033[K to every line to clear to end of line preventing horizontal ghosting
+
 
                 if (termWidth < MIN_WIDTH || termHeight < MIN_HEIGHT)
                 {
                     sb.append("\033[J"); // Clear screen
                     sb.append(String.format("Terminal too small. Minimum size: %dx%d. Current: %dx%d\n", MIN_WIDTH, MIN_HEIGHT, termWidth, termHeight));
                     sb.append("Please resize the terminal window.\n");
-                    term.print(sb.toString());
+                    String finalStr = sb.toString().replace("\n", "\033[K\n");
+                term.print(finalStr);
                     Thread.sleep(500);
                     continue;
                 }
@@ -604,7 +607,8 @@ public class PlaybackEngine
                 // Clear the rest of the screen to prevent ghosting/flickering below the UI
                 sb.append("\033[J");
 
-                term.print(sb.toString());
+                String finalStr = sb.toString().replace("\n", "\033[K\n");
+                term.print(finalStr);
                 Thread.sleep(50); // 20 FPS
             }
         }
