@@ -40,71 +40,100 @@ public class DashboardUI implements PlaybackUI
                 String doubleLine = "=".repeat(termWidth) + "\n";
                 String singleLine = "-".repeat(termWidth) + "\n";
 
-                int contentHeight = termHeight - 4;
+                // Minimum Playlist requirements based on list size
+                int listSize = engine.getContext().files().size();
+                boolean showPlaylist = listSize > 1;
+                int minPlaylistHeight = showPlaylist ? Math.min(listSize, 4) : 0;
+
+                int contentHeight = termHeight - 4; // Subtract 4 for the horizontal separator lines
+                boolean showHeaders = true;
+                int headerOverhead = 2; // Extra height used by string headers like "[MIDI CHANNELS]"
+
                 int hMetadata = 3;
                 int hStatus = 5;
                 int hControls = 3;
                 int hChannels = 16;
                 boolean useHorizontalChannels = false;
 
-                int usedHeight = hMetadata + hStatus + hControls + hChannels;
-                int hPlaylist = contentHeight - usedHeight;
+                // Priority 1: Primary Layout
+                int usedHeight = hMetadata + hStatus + hControls + hChannels + headerOverhead;
+                int hPlaylist = showPlaylist ? Math.max(minPlaylistHeight, contentHeight - usedHeight) : 0;
 
-                if (hPlaylist < 0) {
+                if (usedHeight + (showPlaylist ? minPlaylistHeight : 0) > contentHeight) {
+                    // Priority 2: Horizontal Channels
                     hChannels = 4;
-                    usedHeight = hMetadata + hStatus + hControls + hChannels;
-                    hPlaylist = contentHeight - usedHeight;
                     useHorizontalChannels = true;
+                    headerOverhead = showPlaylist ? 4 : 2; // [CHANNELS] + [PLAYLIST]
+                    usedHeight = hMetadata + hStatus + hControls + hChannels + headerOverhead;
+                    hPlaylist = showPlaylist ? Math.max(minPlaylistHeight, contentHeight - usedHeight) : 0;
 
-                    if (hPlaylist < 0) {
-                        hStatus = statusPanel.calculateHeight(Math.max(1, contentHeight - hMetadata - hChannels - 1));
-                        hControls = controlsPanel.calculateHeight(Math.max(1, contentHeight - hMetadata - hChannels - hStatus - 1));
-                        usedHeight = hMetadata + hStatus + hControls + hChannels;
-                        hPlaylist = contentHeight - usedHeight;
+                    if (usedHeight + (showPlaylist ? minPlaylistHeight : 0) > contentHeight) {
+                        // Priority 3: Squeeze Status and Controls
+                        hStatus = statusPanel.calculateHeight(Math.max(1, contentHeight - hMetadata - hChannels - minPlaylistHeight - headerOverhead - 1));
+                        hControls = controlsPanel.calculateHeight(Math.max(1, contentHeight - hMetadata - hChannels - hStatus - minPlaylistHeight - headerOverhead));
+                        usedHeight = hMetadata + hStatus + hControls + hChannels + headerOverhead;
+                        hPlaylist = showPlaylist ? Math.max(minPlaylistHeight, contentHeight - usedHeight) : 0;
 
-                        if (hPlaylist < 0) {
+                        if (usedHeight + (showPlaylist ? minPlaylistHeight : 0) > contentHeight) {
+                            // Priority 4: Drop Headers completely to save space
+                            showHeaders = false;
+                            headerOverhead = 0;
                             hMetadata = 1;
-                            hStatus = 1;
                             hControls = 1;
-                            hChannels = 4;
-                            hPlaylist = 0;
+                            hStatus = statusPanel.calculateHeight(Math.max(1, contentHeight - hMetadata - hChannels - minPlaylistHeight));
+                            usedHeight = hMetadata + hStatus + hControls + hChannels;
+                            hPlaylist = showPlaylist ? Math.max(minPlaylistHeight, contentHeight - usedHeight) : 0;
+
+                            if (usedHeight + (showPlaylist ? minPlaylistHeight : 0) > contentHeight) {
+                                // Priority 5: Absolute Minimum Clamp (Force display even if it overflows)
+                                hMetadata = 1;
+                                hStatus = 1;
+                                hControls = 1;
+                                hChannels = 4;
+                                hPlaylist = minPlaylistHeight;
+                            }
                         }
                     }
                 }
 
+                // Render Phase
                 sb.append(doubleLine);
                 sb.append("  Midiraja v").append(com.midiraja.Version.VERSION).append(" - Java 25 Native MIDI Player\n");
                 sb.append(doubleLine);
 
-                metadataPanel.render(sb, termWidth, hMetadata, engine);
-                statusPanel.render(sb, termWidth, hStatus, engine);
+                metadataPanel.render(sb, termWidth, hMetadata, showHeaders, engine);
+                statusPanel.render(sb, termWidth, hStatus, showHeaders, engine);
                 sb.append(singleLine);
 
                 if (useHorizontalChannels) {
-                    sb.append(" [MIDI CHANNELS ACTIVITY]\n");
-                    channelPanel.render(sb, termWidth, hChannels, engine);
-                    if (hPlaylist > 0) {
+                    if (showHeaders) sb.append(" [MIDI CHANNELS ACTIVITY]\n");
+                    channelPanel.render(sb, termWidth, hChannels, showHeaders, engine);
+                    if (showPlaylist && hPlaylist > 0) {
                         sb.append(singleLine);
-                        sb.append(" [PLAYLIST]\n\n");
+                        if (showHeaders) sb.append(" [PLAYLIST]\n\n");
                         renderPlaylist(sb, engine, termWidth, hPlaylist);
                     }
                 } else {
                     int leftColWidth = Math.max(35, termWidth / 2);
                     int rightColWidth = termWidth - leftColWidth;
 
-                    String leftHeader = " [MIDI CHANNELS ACTIVITY]";
-                    String rightHeader = " [PLAYLIST]";
-                    sb.append(String.format("%-" + leftColWidth + "s%s\n\n", leftHeader, rightHeader));
+                    if (showHeaders) {
+                        String leftHeader = " [MIDI CHANNELS ACTIVITY]";
+                        String rightHeader = showPlaylist ? " [PLAYLIST]" : "";
+                        sb.append(String.format("%-" + leftColWidth + "s%s\n\n", leftHeader, rightHeader));
+                    }
 
                     StringBuilder channelSb = new StringBuilder();
-                    channelPanel.render(channelSb, leftColWidth, hChannels, engine);
+                    channelPanel.render(channelSb, leftColWidth, hChannels, showHeaders, engine);
                     String[] channelLines = channelSb.toString().split("\n");
 
                     StringBuilder playlistSb = new StringBuilder();
-                    renderPlaylist(playlistSb, engine, rightColWidth, hChannels);
+                    if (showPlaylist) {
+                        renderPlaylist(playlistSb, engine, rightColWidth, hChannels);
+                    }
                     String[] playlistLines = playlistSb.toString().split("\n");
 
-                    for (int i = 0; i < 16; i++) {
+                    for (int i = 0; i < hChannels; i++) {
                         String leftStr = i < channelLines.length ? channelLines[i] : "";
                         if (leftStr.length() > leftColWidth) leftStr = leftStr.substring(0, leftColWidth);
                         else leftStr = leftStr + " ".repeat(leftColWidth - leftStr.length());
@@ -115,7 +144,7 @@ public class DashboardUI implements PlaybackUI
                 }
 
                 sb.append(singleLine);
-                controlsPanel.render(sb, termWidth, hControls, engine);
+                controlsPanel.render(sb, termWidth, hControls, showHeaders, engine);
                 sb.append(doubleLine);
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
@@ -127,14 +156,14 @@ public class DashboardUI implements PlaybackUI
         catch (InterruptedException _) {}
     }
 
-    private void renderPlaylist(StringBuilder sb, PlaybackEngine engine, int width, int height)
+    private void renderPlaylist(StringBuilder sb, PlaybackEngine engine, int width, int allocatedHeight)
     {
-        if (height <= 2) return;
+        if (allocatedHeight <= 0) return;
         PlaylistContext context = engine.getContext();
         int listSize = context.files().size();
         int idx = context.currentIndex();
 
-        int maxItems = height - 2;
+        int maxItems = allocatedHeight;
         int half = maxItems / 2;
         int startIdx = Math.max(0, idx - half);
         int endIdx = Math.min(listSize - 1, startIdx + maxItems - 1);

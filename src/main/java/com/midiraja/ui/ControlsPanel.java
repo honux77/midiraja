@@ -19,16 +19,21 @@ public class ControlsPanel implements Panel
     }
 
     @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, PlaybackEngine engine)
+    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
     {
         if (allocatedHeight <= 0) return;
         if (allocatedHeight >= 3) {
-            sb.append(" [CONTROLS]\n");
+            if (showHeaders) sb.append(" [CONTROLS]\n");
             sb.append("  [Space] Pause/Resume  |  [<] [>] Prev/Next Track  |  [+] [-] Transpose\n");
             sb.append("  [Up] [Down] Volume    |  [Q] Quit                 |\n");
         } else {
             String minLine = "  [Spc]Pause [<>]Skip [+-]Trans [^v]Vol [Q]Quit";
-            sb.append(truncate(minLine, allocatedWidth)).append("\n");
+            if (showHeaders && allocatedHeight >= 2) {
+                sb.append(" [CONTROLS]\n");
+                sb.append(truncate(minLine, allocatedWidth)).append("\n");
+            } else {
+                sb.append(truncate(minLine, allocatedWidth)).append("\n");
+            }
         }
     }
 }

@@ -44,7 +44,7 @@ public class StatusPanel implements Panel
     }
 
     @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, PlaybackEngine engine)
+    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
     {
         if (allocatedHeight <= 0) return;
         long totalMicros = engine.getTotalMicroseconds();

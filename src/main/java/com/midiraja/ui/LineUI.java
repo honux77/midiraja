@@ -26,7 +26,7 @@ public class LineUI implements PlaybackUI
                 int width = term.getWidth();
                 StringBuilder sb = new StringBuilder();
                 sb.append("\r");
-                statusPanel.render(sb, width, 1, engine);
+                statusPanel.render(sb, width, 1, false, engine);
                 term.print(sb.toString().replace("\n", ""));
                 Thread.sleep(100);
             }

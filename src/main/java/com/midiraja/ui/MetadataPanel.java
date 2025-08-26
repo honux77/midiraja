@@ -19,19 +19,20 @@ public class MetadataPanel implements Panel
     }
 
     @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, PlaybackEngine engine)
+    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
     {
         if (allocatedHeight <= 0) return;
         PlaylistContext context = engine.getContext();
         String rawTitle = context.sequenceTitle() != null ? context.sequenceTitle() : context.files().get(context.currentIndex()).getName();
 
         if (allocatedHeight == 1) {
-            sb.append(truncate("  [NOW] " + rawTitle, allocatedWidth)).append("\n");
+            String prefix = showHeaders ? "  [NOW] " : "  ";
+            sb.append(truncate(prefix + rawTitle, allocatedWidth)).append("\n");
         } else if (allocatedHeight == 2) {
-            sb.append("  [NOW PLAYING]\n");
+            if (showHeaders) sb.append("  [NOW PLAYING]\n");
             sb.append(String.format("    Title:     %s\n", truncate(rawTitle, allocatedWidth - 16)));
         } else {
-            sb.append("  [NOW PLAYING]\n\n");
+            if (showHeaders) sb.append("  [NOW PLAYING]\n\n");
             sb.append(String.format("    Title:     %s\n", truncate(rawTitle, allocatedWidth - 16)));
         }
     }
