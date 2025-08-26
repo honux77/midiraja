@@ -17,4 +17,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 *Link: [./archive/interactive_playback_20260223/](./archive/interactive_playback_20260223/)*
 
 - [~] **Track: Linux ALSA Support & Docker Build**
-\n---\n\n- [x] **Track: Refactor TUI into an MVC architecture with responsive, modular Panels (Header, Channels, Playlist, Controls) that adapt dynamically to vertical space constraints.**\n*Link: [./tracks/tui_mvc_20260225/](./tracks/tui_mvc_20260225/)*\n
