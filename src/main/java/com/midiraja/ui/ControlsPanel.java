@@ -9,38 +9,26 @@ package com.midiraja.ui;
 
 import com.midiraja.engine.PlaybackEngine;
 
-/**
- * Displays user control shortcuts. Switches between detailed and compact formats.
- */
 public class ControlsPanel implements Panel
 {
     @Override
     public int calculateHeight(int availableHeight)
     {
-        if (availableHeight >= 3) return 3; // Primary
-        return 1; // Min Condensed
+        if (availableHeight >= 3) return 3;
+        return 1;
     }
 
     @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight,
-            PlaybackEngine engine)
+    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, PlaybackEngine engine)
     {
         if (allocatedHeight <= 0) return;
-
-        if (allocatedHeight >= 3)
-        {
-            sb.append(" [CONTROLS]
-");
-            sb.append("  [Space] Pause/Resume  |  [<] [>] Prev/Next Track  |  [+] [-] Transpose
-");
-            sb.append("  [Up] [Down] Volume    |  [Q] Quit                 |
-");
-        }
-        else
-        {
+        if (allocatedHeight >= 3) {
+            sb.append(" [CONTROLS]\n");
+            sb.append("  [Space] Pause/Resume  |  [<] [>] Prev/Next Track  |  [+] [-] Transpose\n");
+            sb.append("  [Up] [Down] Volume    |  [Q] Quit                 |\n");
+        } else {
             String minLine = "  [Spc]Pause [<>]Skip [+-]Trans [^v]Vol [Q]Quit";
-            sb.append(truncate(minLine, allocatedWidth)).append("
-");
+            sb.append(truncate(minLine, allocatedWidth)).append("\n");
         }
     }
 }
