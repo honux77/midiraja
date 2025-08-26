@@ -66,7 +66,7 @@ class PlaybackEngineTest
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
 
         assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
-                .call(() -> engine.start()));
+                .call(() -> engine.start(new com.midiraja.ui.DumbUI())));
     }
 
     @Test
@@ -83,7 +83,7 @@ class PlaybackEngineTest
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
 
         assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
-                .call(() -> engine.start()));
+                .call(() -> engine.start(new com.midiraja.ui.DumbUI())));
     }
 
     @Test
@@ -99,7 +99,7 @@ class PlaybackEngineTest
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
 
         assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
-                .call(() -> engine.start()));
+                .call(() -> engine.start(new com.midiraja.ui.DumbUI())));
     }
 
     @Test
@@ -117,6 +117,6 @@ class PlaybackEngineTest
         mockIO.injectKey(TerminalIO.TerminalKey.QUIT);
 
         assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
-                .call(() -> engine.start()));
+                .call(() -> engine.start(new com.midiraja.ui.DumbUI())));
     }
 }
