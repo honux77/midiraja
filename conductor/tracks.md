@@ -13,6 +13,4 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: MIDI Metadata Extraction & Display**
 *Link: [./archive/metadata_display_20260223/](./archive/metadata_display_20260223/)*
 
-- [x] **Track: Interactive Playback Architecture (IoC & DIP)**
-*Link: [./archive/interactive_playback_20260223/](./archive/interactive_playback_20260223/)*
 
