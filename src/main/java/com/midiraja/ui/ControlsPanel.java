@@ -7,32 +7,53 @@
 
 package com.midiraja.ui;
 
-import com.midiraja.engine.PlaybackEngine;
-
+/**
+ * Displays user control shortcuts.
+ */
 public class ControlsPanel implements Panel
 {
+    private LayoutConstraints constraints = new LayoutConstraints(80, 1, false, false);
+
     @Override
-    public int calculateHeight(int availableHeight)
+    public void onLayoutUpdated(LayoutConstraints bounds)
     {
-        if (availableHeight >= 3) return 3;
-        return 1;
+        this.constraints = bounds;
     }
 
     @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
+    public void onPlaybackStateChanged() {}
+
+    @Override
+    public void onTick(long currentMicroseconds) {}
+
+    @Override
+    public void onTempoChanged(float bpm) {}
+
+    @Override
+    public void onChannelActivity(int channel, int velocity) {}
+
+    @Override
+    public void render(StringBuilder sb)
     {
-        if (allocatedHeight <= 0) return;
-        if (allocatedHeight >= 3) {
-            if (showHeaders) sb.append(" [CONTROLS]\n");
+        if (constraints.height() <= 0) return;
+
+        if (constraints.height() >= 3)
+        {
+            if (constraints.showHeaders()) sb.append(" [CONTROLS]\n");
             sb.append("  [Space] Pause/Resume  |  [<] [>] Prev/Next Track  |  [+] [-] Transpose\n");
             sb.append("  [Up] [Down] Volume    |  [Q] Quit                 |\n");
-        } else {
+        }
+        else
+        {
             String minLine = "  [Spc]Pause [<>]Skip [+-]Trans [^v]Vol [Q]Quit";
-            if (showHeaders && allocatedHeight >= 2) {
+            if (constraints.showHeaders() && constraints.height() >= 2)
+            {
                 sb.append(" [CONTROLS]\n");
-                sb.append(truncate(minLine, allocatedWidth)).append("\n");
-            } else {
-                sb.append(truncate(minLine, allocatedWidth)).append("\n");
+                sb.append(truncate(minLine, constraints.width())).append("\n");
+            }
+            else
+            {
+                sb.append(truncate(minLine, constraints.width())).append("\n");
             }
         }
     }

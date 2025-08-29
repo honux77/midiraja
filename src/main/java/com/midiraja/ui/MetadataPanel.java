@@ -7,33 +7,61 @@
 
 package com.midiraja.ui;
 
-import com.midiraja.engine.PlaybackEngine;
 import com.midiraja.engine.PlaylistContext;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Renders the song title and global file metadata.
+ */
 public class MetadataPanel implements Panel
 {
+    private LayoutConstraints constraints = new LayoutConstraints(80, 1, false, false);
+    @Nullable private String title;
+
     @Override
-    public int calculateHeight(int availableHeight)
+    public void onLayoutUpdated(LayoutConstraints bounds)
     {
-        return Math.min(availableHeight, 3);
+        this.constraints = bounds;
     }
 
     @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
-    {
-        if (allocatedHeight <= 0) return;
-        PlaylistContext context = engine.getContext();
-        String rawTitle = context.sequenceTitle() != null ? context.sequenceTitle() : context.files().get(context.currentIndex()).getName();
+    public void onPlaybackStateChanged() {}
 
-        if (allocatedHeight == 1) {
-            String prefix = showHeaders ? "  [NOW] " : "  ";
-            sb.append(truncate(prefix + rawTitle, allocatedWidth)).append("\n");
-        } else if (allocatedHeight == 2) {
-            if (showHeaders) sb.append("  [NOW PLAYING]\n");
-            sb.append(String.format("    Title:     %s\n", truncate(rawTitle, allocatedWidth - 16)));
-        } else {
-            if (showHeaders) sb.append("  [NOW PLAYING]\n\n");
-            sb.append(String.format("    Title:     %s\n", truncate(rawTitle, allocatedWidth - 16)));
+    @Override
+    public void onTick(long currentMicroseconds) {}
+
+    @Override
+    public void onTempoChanged(float bpm) {}
+
+    @Override
+    public void onChannelActivity(int channel, int velocity) {}
+
+    public void updateContext(PlaylistContext context)
+    {
+        this.title = context.sequenceTitle() != null ? context.sequenceTitle()
+                : context.files().get(context.currentIndex()).getName();
+    }
+
+    @Override
+    public void render(StringBuilder sb)
+    {
+        if (constraints.height() <= 0) return;
+        String rawTitle = title != null ? title : "Unknown";
+
+        if (constraints.height() == 1)
+        {
+            String prefix = constraints.showHeaders() ? "  [NOW] " : "  ";
+            sb.append(truncate(prefix + rawTitle, constraints.width())).append("\n");
+        }
+        else if (constraints.height() == 2)
+        {
+            if (constraints.showHeaders()) sb.append("  [NOW PLAYING]\n");
+            sb.append(String.format("    Title:     %s\n", truncate(rawTitle, constraints.width() - 16)));
+        }
+        else
+        {
+            if (constraints.showHeaders()) sb.append("  [NOW PLAYING]\n\n");
+            sb.append(String.format("    Title:     %s\n", truncate(rawTitle, constraints.width() - 16)));
         }
     }
 }

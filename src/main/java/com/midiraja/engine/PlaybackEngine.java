@@ -9,11 +9,10 @@ package com.midiraja.engine;
 
 import java.util.Optional;
 
-import com.midiraja.io.TerminalIO;
 import com.midiraja.midi.MidiOutProvider;
+import com.midiraja.ui.PlaybackEventListener;
 
 import javax.sound.midi.*;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.stream.IntStream;
@@ -32,7 +31,6 @@ public class PlaybackEngine
     private final Sequence sequence;
     private final MidiOutProvider provider;
 
-    private volatile long currentTick = 0;
     private volatile long currentMicroseconds = 0;
     private volatile long seekTarget = -1;
     private volatile float currentBpm = 120.0f;
@@ -47,6 +45,8 @@ public class PlaybackEngine
     private final int resolution;
     private final PlaylistContext context;
     private final int[] channelPrograms = new int[16];
+
+    private final List<PlaybackEventListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     public PlaybackEngine(Sequence sequence, MidiOutProvider provider, PlaylistContext context, int initialVolumePercent,
             double initialSpeed, Optional<String> startTimeStr, Optional<Integer> initialTranspose)
@@ -67,6 +67,11 @@ public class PlaybackEngine
         {
             this.seekTarget = getTickForTime(parseTimeToMicroseconds(startTimeStr.get()));
         }
+    }
+
+    public void addPlaybackEventListener(PlaybackEventListener listener)
+    {
+        listeners.add(listener);
     }
 
     /**
@@ -210,7 +215,7 @@ public class PlaybackEngine
                 chaseNanos += (long) ((target - chaseLastTick) * chaseTicksToNanos);
 
                 // 4. Resume playback from the new position
-                currentTick = target;
+                
                 lastTick = target;
                 eventIndex = newIndex;
                 elapsedNanos = chaseNanos;
@@ -249,8 +254,12 @@ public class PlaybackEngine
 
             processEvent(event);
             lastTick = tick;
-            currentTick = tick;
+            
             currentMicroseconds = elapsedNanos / 1000;
+            
+            long finalMicros = currentMicroseconds;
+            listeners.forEach(l -> l.onTick(finalMicros));
+            
             eventIndex++;
 
             // Recalculate timing ratio if BPM changed during processEvent
@@ -271,6 +280,7 @@ public class PlaybackEngine
             if (mspqn > 0)
             {
                 currentBpm = 60000000.0f / mspqn;
+                listeners.forEach(l -> l.onTempoChanged(currentBpm));
             }
             return;
         }
@@ -310,6 +320,7 @@ public class PlaybackEngine
             if (mspqn > 0)
             {
                 currentBpm = 60000000.0f / mspqn;
+                listeners.forEach(l -> l.onTempoChanged(currentBpm));
             }
             return;
         }
@@ -339,7 +350,9 @@ public class PlaybackEngine
 
             if (cmd == 0x90 && raw.length >= 3 && (raw[2] & 0xFF) > 0)
             {
-                channelLevels[ch] = Math.max(channelLevels[ch], (raw[2] & 0xFF) / 127.0);
+                int velocity = raw[2] & 0xFF;
+                channelLevels[ch] = Math.max(channelLevels[ch], velocity / 127.0);
+                listeners.forEach(l -> l.onChannelActivity(ch, velocity));
             }
 
             try
@@ -352,20 +365,6 @@ public class PlaybackEngine
             }
         }
     }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 
     // --- Engine API (For UI and External Control) ---
 
@@ -400,15 +399,18 @@ public class PlaybackEngine
             byte[] msg = new byte[] {(byte) (0xB0 | ch), 7, (byte) (100 * volumeScale)};
             try { provider.sendMessage(msg); } catch (Exception _) {}
         }
+        listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
     public void adjustSpeed(double delta) {
         currentSpeed = Math.max(0.5, Math.min(2.0, currentSpeed + delta));
+        listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
     public void adjustTranspose(int delta) {
         currentTranspose += delta;
         try { provider.panic(); } catch (Exception _) {}
+        listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
     public void seekRelative(long microsecondsDelta) {

@@ -11,13 +11,19 @@ import com.midiraja.engine.PlaybackEngine;
 import com.midiraja.engine.PlaylistContext;
 import com.midiraja.io.TerminalIO;
 import java.io.IOException;
+import java.util.Map;
+import java.util.Objects;
 
+/**
+ * A rich, full-screen Terminal User Interface (TUI) Dashboard.
+ */
 public class DashboardUI implements PlaybackUI
 {
     private final MetadataPanel metadataPanel = new MetadataPanel();
     private final StatusPanel statusPanel = new StatusPanel();
     private final ChannelActivityPanel channelPanel = new ChannelActivityPanel();
     private final ControlsPanel controlsPanel = new ControlsPanel();
+    private final DashboardLayoutManager layoutManager = new DashboardLayoutManager();
 
     @Override
     public void runRenderLoop(PlaybackEngine engine)
@@ -25,14 +31,35 @@ public class DashboardUI implements PlaybackUI
         var term = TerminalIO.CONTEXT.get();
         if (!term.isInteractive()) return;
 
+        // Wire up listeners
+        engine.addPlaybackEventListener(metadataPanel);
+        engine.addPlaybackEventListener(statusPanel);
+        engine.addPlaybackEventListener(channelPanel);
+        engine.addPlaybackEventListener(controlsPanel);
+
+        metadataPanel.updateContext(engine.getContext());
+        channelPanel.updatePrograms(engine.getChannelPrograms());
+
+        int lastWidth = -1;
+        int lastHeight = -1;
+
         try
         {
             while (engine.isPlaying())
             {
-                engine.decayChannelLevels(0.05);
-
                 int termWidth = term.getWidth();
                 int termHeight = term.getHeight();
+
+                if (termWidth != lastWidth || termHeight != lastHeight) {
+                    recalculateLayout(termWidth, termHeight, engine.getContext().files().size());
+                    lastWidth = termWidth;
+                    lastHeight = termHeight;
+                }
+
+                // Push latest state that might change externally (non-event polled values)
+                statusPanel.updateState(engine.getCurrentMicroseconds(), engine.getTotalMicroseconds(), 
+                    engine.getCurrentBpm(), engine.getCurrentSpeed(), engine.getVolumeScale(), 
+                    engine.getCurrentTranspose(), engine.getContext());
 
                 StringBuilder sb = new StringBuilder();
                 sb.append("\033[H");
@@ -40,102 +67,58 @@ public class DashboardUI implements PlaybackUI
                 String doubleLine = "=".repeat(termWidth) + "\n";
                 String singleLine = "-".repeat(termWidth) + "\n";
 
-                int contentHeight = termHeight - 4; // Subtract 4 for the horizontal separator lines
-                boolean showPlaylist = engine.getContext().files().size() > 1;
-                
-                int hMetadata = 1;
-                int hStatus = 1;
-                int hControls = 1;
-                int hChannels = 16;
-                int hPlaylist = 0;
-                boolean useHorizontalChannels = false;
-                boolean showHeaders = false;
-
-                // 19 lines is the absolute minimum required to hold Two-Column Layout 
-                // with other panels compressed to their 1-line minimums.
-                if (contentHeight >= 19) {
-                    // Two-Column Mode
-                    useHorizontalChannels = false;
-                    hChannels = 16;
-                    hPlaylist = 16; // Shares height with channels
-                    
-                    showHeaders = contentHeight >= 21;
-                    int baseRequired = showHeaders ? 21 : 19;
-                    int surplus = contentHeight - baseRequired;
-                    
-                    // Distribute surplus up to max bounds
-                    int addStatus = Math.min(surplus, 4); // Max 5
-                    hStatus += addStatus;
-                    surplus -= addStatus;
-                    
-                    int addMeta = Math.min(surplus, 2); // Max 3
-                    hMetadata += addMeta;
-                    surplus -= addMeta;
-                    
-                    int addControls = Math.min(surplus, 2); // Max 3
-                    hControls += addControls;
-                    surplus -= addControls;
-                } else {
-                    // Stacked Mode (Terminal too short, contentHeight <= 18)
-                    useHorizontalChannels = true;
-                    showHeaders = false;
-                    hChannels = 4;
-                    
-                    if (showPlaylist) {
-                        hPlaylist = contentHeight - 3 - 4 - 1; // Content - Mins - Channels - Separator
-                        if (hPlaylist < 0) hPlaylist = 0;
-                    }
-                }
-
                 sb.append(doubleLine);
                 sb.append("  Midiraja v").append(com.midiraja.Version.VERSION).append(" - Java 25 Native MIDI Player\n");
                 sb.append(doubleLine);
 
-                metadataPanel.render(sb, termWidth, hMetadata, showHeaders, engine);
-                statusPanel.render(sb, termWidth, hStatus, showHeaders, engine);
+                metadataPanel.render(sb);
+                statusPanel.render(sb);
                 sb.append(singleLine);
 
-                if (useHorizontalChannels) {
-                    if (showHeaders) sb.append(" [MIDI CHANNELS ACTIVITY]\n");
-                    channelPanel.render(sb, termWidth, hChannels, showHeaders, engine);
-                    
-                    if (showPlaylist && hPlaylist > 0) {
+                // For the center content (Channels and Playlist), we still need to coordinate the 2-column or stacked view
+                Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = 
+                    layoutManager.calculateLayout(termWidth, termHeight, engine.getContext().files().size());
+                
+                LayoutConstraints chanC = Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS));
+                LayoutConstraints playC = Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
+
+                if (chanC.isHorizontal()) {
+                    if (chanC.showHeaders()) sb.append(" [MIDI CHANNELS ACTIVITY]\n");
+                    channelPanel.render(sb);
+                    if (playC.height() > 0) {
                         sb.append(singleLine);
-                        if (showHeaders) sb.append(" [PLAYLIST]\n\n");
-                        renderPlaylist(sb, engine, termWidth, hPlaylist);
+                        if (playC.showHeaders()) sb.append(" [PLAYLIST]\n\n");
+                        renderPlaylist(sb, engine, playC);
                     }
                 } else {
-                    int leftColWidth = Math.max(35, termWidth / 2);
-                    int rightColWidth = termWidth - leftColWidth;
-
-                    if (showHeaders) {
+                    if (chanC.showHeaders()) {
                         String leftHeader = " [MIDI CHANNELS ACTIVITY]";
-                        String rightHeader = showPlaylist ? " [PLAYLIST]" : "";
-                        sb.append(String.format("%-" + leftColWidth + "s%s\n\n", leftHeader, rightHeader));
+                        String rightHeader = engine.getContext().files().size() > 1 ? " [PLAYLIST]" : "";
+                        sb.append(String.format("%-" + chanC.width() + "s%s\n\n", leftHeader, rightHeader));
                     }
 
-                    StringBuilder channelSb = new StringBuilder();
-                    channelPanel.render(channelSb, leftColWidth, hChannels, showHeaders, engine);
-                    String[] channelLines = channelSb.toString().split("\n");
+                    StringBuilder chanSb = new StringBuilder();
+                    channelPanel.render(chanSb);
+                    String[] chanLines = chanSb.toString().split("\n");
 
-                    StringBuilder playlistSb = new StringBuilder();
-                    if (showPlaylist) {
-                        renderPlaylist(playlistSb, engine, rightColWidth, hChannels);
+                    StringBuilder playSb = new StringBuilder();
+                    if (engine.getContext().files().size() > 1) {
+                        renderPlaylist(playSb, engine, playC);
                     }
-                    String[] playlistLines = playlistSb.toString().split("\n");
+                    String[] playLines = playSb.toString().split("\n");
 
-                    for (int i = 0; i < hChannels; i++) {
-                        String leftStr = i < channelLines.length ? channelLines[i] : "";
-                        if (leftStr.length() > leftColWidth) leftStr = leftStr.substring(0, leftColWidth);
-                        else leftStr = leftStr + " ".repeat(leftColWidth - leftStr.length());
+                    for (int i = 0; i < chanC.height(); i++) {
+                        String left = i < chanLines.length ? chanLines[i] : "";
+                        if (left.length() > chanC.width()) left = left.substring(0, chanC.width());
+                        else left = left + " ".repeat(chanC.width() - left.length());
                         
-                        String rightStr = i < playlistLines.length ? playlistLines[i] : "";
-                        sb.append(leftStr).append(rightStr).append("\n");
+                        String right = i < playLines.length ? playLines[i] : "";
+                        sb.append(left).append(right).append("\n");
                     }
                 }
 
                 sb.append(singleLine);
-                controlsPanel.render(sb, termWidth, hControls, showHeaders, engine);
+                controlsPanel.render(sb);
                 sb.append(doubleLine);
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
@@ -147,14 +130,22 @@ public class DashboardUI implements PlaybackUI
         catch (InterruptedException _) {}
     }
 
-    private void renderPlaylist(StringBuilder sb, PlaybackEngine engine, int width, int allocatedHeight)
+    private void recalculateLayout(int width, int height, int listSize) {
+        Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = layoutManager.calculateLayout(width, height, listSize);
+        metadataPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
+        statusPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.STATUS)));
+        channelPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS)));
+        controlsPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CONTROLS)));
+    }
+
+    private void renderPlaylist(StringBuilder sb, PlaybackEngine engine, LayoutConstraints constraints)
     {
-        if (allocatedHeight <= 0) return;
+        if (constraints.height() <= 0) return;
         PlaylistContext context = engine.getContext();
         int listSize = context.files().size();
         int idx = context.currentIndex();
 
-        int maxItems = allocatedHeight;
+        int maxItems = constraints.height();
         int half = maxItems / 2;
         int startIdx = Math.max(0, idx - half);
         int endIdx = Math.min(listSize - 1, startIdx + maxItems - 1);
@@ -165,8 +156,8 @@ public class DashboardUI implements PlaybackUI
             String name = context.files().get(i).getName();
             String status = (i == idx) ? "  (Playing)" : "";
             
-            if (name.length() > width - status.length() - 8) {
-                name = name.substring(0, Math.max(0, width - status.length() - 11)) + "...";
+            if (name.length() > constraints.width() - status.length() - 8) {
+                name = name.substring(0, Math.max(0, constraints.width() - status.length() - 11)) + "...";
             }
             sb.append(String.format(" %s %d. %s%s\n", marker, i + 1, name, status));
         }

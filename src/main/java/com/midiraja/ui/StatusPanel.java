@@ -7,10 +7,57 @@
 
 package com.midiraja.ui;
 
-import com.midiraja.engine.PlaybackEngine;
+import com.midiraja.engine.PlaylistContext;
+import org.jspecify.annotations.Nullable;
 
+/**
+ * Responsive status panel showing tempo, progress, transpose, and volume.
+ */
 public class StatusPanel implements Panel
 {
+    private LayoutConstraints constraints = new LayoutConstraints(80, 1, false, false);
+    private long currentMicros = 0;
+    private long totalMicros = 0;
+    private float bpm = 120.0f;
+    private double speed = 1.0;
+    private double volumeScale = 1.0;
+    private int transpose = 0;
+    @Nullable private PlaylistContext context;
+
+    @Override
+    public void onLayoutUpdated(LayoutConstraints bounds)
+    {
+        this.constraints = bounds;
+    }
+
+    @Override
+    public void onPlaybackStateChanged() {} // Handled by polling properties for now, or we can add specific setters
+
+    public void updateState(long currentMicros, long totalMicros, float bpm, double speed, double volumeScale, int transpose, PlaylistContext context) {
+        this.currentMicros = currentMicros;
+        this.totalMicros = totalMicros;
+        this.bpm = bpm;
+        this.speed = speed;
+        this.volumeScale = volumeScale;
+        this.transpose = transpose;
+        this.context = context;
+    }
+
+    @Override
+    public void onTick(long currentMicroseconds)
+    {
+        this.currentMicros = currentMicroseconds;
+    }
+
+    @Override
+    public void onTempoChanged(float bpm)
+    {
+        this.bpm = bpm;
+    }
+
+    @Override
+    public void onChannelActivity(int channel, int velocity) {}
+
     private String formatTime(long microseconds, boolean includeHours)
     {
         long totalSeconds = microseconds / 1000000;
@@ -21,9 +68,18 @@ public class StatusPanel implements Panel
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    private String buildProgressBar(int percent, int termWidth)
+    @Override
+    public void render(StringBuilder sb)
     {
-        int barWidth = Math.max(10, termWidth - 40);
+        if (constraints.height() <= 0) return;
+        boolean incHrs = (totalMicros / 1000000) >= 3600;
+        String totStr = formatTime(totalMicros, incHrs);
+        String curStr = formatTime(currentMicros, incHrs);
+
+        int percent = (int) (totalMicros > 0 ? (currentMicros * 100 / totalMicros) : 0);
+        percent = Math.min(100, Math.max(0, percent));
+        
+        int barWidth = Math.max(10, constraints.width() - 40);
         int filled = (int) ((percent / 100.0) * barWidth);
         StringBuilder bar = new StringBuilder("[");
         for (int i = 0; i < barWidth; i++) {
@@ -32,47 +88,23 @@ public class StatusPanel implements Panel
             else bar.append("-");
         }
         bar.append("]");
-        return bar.toString();
-    }
 
-    @Override
-    public int calculateHeight(int availableHeight)
-    {
-        if (availableHeight >= 5) return 5;
-        if (availableHeight >= 2) return 2;
-        return 1;
-    }
-
-    @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
-    {
-        if (allocatedHeight <= 0) return;
-        long totalMicros = engine.getTotalMicroseconds();
-        long currentMicros = engine.getCurrentMicroseconds();
-        boolean incHrs = (totalMicros / 1000000) >= 3600;
-
-        String totStr = formatTime(totalMicros, incHrs);
-        String curStr = formatTime(currentMicros, incHrs);
-
-        int percent = (int) (totalMicros > 0 ? (currentMicros * 100 / totalMicros) : 0);
-        percent = Math.min(100, Math.max(0, percent));
-        String bar = buildProgressBar(percent, allocatedWidth);
-
-        if (allocatedHeight == 1) {
-            String s = String.format("    %s / %s %s %3d%%  Vol:%d%% Spd:%.1fx Tr:%+d", curStr, totStr, bar, percent, (int) (engine.getVolumeScale() * 100), engine.getCurrentSpeed(), engine.getCurrentTranspose());
-            sb.append(truncate(s, allocatedWidth)).append("\n");
-        } else if (allocatedHeight == 2 || allocatedHeight == 3 || allocatedHeight == 4) {
+        if (constraints.height() == 1) {
+            String s = String.format("    %s / %s %s %3d%%  Vol:%d%% Spd:%.1fx Tr:%+d", curStr, totStr, bar, percent, (int) (volumeScale * 100), speed, transpose);
+            sb.append(truncate(s, constraints.width())).append("\n");
+        } else if (constraints.height() >= 2 && constraints.height() <= 4) {
             String line1 = String.format("    Time: %s / %s  %s  %3d%%", curStr, totStr, bar, percent);
-            String line2 = String.format("    Tempo: %3.0f BPM (%.1fx) | Vol: %d%% | Trans: %+d", engine.getCurrentBpm(), engine.getCurrentSpeed(), (int) (engine.getVolumeScale() * 100), engine.getCurrentTranspose());
-            sb.append(truncate(line1, allocatedWidth)).append("\n");
-            sb.append(truncate(line2, allocatedWidth)).append("\n");
-            for (int i = 2; i < allocatedHeight; i++) sb.append("\n");
+            String line2 = String.format("    Tempo: %3.0f BPM (%.1fx) | Vol: %d%% | Trans: %+d", bpm, speed, (int) (volumeScale * 100), transpose);
+            sb.append(truncate(line1, constraints.width())).append("\n");
+            sb.append(truncate(line2, constraints.width())).append("\n");
+            for (int i = 2; i < constraints.height(); i++) sb.append("\n");
         } else {
-            sb.append(String.format("    Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", engine.getCurrentBpm(), engine.getCurrentSpeed()));
+            sb.append(String.format("    Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", bpm, speed));
             sb.append(String.format("    Time:      %s / %s  %s  %3d%%\n", curStr, totStr, bar, percent));
-            sb.append(String.format("    Transpose: %+d\n", engine.getCurrentTranspose()));
-            sb.append(String.format("    Volume:    %d%%\n", (int) (engine.getVolumeScale() * 100)));
-            sb.append(String.format("    Port:      [%d] %s\n", engine.getContext().targetPort().index(), engine.getContext().targetPort().name()));
+            sb.append(String.format("    Transpose: %+d\n", transpose));
+            sb.append(String.format("    Volume:    %d%%\n", (int) (volumeScale * 100)));
+            String portInfo = context != null ? String.format("[%d] %s", context.targetPort().index(), context.targetPort().name()) : "Unknown";
+            sb.append(String.format("    Port:      %s\n", portInfo));
         }
     }
 }

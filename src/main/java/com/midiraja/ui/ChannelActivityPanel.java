@@ -7,13 +7,49 @@
 
 package com.midiraja.ui;
 
-import com.midiraja.engine.PlaybackEngine;
+import java.util.Arrays;
 
+/**
+ * Responsive VU meter display for 16 MIDI channels.
+ */
 public class ChannelActivityPanel implements Panel
 {
     private static final String[] GM_FAMILIES = {"Piano", "Chrom Perc", "Organ", "Guitar", "Bass", "Strings", "Ensemble", "Brass", "Reed", "Pipe", "Synth Lead", "Synth Pad", "Synth FX", "Ethnic", "Percussive", "SFX"};
 
-    private String getChannelName(int[] channelPrograms, int ch)
+    private LayoutConstraints constraints = new LayoutConstraints(80, 16, false, false);
+    private final double[] channelLevels = new double[16];
+    private final int[] channelPrograms = new int[16];
+
+    @Override
+    public void onLayoutUpdated(LayoutConstraints bounds)
+    {
+        this.constraints = bounds;
+    }
+
+    @Override
+    public void onPlaybackStateChanged() {}
+
+    @Override
+    public void onTick(long currentMicroseconds) {}
+
+    @Override
+    public void onTempoChanged(float bpm) {}
+
+    @Override
+    public void onChannelActivity(int channel, int velocity)
+    {
+        if (channel >= 0 && channel < 16)
+        {
+            channelLevels[channel] = Math.max(channelLevels[channel], velocity / 127.0);
+        }
+    }
+
+    public void updatePrograms(int[] programs)
+    {
+        System.arraycopy(programs, 0, channelPrograms, 0, 16);
+    }
+
+    private String getChannelName(int ch)
     {
         if (ch == 9) return "Drums";
         int family = channelPrograms[ch] / 8;
@@ -22,44 +58,44 @@ public class ChannelActivityPanel implements Panel
     }
 
     @Override
-    public int calculateHeight(int availableHeight)
+    public void render(StringBuilder sb)
     {
-        if (availableHeight >= 16) return 16;
-        if (availableHeight >= 4) return 4;
-        return 0;
-    }
+        if (constraints.height() <= 0) return;
 
-    @Override
-    public void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine)
-    {
-        if (allocatedHeight <= 0) return;
-        double[] levels = engine.getChannelLevels();
-        int[] programs = engine.getChannelPrograms();
+        // Internal Decay Logic
+        for (int i = 0; i < 16; i++) {
+            channelLevels[i] = Math.max(0, channelLevels[i] - 0.05);
+        }
 
-        if (allocatedHeight >= 16) {
-            int maxMeterLength = Math.max(5, allocatedWidth - 26);
-            for (int i = 0; i < 16; i++) {
-                int meterLength = (int) (levels[i] * maxMeterLength);
+        if (!constraints.isHorizontal() && constraints.height() >= 16)
+        {
+            int maxMeterLength = Math.max(5, constraints.width() - 26);
+            for (int i = 0; i < 16; i++)
+            {
+                int meterLength = (int) (channelLevels[i] * maxMeterLength);
                 String meter = "█".repeat(meterLength) + " ".repeat(maxMeterLength - meterLength);
-                String chName = getChannelName(programs, i);
-                String line = String.format("  CH %02d %-11s : %s", i + 1, "(" + chName + ")", meter);
-                sb.append(truncate(line, allocatedWidth)).append("\n");
+                String line = String.format("  CH %02d %-11s : %s", i + 1, "(" + getChannelName(i) + ")", meter);
+                sb.append(truncate(line, constraints.width())).append("\n");
             }
-        } else if (allocatedHeight >= 4) {
-            int colWidth = allocatedWidth / 4;
+        }
+        else if (constraints.height() >= 4)
+        {
+            int colWidth = constraints.width() / 4;
             int maxMeterLength = Math.max(2, colWidth - 7);
-            for (int row = 0; row < 4; row++) {
+            for (int row = 0; row < 4; row++)
+            {
                 StringBuilder rowSb = new StringBuilder();
-                for (int col = 0; col < 4; col++) {
+                for (int col = 0; col < 4; col++)
+                {
                     int ch = row + (col * 4);
-                    int meterLength = (int) (levels[ch] * maxMeterLength);
+                    int meterLength = (int) (channelLevels[ch] * maxMeterLength);
                     String meter = "█".repeat(meterLength) + " ".repeat(maxMeterLength - meterLength);
                     String cell = String.format("C%02d:%s", ch + 1, meter);
                     if (cell.length() > colWidth) cell = cell.substring(0, colWidth);
                     else cell += " ".repeat(colWidth - cell.length());
                     rowSb.append(cell);
                 }
-                sb.append(truncate(rowSb.toString(), allocatedWidth)).append("\n");
+                sb.append(truncate(rowSb.toString(), constraints.width())).append("\n");
             }
         }
     }

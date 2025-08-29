@@ -21,12 +21,22 @@ public class LineUI implements PlaybackUI
     public void runRenderLoop(PlaybackEngine engine)
     {
         var term = TerminalIO.CONTEXT.get();
+        
+        // Setup initial constraints for 1-line mode
+        statusPanel.onLayoutUpdated(new LayoutConstraints(term.getWidth(), 1, false, false));
+        engine.addPlaybackEventListener(statusPanel);
+
         try {
             while (engine.isPlaying()) {
                 int width = term.getWidth();
+                statusPanel.onLayoutUpdated(new LayoutConstraints(width, 1, false, false));
+                statusPanel.updateState(engine.getCurrentMicroseconds(), engine.getTotalMicroseconds(), 
+                    engine.getCurrentBpm(), engine.getCurrentSpeed(), engine.getVolumeScale(), 
+                    engine.getCurrentTranspose(), engine.getContext());
+
                 StringBuilder sb = new StringBuilder();
                 sb.append("\r");
-                statusPanel.render(sb, width, 1, false, engine);
+                statusPanel.render(sb);
                 term.print(sb.toString().replace("\n", ""));
                 Thread.sleep(100);
             }

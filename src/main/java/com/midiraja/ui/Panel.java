@@ -7,14 +7,23 @@
 
 package com.midiraja.ui;
 
-import com.midiraja.engine.PlaybackEngine;
-
-public interface Panel
+/**
+ * Represents a modular, responsive UI component that receives state updates via events
+ * and renders its current internal representation.
+ */
+public interface Panel extends LayoutListener, PlaybackEventListener
 {
-    int calculateHeight(int availableHeight);
+    /**
+     * Renders the panel's content into the provided StringBuilder.
+     * The panel should use its cached layout constraints and state.
+     *
+     * @param sb The StringBuilder to append the rendered ANSI/text content to.
+     */
+    void render(StringBuilder sb);
 
-    void render(StringBuilder sb, int allocatedWidth, int allocatedHeight, boolean showHeaders, PlaybackEngine engine);
-
+    /**
+     * Utility method to truncate long strings to fit the terminal width without wrapping.
+     */
     default String truncate(String text, int maxLength)
     {
         if (text == null) return "";
