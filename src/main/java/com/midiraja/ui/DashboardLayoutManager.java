@@ -38,7 +38,15 @@ public class DashboardLayoutManager
     {
         Map<PanelId, LayoutConstraints> layout = new HashMap<>();
 
-        int contentHeight = termHeight - 4; // Subtract 4 for the horizontal separator lines
+        // Total static structural overhead lines in DashboardUI:
+        // Top banner: 3 lines
+        // Separator below status: 1 line
+        // Separator above controls: 1 line
+        // Separator below controls: 1 line
+        // Total static overhead = 6 lines
+        int staticOverhead = 6;
+        int contentHeight = termHeight - staticOverhead;
+        
         boolean showPlaylist = listSize > 1;
 
         int hMetadata = 1;
@@ -49,8 +57,11 @@ public class DashboardLayoutManager
         boolean useHorizontalChannels = false;
         boolean showHeaders = false;
 
-        // 19 lines is the absolute minimum required to hold Two-Column Layout
-        // with other panels compressed to their 1-line minimums.
+        // Absolute minimum required contentHeight for Two-Column Layout:
+        // hMetadata(1) + hStatus(1) + hChannels(16) + hControls(1) = 19 lines.
+        // Plus 2 lines for " [MIDI CHANNELS ACTIVITY]
+
+// header if showHeaders is true = 21 lines.
         if (contentHeight >= 19)
         {
             // Two-Column Mode
@@ -84,7 +95,10 @@ public class DashboardLayoutManager
 
             if (showPlaylist)
             {
-                hPlaylist = contentHeight - 3 - 4 - 1; // Content - Mins - Channels - Separator
+                // In stacked mode, if playlist is shown, an additional 1 line separator is rendered.
+                // Required height: Meta(1) + Status(1) + Channels(4) + Controls(1) = 7
+                // Plus 1 line for the extra separator = 8
+                hPlaylist = contentHeight - 8; 
                 if (hPlaylist < 0) hPlaylist = 0;
             }
         }
