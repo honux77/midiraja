@@ -19,6 +19,13 @@ public class LineUI implements PlaybackUI
     public void runRenderLoop(PlaybackEngine engine)
     {
         var term = TerminalIO.CONTEXT.get();
+        
+        // Print static information and controls header before the dynamic line
+        com.midiraja.engine.PlaylistContext context = engine.getContext();
+        String title = context.sequenceTitle() != null ? context.sequenceTitle() : context.files().get(context.currentIndex()).getName();
+        term.println("Playing: " + title + "  [Port: " + context.targetPort().name() + "]");
+        term.println("Controls: [Spc]Pause [< >]Skip [+-]Trans [^ v]Vol [Q]Quit");
+        
         String[] blocks = {" ", " ", "▂", "▃", "▄", "▅", "▆", "▇", "█"};
         
         try {
