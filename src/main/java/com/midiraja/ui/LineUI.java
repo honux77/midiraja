@@ -50,7 +50,7 @@ public class LineUI implements PlaybackUI
             staticLinesPrinted++;
         }
         
-        term.println("\033[38;5;244m  Controls: [Spc]Pause [◀ ▶]Skip [+-]Trans [▲ ▼]Vol [Q]Quit\033[0m");
+        term.println("\033[38;5;244m  Controls: [Spc]Pause [n p]Skip [◀ ▶]Seek [+-]Speed [<>]Trans [▲ ▼]Vol [Q]Quit\033[0m");
         staticLinesPrinted++;
         term.println(""); // Blank line
         staticLinesPrinted++;
@@ -133,6 +133,8 @@ public class LineUI implements PlaybackUI
             case TRANSPOSE_DOWN -> engine.adjustTranspose(-1);
             case SPEED_UP -> engine.adjustSpeed(0.1);
             case SPEED_DOWN -> engine.adjustSpeed(-0.1);
+            case SEEK_FORWARD -> engine.seekRelative(10_000_000);  // +10 seconds
+            case SEEK_BACKWARD -> engine.seekRelative(-10_000_000); // -10 seconds
             case QUIT -> engine.requestStop(PlaybackStatus.QUIT_ALL);
             default -> {}
         }
