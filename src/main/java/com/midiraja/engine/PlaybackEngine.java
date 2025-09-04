@@ -228,6 +228,14 @@ public class PlaybackEngine
                 continue;
             }
 
+            while (isPaused && isPlaying) {
+                Thread.sleep(50); // Hold the playback thread
+                // If user seeks while paused, break out to let the seek logic run
+                if (seekTarget != -1) break;
+                // Keep pushing the startTime forward so we don't instantly "catch up" when unpaused!
+                startTimeNanos += 50_000_000; 
+            }
+
             var event = sortedEvents.get(eventIndex);
             long tick = event.getTick();
 
