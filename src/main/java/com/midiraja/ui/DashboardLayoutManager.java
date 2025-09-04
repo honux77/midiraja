@@ -39,12 +39,12 @@ public class DashboardLayoutManager
         Map<PanelId, LayoutConstraints> layout = new HashMap<>();
 
         // Total static structural overhead lines in DashboardUI:
-        // Top banner: 3 lines
+        // Top banner: 1 line (inverted solid bar)
         // Separator below status: 1 line
         // Separator above controls: 1 line
         // Separator below controls: 1 line
-        // Total static overhead = 6 lines
-        int staticOverhead = 6;
+        // Total static overhead = 4 lines
+        int staticOverhead = 4;
         int contentHeight = termHeight - staticOverhead;
         
         boolean showPlaylist = listSize > 1;

@@ -39,7 +39,7 @@ public class LineUI implements PlaybackUI
         // Count how many lines we print so we know how much to jump up to clear on next track
         int staticLinesPrinted = 0;
 
-        term.println(String.format("Midiraja v%s - Terminal Lover's MIDI Player", com.midiraja.Version.VERSION));
+        term.println(String.format("\033[7m Midiraja v%s - Terminal Lover's MIDI Player \033[0m", com.midiraja.Version.VERSION));
         staticLinesPrinted++;
         
         int listSize = context.files().size();

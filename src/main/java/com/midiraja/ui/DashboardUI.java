@@ -64,12 +64,14 @@ public class DashboardUI implements PlaybackUI
                 StringBuilder sb = new StringBuilder();
                 sb.append("\033[H");
 
-                String doubleLine = "=".repeat(termWidth) + "\n";
                 String singleLine = "-".repeat(termWidth) + "\n";
 
-                sb.append(doubleLine);
-                sb.append("  Midiraja v").append(com.midiraja.Version.VERSION).append(" - Terminal Lover's MIDI Player\n");
-                sb.append(doubleLine);
+                // Full-width inverted banner
+                String title = String.format(" Midiraja v%s - Terminal Lover's MIDI Player", com.midiraja.Version.VERSION);
+                int padding = Math.max(0, termWidth - title.length());
+                sb.append("\033[7m").append(title).append(" ".repeat(padding)).append("\033[0m\n");
+                // The double lines are removed because the solid bar acts as a strong separator already.
+
 
                 metadataPanel.render(sb);
                 statusPanel.render(sb);
@@ -119,7 +121,7 @@ public class DashboardUI implements PlaybackUI
 
                 sb.append(singleLine);
                 controlsPanel.render(sb);
-                sb.append(doubleLine);
+                sb.append("=".repeat(termWidth)).append("\n");
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
                 term.print(finalStr + "\033[J");
