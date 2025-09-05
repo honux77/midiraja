@@ -91,14 +91,21 @@ public class DashboardLayoutManager
             // Stacked Mode (Terminal too short, contentHeight <= 18)
             useHorizontalChannels = true;
             showHeaders = false;
-            hChannels = 4;
+            
+            // If the terminal is extremely short, we must completely hide the channel meters
+            // to prevent the total lines from exceeding termHeight.
+            if (contentHeight >= 7) {
+                hChannels = 4;
+            } else {
+                hChannels = 0;
+            }
 
             if (showPlaylist)
             {
-                // In stacked mode, if playlist is shown, an additional 1 line separator is rendered.
-                // Required height: Meta(1) + Status(1) + Channels(4) + Controls(1) = 7
-                // Plus 1 line for the extra separator = 8
-                hPlaylist = contentHeight - 8; 
+                // Required height: Meta(1) + Status(1) + Channels(hChannels) + Controls(1)
+                // Plus 1 line for the playlist separator
+                int requiredBeforePlaylist = 1 + 1 + hChannels + 1 + 1; 
+                hPlaylist = contentHeight - requiredBeforePlaylist; 
                 if (hPlaylist < 0) hPlaylist = 0;
             }
         }

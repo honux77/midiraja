@@ -121,7 +121,8 @@ public class DashboardUI implements PlaybackUI
 
                 sb.append(singleLine);
                 controlsPanel.render(sb);
-                sb.append("=".repeat(termWidth)).append("\n");
+                // CRITICAL: Do not append \n to the very last line to prevent the terminal from scrolling down!
+                sb.append("=".repeat(termWidth));
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
                 term.print(finalStr + "\033[J");
