@@ -37,25 +37,22 @@ public class ControlsPanel implements Panel
     {
         if (constraints.height() <= 0) return;
 
+        String minLine = "  [Spc]Pause [n p]Skip [◀ ▶]Seek [+-]Speed [<>]Trans [▲ ▼]Vol [Q]Quit";
+        
         if (constraints.height() >= 3)
         {
             if (constraints.showHeaders()) sb.append(" [CONTROLS]\n");
-            sb.append("  [Spc] Pause/Resume  |  [n] [p] Skip Track    |  [◀] [▶] Seek 10s\n");
-            sb.append("  [▲] [▼] Volume      |  [+] [-] Speed         |  [<] [>] Transpose\n");
-            sb.append("  [Q] Quit            |\n");
+            sb.append("  [Spc] Pause/Resume   [n p] Skip Track   [◀ ▶] Seek 10s   [Q] Quit\n");
+            sb.append("  [▲ ▼] Volume         [+-]  Speed        [< >] Transpose\n");
+        }
+        else if (constraints.height() == 2)
+        {
+            if (constraints.showHeaders()) sb.append(" [CONTROLS]\n");
+            sb.append(truncate(minLine, constraints.width())).append("\n");
         }
         else
         {
-            String minLine = "  [Spc]Pause [n p]Skip [◀ ▶]Seek [+-]Speed [<>]Trans [▲ ▼]Vol [Q]Quit";
-            if (constraints.showHeaders() && constraints.height() >= 2)
-            {
-                sb.append(" [CONTROLS]\n");
-                sb.append(truncate(minLine, constraints.width())).append("\n");
-            }
-            else
-            {
-                sb.append(truncate(minLine, constraints.width())).append("\n");
-            }
+            sb.append(truncate(minLine, constraints.width())).append("\n");
         }
     }
 }
