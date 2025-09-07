@@ -70,12 +70,11 @@ public class DashboardUI implements PlaybackUI
                 String title = String.format(" Midiraja v%s - Terminal Lover's MIDI Player", com.midiraja.Version.VERSION);
                 int padding = Math.max(0, termWidth - title.length());
                 sb.append("\033[7m").append(title).append(" ".repeat(padding)).append("\033[0m\n");
-                // The double lines are removed because the solid bar acts as a strong separator already.
-
 
                 metadataPanel.render(sb);
                 statusPanel.render(sb);
                 
+                sb.append(singleLine);
 
                 // For the center content (Channels and Playlist), we still need to coordinate the 2-column or stacked view
                 Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = 
@@ -85,25 +84,26 @@ public class DashboardUI implements PlaybackUI
                 LayoutConstraints playC = Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
 
                 if (chanC.isHorizontal()) {
-                    String hChan = " ≡≡≡[ MIDI CHANNELS ]";
-                    sb.append(hChan).append("≡".repeat(Math.max(0, chanC.width() - hChan.length() - 1))).append(" \n");
-                    channelPanel.render(sb);
+                    if (chanC.height() > 0) {
+                        String hChan = " ≡≡[ MIDI CHANNELS ]";
+                        sb.append(hChan).append("≡".repeat(Math.max(0, chanC.width() - hChan.length() - 1))).append(" \n");
+                        channelPanel.render(sb);
+                    }
                     if (playC.height() > 0) {
-                        String hPlay = " ≡≡≡[ PLAYLIST ]";
+                        String hPlay = " ≡≡[ PLAYLIST ]";
                         sb.append(hPlay).append("≡".repeat(Math.max(0, playC.width() - hPlay.length() - 1))).append(" \n");
                         renderPlaylist(sb, engine, playC);
                     }
                 } else {
-                    String leftHeader = " ≡≡≡[ MIDI CHANNELS ]";
-                    leftHeader = leftHeader + "≡".repeat(Math.max(0, chanC.width() - leftHeader.length()));
+                    String leftHeader = " ≡≡[ MIDI CHANNELS ]";
+                    leftHeader = leftHeader + "≡".repeat(Math.max(0, chanC.width() - leftHeader.length() - 1)) + " ";
                     
                     String rightHeader = "";
                     if (engine.getContext().files().size() > 1) {
-                        rightHeader = "≡≡≡[ PLAYLIST ]";
+                        rightHeader = " ≡≡[ PLAYLIST ]";
                         rightHeader = rightHeader + "≡".repeat(Math.max(0, playC.width() - rightHeader.length() - 1)) + " ";
                     } else {
-                        // Fill the rest of the line if no playlist header
-                        leftHeader = leftHeader + "≡".repeat(Math.max(0, termWidth - leftHeader.length() - 1)) + " ";
+                        leftHeader = leftHeader.trim() + "≡".repeat(Math.max(0, termWidth - leftHeader.trim().length() - 1)) + " ";
                     }
                     sb.append(leftHeader).append(rightHeader).append("\n");
 
@@ -127,9 +127,8 @@ public class DashboardUI implements PlaybackUI
                     }
                 }
 
-                
+                sb.append(singleLine);
                 controlsPanel.render(sb);
-                // CRITICAL: Do not append \n to the very last line to prevent the terminal from scrolling down!
                 sb.append("=".repeat(termWidth));
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
