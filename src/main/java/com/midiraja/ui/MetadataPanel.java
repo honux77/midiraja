@@ -55,9 +55,9 @@ public class MetadataPanel implements Panel
         else
         {
             // Always show headers if height > 1, no blank line below it.
-            String header = "≡≡≡[ NOW PLAYING ]";
-            int padding = Math.max(0, constraints.width() - header.length());
-            sb.append(header).append("≡".repeat(padding)).append("\n");
+            String header = " ≡≡≡[ NOW PLAYING ]";
+            int padding = Math.max(0, constraints.width() - header.length() - 1);
+            sb.append(header).append("≡".repeat(padding)).append(" \n");
             sb.append(String.format("    Title:     %s\n", truncate(rawTitle, constraints.width() - 16)));
         }
     }

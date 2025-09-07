@@ -40,10 +40,9 @@ public class DashboardLayoutManager
 
         // Total static structural overhead lines in DashboardUI:
         // Top banner: 1 line (inverted solid bar)
+        // Separator above controls: 1 line
         // Separator below controls: 1 line
-        // (We removed the simple singleLine '-' separators in favor of the '≡≡≡[ TITLE ]≡≡' headers, 
-        //  which are embedded within the panel height calculations)
-        int staticOverhead = 2;
+        int staticOverhead = 3;
         int contentHeight = termHeight - staticOverhead;
         
         boolean showPlaylist = listSize > 1;

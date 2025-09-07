@@ -85,22 +85,25 @@ public class DashboardUI implements PlaybackUI
                 LayoutConstraints playC = Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
 
                 if (chanC.isHorizontal()) {
-                    String hChan = "≡≡≡[ MIDI CHANNELS ]";
-                    sb.append(hChan).append("≡".repeat(Math.max(0, chanC.width() - hChan.length()))).append("\n");
+                    String hChan = " ≡≡≡[ MIDI CHANNELS ]";
+                    sb.append(hChan).append("≡".repeat(Math.max(0, chanC.width() - hChan.length() - 1))).append(" \n");
                     channelPanel.render(sb);
                     if (playC.height() > 0) {
-                        String hPlay = "≡≡≡[ PLAYLIST ]";
-                        sb.append(hPlay).append("≡".repeat(Math.max(0, playC.width() - hPlay.length()))).append("\n");
+                        String hPlay = " ≡≡≡[ PLAYLIST ]";
+                        sb.append(hPlay).append("≡".repeat(Math.max(0, playC.width() - hPlay.length() - 1))).append(" \n");
                         renderPlaylist(sb, engine, playC);
                     }
                 } else {
-                    String leftHeader = "≡≡≡[ MIDI CHANNELS ]";
+                    String leftHeader = " ≡≡≡[ MIDI CHANNELS ]";
                     leftHeader = leftHeader + "≡".repeat(Math.max(0, chanC.width() - leftHeader.length()));
                     
                     String rightHeader = "";
                     if (engine.getContext().files().size() > 1) {
                         rightHeader = "≡≡≡[ PLAYLIST ]";
-                        rightHeader = rightHeader + "≡".repeat(Math.max(0, playC.width() - rightHeader.length()));
+                        rightHeader = rightHeader + "≡".repeat(Math.max(0, playC.width() - rightHeader.length() - 1)) + " ";
+                    } else {
+                        // Fill the rest of the line if no playlist header
+                        leftHeader = leftHeader + "≡".repeat(Math.max(0, termWidth - leftHeader.length() - 1)) + " ";
                     }
                     sb.append(leftHeader).append(rightHeader).append("\n");
 
