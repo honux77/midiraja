@@ -1,127 +1,84 @@
-/*
- * Copyright (c) 2026, Park, Sungchul All rights reserved.
- *
- * This source code is licensed under the BSD-style license found in the LICENSE file in the root
- * directory of this source tree.
- */
-
 package com.midiraja.ui;
 
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Manages the layout negotiation logic for the Midiraja TUI Dashboard. Orchestrates the
- * distribution of available terminal space among various Panels based on a strict priority
- * algorithm.
- */
 public class DashboardLayoutManager
 {
-    /**
-     * Enum for identifying the different panels managed by this layout manager.
-     */
-    public enum PanelId
-    {
-        METADATA, STATUS, CHANNELS, PLAYLIST, CONTROLS
-    }
+    public enum PanelId { METADATA, CHANNELS, PLAYLIST, CONTROLS }
 
-    /**
-     * Calculates the layout constraints for all panels based on the current terminal dimensions.
-     *
-     * @param termWidth Current width of the terminal.
-     * @param termHeight Current height of the terminal.
-     * @param listSize Number of items in the current playlist.
-     * @return A map of PanelId to LayoutConstraints.
-     */
-    public Map<PanelId, LayoutConstraints> calculateLayout(int termWidth, int termHeight,
-            int listSize)
+    public Map<PanelId, LayoutConstraints> calculateLayout(int termWidth, int termHeight, int listSize)
     {
         Map<PanelId, LayoutConstraints> layout = new HashMap<>();
-
-        // Total static structural overhead lines in DashboardUI:
-        // Top banner: 1 line (inverted solid bar)
-        // Separator above controls: 1 line
-        // Separator below controls: 1 line
-        int staticOverhead = 3;
-        int contentHeight = termHeight - staticOverhead;
-        
         boolean showPlaylist = listSize > 1;
 
-        int hMetadata = 1;
-        int hStatus = 1;
-        int hControls = 1;
-        int hChannels = 16;
+        // Static lines: Top Banner(1) + Bottom Border(1) = 2
+        int hMetadata = 1; // Pure title line
+        int hStatus = 1;   // Base status line
+        int hControls = 1; // Base controls line
+        
+        int hChannels = 0;
         int hPlaylist = 0;
-        boolean useHorizontalChannels = false;
-        boolean showHeaders = false;
+        boolean isHorizontal = false;
 
-        // Absolute minimum required contentHeight for Two-Column Layout:
-        // hMetadata(1) + hStatus(1) + hChannels(16) + hControls(1) = 19 lines.
-        // Plus 2 lines for " [MIDI CHANNELS ACTIVITY]
-
-// header if showHeaders is true = 21 lines.
-        if (contentHeight >= 19)
-        {
-            // Two-Column Mode
-            useHorizontalChannels = false;
+        // Base structural overhead:
+        // TopBanner(1) + NowPlaying[Header(1) + Bottom(1)] + Controls(hControls) + VeryBottom(1)
+        // Overhead = 4 + hMetadata + hStatus + hControls
+        
+        // Target Two-Column: Channels needs Header(1) + 16 + BottomBorder(1) = 18 lines.
+        // Total required for Two-Column = 4 + 1(Meta) + 1(Status) + 1(Control) + 18(Channels block) = 25 lines.
+        // Wait, TitledPanel adds 2 lines of overhead.
+        // So Channels content needs 16. Total block = 18.
+        
+        if (termHeight >= 25) {
+            isHorizontal = false;
             hChannels = 16;
-            hPlaylist = 16; // Shares height with channels
-
-            showHeaders = contentHeight >= 21;
-            int baseRequired = showHeaders ? 21 : 19;
-            int surplus = contentHeight - baseRequired;
-
-            // Distribute surplus up to max bounds
-            int addStatus = Math.min(surplus, 4); // Max 5
+            hPlaylist = 16;
+            
+            int surplus = termHeight - 25;
+            
+            // Distribute surplus
+            int addStatus = Math.min(surplus, 4);
             hStatus += addStatus;
             surplus -= addStatus;
-
-            int addMeta = Math.min(surplus, 2); // Max 3
-            hMetadata += addMeta;
-            surplus -= addMeta;
-
-            int addControls = Math.min(surplus, 2); // Max 3
-            hControls += addControls;
-            surplus -= addControls;
-        }
-        else
-        {
-            useHorizontalChannels = true;
-            hMetadata = 2; // Header + Title
             
-            // Require: Meta(2) + Status(1) + ChanHeader(1) + Chan(4) + Controls(1) = 9
-            if (contentHeight >= 9) {
+            int addControls = Math.min(surplus, 2);
+            hControls += addControls;
+        } else {
+            isHorizontal = true; // Stacked Mode
+            // Calculate available lines for center blocks
+            // Center = termHeight - 4 (struct) - hMetadata(1) - hStatus(1) - hControls(1) = termHeight - 7
+            int centerSpace = termHeight - 7;
+            
+            // Stacked needs TitledChannels(Header+4+Bottom = 6) and TitledPlaylist(Header+M+Bottom = 3+).
+            if (centerSpace >= 6) {
                 hChannels = 4;
+                if (showPlaylist) {
+                    hPlaylist = Math.max(0, centerSpace - 6 - 2); // -6 for Channels block, -2 for Playlist overhead
+                }
             } else {
-                hChannels = 0; // Extremely short terminal
-            }
-
-            if (showPlaylist)
-            {
-                // Playlist requires 1 line for header, plus items
-                int requiredBeforePlaylist = 2 + hStatus + (hChannels > 0 ? 1 + hChannels : 0) + hControls; 
-                hPlaylist = contentHeight - requiredBeforePlaylist - 1; // -1 for Playlist Header
-                if (hPlaylist < 0) hPlaylist = 0;
+                hChannels = 0;
+                if (showPlaylist) {
+                    hPlaylist = Math.max(0, centerSpace - 2);
+                }
             }
         }
-
-        layout.put(PanelId.METADATA, new LayoutConstraints(termWidth, hMetadata, showHeaders, false));
-        layout.put(PanelId.STATUS, new LayoutConstraints(termWidth, hStatus, showHeaders, false));
-        layout.put(PanelId.CONTROLS, new LayoutConstraints(termWidth, hControls, showHeaders, false));
         
-        if (useHorizontalChannels)
-        {
-            layout.put(PanelId.CHANNELS, new LayoutConstraints(termWidth, hChannels, showHeaders, true));
-            layout.put(PanelId.PLAYLIST, new LayoutConstraints(termWidth, hPlaylist, showHeaders, false));
-        }
-        else
-        {
+        // Composite Panel height is Metadata + Status
+        int hNowPlaying = hMetadata + hStatus;
+
+        layout.put(PanelId.METADATA, new LayoutConstraints(termWidth, hNowPlaying, true, false));
+        layout.put(PanelId.CONTROLS, new LayoutConstraints(termWidth, hControls, false, false));
+        
+        if (isHorizontal) {
             int leftColWidth = Math.max(35, termWidth / 2);
             int rightColWidth = termWidth - leftColWidth;
-            layout.put(PanelId.CHANNELS, new LayoutConstraints(leftColWidth, hChannels, showHeaders, false));
-            layout.put(PanelId.PLAYLIST, new LayoutConstraints(rightColWidth, hPlaylist, showHeaders, false));
+            layout.put(PanelId.CHANNELS, new LayoutConstraints(leftColWidth, hChannels, true, false));
+            layout.put(PanelId.PLAYLIST, new LayoutConstraints(rightColWidth, hPlaylist, true, false));
+        } else {
+            layout.put(PanelId.CHANNELS, new LayoutConstraints(termWidth, hChannels, true, true));
+            layout.put(PanelId.PLAYLIST, new LayoutConstraints(termWidth, hPlaylist, true, false));
         }
-
         return layout;
     }
 }

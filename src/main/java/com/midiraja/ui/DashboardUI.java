@@ -8,21 +8,24 @@
 package com.midiraja.ui;
 
 import com.midiraja.engine.PlaybackEngine;
-import com.midiraja.engine.PlaylistContext;
 import com.midiraja.io.TerminalIO;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
-/**
- * A rich, full-screen Terminal User Interface (TUI) Dashboard.
- */
 public class DashboardUI implements PlaybackUI
 {
     private final MetadataPanel metadataPanel = new MetadataPanel();
     private final StatusPanel statusPanel = new StatusPanel();
-    private final ChannelActivityPanel channelPanel = new ChannelActivityPanel();
+    private final ChannelActivityPanel rawChannelPanel = new ChannelActivityPanel();
     private final ControlsPanel controlsPanel = new ControlsPanel();
+    private final PlaylistPanel rawPlaylistPanel = new PlaylistPanel();
+    
+    private final CompositePanel metaStatusComposite = new CompositePanel(metadataPanel, statusPanel);
+    private final TitledPanel nowPlayingPanel = new TitledPanel("NOW PLAYING", metaStatusComposite);
+    private final TitledPanel channelPanel = new TitledPanel("MIDI CHANNELS", rawChannelPanel);
+    private final TitledPanel titledPlaylistPanel = new TitledPanel("PLAYLIST", rawPlaylistPanel);
+
     private final DashboardLayoutManager layoutManager = new DashboardLayoutManager();
 
     @Override
@@ -34,19 +37,19 @@ public class DashboardUI implements PlaybackUI
         // Wire up listeners
         engine.addPlaybackEventListener(metadataPanel);
         engine.addPlaybackEventListener(statusPanel);
-        engine.addPlaybackEventListener(channelPanel);
+        engine.addPlaybackEventListener(rawChannelPanel);
         engine.addPlaybackEventListener(controlsPanel);
 
         metadataPanel.updateContext(engine.getContext());
-        channelPanel.updatePrograms(engine.getChannelPrograms());
+        rawPlaylistPanel.updateContext(engine.getContext());
+        rawChannelPanel.updatePrograms(engine.getChannelPrograms());
+        metaStatusComposite.setHeights(1); // Metadata + Header
 
         int lastWidth = -1;
         int lastHeight = -1;
 
-        try
-        {
-            while (engine.isPlaying())
-            {
+        try {
+            while (engine.isPlaying()) {
                 int termWidth = term.getWidth();
                 int termHeight = term.getHeight();
 
@@ -56,7 +59,6 @@ public class DashboardUI implements PlaybackUI
                     lastHeight = termHeight;
                 }
 
-                // Push latest state that might change externally (non-event polled values)
                 statusPanel.updateState(engine.getCurrentMicroseconds(), engine.getTotalMicroseconds(), 
                     engine.getCurrentBpm(), engine.getCurrentSpeed(), engine.getVolumeScale(), 
                     engine.getCurrentTranspose(), engine.isPaused(), engine.getContext());
@@ -64,19 +66,12 @@ public class DashboardUI implements PlaybackUI
                 StringBuilder sb = new StringBuilder();
                 sb.append("\033[H");
 
-                String singleLine = "-".repeat(termWidth) + "\n";
+                String banner = String.format(" Midiraja v%s - Terminal Lover's MIDI Player", com.midiraja.Version.VERSION);
+                int bannerPadding = Math.max(0, termWidth - banner.length());
+                sb.append("\033[7m").append(banner).append(" ".repeat(bannerPadding)).append("\033[0m\n");
 
-                // Full-width inverted banner
-                String title = String.format(" Midiraja v%s - Terminal Lover's MIDI Player", com.midiraja.Version.VERSION);
-                int padding = Math.max(0, termWidth - title.length());
-                sb.append("\033[7m").append(title).append(" ".repeat(padding)).append("\033[0m\n");
+                nowPlayingPanel.render(sb);
 
-                metadataPanel.render(sb);
-                statusPanel.render(sb);
-                
-                sb.append(singleLine);
-
-                // For the center content (Channels and Playlist), we still need to coordinate the 2-column or stacked view
                 Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = 
                     layoutManager.calculateLayout(termWidth, termHeight, engine.getContext().files().size());
                 
@@ -84,40 +79,18 @@ public class DashboardUI implements PlaybackUI
                 LayoutConstraints playC = Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
 
                 if (chanC.isHorizontal()) {
-                    if (chanC.height() > 0) {
-                        String hChan = " ≡≡[ MIDI CHANNELS ]";
-                        sb.append(hChan).append("≡".repeat(Math.max(0, chanC.width() - hChan.length() - 1))).append(" \n");
-                        channelPanel.render(sb);
-                    }
+                    channelPanel.render(sb);
                     if (playC.height() > 0) {
-                        if (chanC.height() > 0) {
-                            // Add separator between Channels and Playlist in stacked mode
-                            sb.append("-".repeat(termWidth)).append("\n");
-                        }
-                        String hPlay = " ≡≡[ PLAYLIST ]";
-                        sb.append(hPlay).append("≡".repeat(Math.max(0, playC.width() - hPlay.length() - 1))).append(" \n");
-                        renderPlaylist(sb, engine, playC);
+                        titledPlaylistPanel.render(sb);
                     }
                 } else {
-                    String leftHeader = " ≡≡[ MIDI CHANNELS ]";
-                    leftHeader = leftHeader + "≡".repeat(Math.max(0, chanC.width() - leftHeader.length() - 1)) + " ";
-                    
-                    String rightHeader = "";
-                    if (engine.getContext().files().size() > 1) {
-                        rightHeader = " ≡≡[ PLAYLIST ]";
-                        rightHeader = rightHeader + "≡".repeat(Math.max(0, playC.width() - rightHeader.length() - 1)) + " ";
-                    } else {
-                        leftHeader = leftHeader.trim() + "≡".repeat(Math.max(0, termWidth - leftHeader.trim().length() - 1)) + " ";
-                    }
-                    sb.append(leftHeader).append(rightHeader).append("\n");
-
                     StringBuilder chanSb = new StringBuilder();
                     channelPanel.render(chanSb);
                     String[] chanLines = chanSb.toString().split("\n");
 
                     StringBuilder playSb = new StringBuilder();
                     if (engine.getContext().files().size() > 1) {
-                        renderPlaylist(playSb, engine, playC);
+                        titledPlaylistPanel.render(playSb);
                     }
                     String[] playLines = playSb.toString().split("\n");
 
@@ -131,7 +104,6 @@ public class DashboardUI implements PlaybackUI
                     }
                 }
 
-                sb.append(singleLine);
                 controlsPanel.render(sb);
                 sb.append("=".repeat(termWidth));
 
@@ -140,41 +112,15 @@ public class DashboardUI implements PlaybackUI
 
                 Thread.sleep(50);
             }
-        }
-        catch (InterruptedException _) {}
+        } catch (InterruptedException _) {}
     }
 
     private void recalculateLayout(int width, int height, int listSize) {
         Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = layoutManager.calculateLayout(width, height, listSize);
-        metadataPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
-        statusPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.STATUS)));
+        nowPlayingPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
         channelPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS)));
+        titledPlaylistPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST)));
         controlsPanel.onLayoutUpdated(Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CONTROLS)));
-    }
-
-    private void renderPlaylist(StringBuilder sb, PlaybackEngine engine, LayoutConstraints constraints)
-    {
-        if (constraints.height() <= 0) return;
-        PlaylistContext context = engine.getContext();
-        int listSize = context.files().size();
-        int idx = context.currentIndex();
-
-        int maxItems = constraints.height();
-        int half = maxItems / 2;
-        int startIdx = Math.max(0, idx - half);
-        int endIdx = Math.min(listSize - 1, startIdx + maxItems - 1);
-        startIdx = Math.max(0, endIdx - maxItems + 1);
-
-        for (int i = startIdx; i <= endIdx; i++) {
-            String marker = (i == idx) ? " >" : "  ";
-            String name = context.files().get(i).getName();
-            String status = (i == idx) ? "  (Playing)" : "";
-            
-            if (name.length() > constraints.width() - status.length() - 8) {
-                name = name.substring(0, Math.max(0, constraints.width() - status.length() - 11)) + "...";
-            }
-            sb.append(String.format(" %s %d. %s%s\n", marker, i + 1, name, status));
-        }
     }
 
     @Override
@@ -184,7 +130,21 @@ public class DashboardUI implements PlaybackUI
         try {
             while (engine.isPlaying()) {
                 var key = term.readKey();
-                LineUI.handleCommonInput(engine, key);
+                switch (key) {
+                    case PAUSE -> engine.togglePause();
+                    case VOLUME_UP -> engine.adjustVolume(0.05);
+                    case VOLUME_DOWN -> engine.adjustVolume(-0.05);
+                    case NEXT_TRACK -> engine.requestStop(PlaybackEngine.PlaybackStatus.NEXT);
+                    case PREV_TRACK -> engine.requestStop(PlaybackEngine.PlaybackStatus.PREVIOUS);
+                    case TRANSPOSE_UP -> engine.adjustTranspose(1);
+                    case TRANSPOSE_DOWN -> engine.adjustTranspose(-1);
+                    case SPEED_UP -> engine.adjustSpeed(0.1);
+                    case SPEED_DOWN -> engine.adjustSpeed(-0.1);
+                    case SEEK_FORWARD -> engine.seekRelative(10_000_000);
+                    case SEEK_BACKWARD -> engine.seekRelative(-10_000_000);
+                    case QUIT -> engine.requestStop(PlaybackEngine.PlaybackStatus.QUIT_ALL);
+                    default -> {}
+                }
             }
         } catch (IOException _) {
             engine.requestStop(PlaybackEngine.PlaybackStatus.QUIT_ALL);
