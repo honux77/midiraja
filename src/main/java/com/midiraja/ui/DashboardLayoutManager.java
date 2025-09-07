@@ -36,12 +36,23 @@ public class DashboardLayoutManager
             int surplus = termHeight - 25;
             
             // Distribute surplus
-            int addStatus = Math.min(surplus, 4);
+            // StatusPanel needs at least 5 lines (so hStatus = 5) to show full details.
+            // It starts at 1, so we need to add up to 4. Wait, if we add 4, it becomes 5!
+            // Why isn't it showing? Let's check TitledPanel overhead.
+            // hNowPlaying = hMetadata(1) + hStatus(1+addStatus) + Overhead(2).
+            // So if addStatus is 4, hStatus is 5.
+            // Let's allow addStatus up to 6 so it's very clear.
+            int addStatus = Math.min(surplus, 6);
             hStatus += addStatus;
             surplus -= addStatus;
             
             int addControls = Math.min(surplus, 2);
             hControls += addControls;
+            surplus -= addControls;
+            
+            // If there's still surplus, give it to Channels and Playlist!
+            hChannels += surplus;
+            hPlaylist += surplus;
         } else {
             isHorizontal = true; // Stacked Mode
             // Calculate available lines for center blocks

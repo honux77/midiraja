@@ -108,6 +108,11 @@ public class StatusPanel implements Panel
             sb.append(String.format("    Volume:    %d%%\n", (int) (volumeScale * 100)));
             String portInfo = context != null ? String.format("[%d] %s", context.targetPort().index(), context.targetPort().name()) : "Unknown";
             sb.append(String.format("    Port:      %s\n", portInfo));
+            
+            // Fill any remaining height
+            for (int i = 5; i < constraints.height(); i++) {
+                sb.append("\n");
+            }
         }
     }
 }
