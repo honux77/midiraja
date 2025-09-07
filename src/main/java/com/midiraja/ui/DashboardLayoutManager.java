@@ -27,13 +27,11 @@ public class DashboardLayoutManager
         
         // Target Two-Column: Channels needs Header(1) + 16 + BottomBorder(1) = 18 lines.
         // Total required for Two-Column = 4 + 1(Meta) + 1(Status) + 1(Control) + 18(Channels block) = 25 lines.
-        // Wait, TitledPanel adds 2 lines of overhead.
-        // So Channels content needs 16. Total block = 18.
         
         if (termHeight >= 25) {
             isHorizontal = false;
-            hChannels = 16;
-            hPlaylist = 16;
+            hChannels = 18;  // 18 lines so the inner panel gets 18 - 2 = 16
+            hPlaylist = 18;  
             
             int surplus = termHeight - 25;
             
@@ -52,9 +50,9 @@ public class DashboardLayoutManager
             
             // Stacked needs TitledChannels(Header+4+Bottom = 6) and TitledPlaylist(Header+M+Bottom = 3+).
             if (centerSpace >= 6) {
-                hChannels = 4;
+                hChannels = 6; // 6 lines so the inner panel gets 6 - 2 = 4
                 if (showPlaylist) {
-                    hPlaylist = Math.max(0, centerSpace - 6 - 2); // -6 for Channels block, -2 for Playlist overhead
+                    hPlaylist = Math.max(0, centerSpace - 6); 
                 }
             } else {
                 hChannels = 0;
