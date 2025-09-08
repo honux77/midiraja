@@ -129,12 +129,13 @@ public class DashboardUI implements PlaybackUI
                     }
                 }
 
-                // Separator above controls
-                sb.append(" ").append("≡".repeat(termWidth - 2)).append(" \n");
+                // Separator above controls (simple dashes, not a titled header)
+                sb.append("-".repeat(termWidth)).append("\n");
                 controlsPanel.render(sb);
                 sb.append("=".repeat(termWidth));
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
+                // Do not append \n to the very end to prevent terminal scrolling/blank lines
                 term.print(finalStr + "\033[J");
 
                 Thread.sleep(50);

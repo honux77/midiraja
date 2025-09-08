@@ -40,8 +40,15 @@ public class DashboardLayoutManager
             hControls += addControls;
             surplus -= addControls;
             
-            // 3. Give remaining to extra metadata or channels? Extra metadata!
-            hNowPlaying += surplus; // Any remaining huge terminal space goes to metadata text
+            // 3. Give remaining to Playlist and Channels instead of infinite NowPlaying
+            // NowPlaying max out at 8 lines (enough for full details + 2 lines of metadata)
+            int addNowExtra = Math.min(surplus, 2);
+            hNowPlaying += addNowExtra;
+            surplus -= addNowExtra;
+            
+            // Give all remaining surplus to Channels and Playlist
+            hChannels += surplus;
+            hPlaylist += surplus;
             
         } else {
             isHorizontal = true; // Stacked Mode
