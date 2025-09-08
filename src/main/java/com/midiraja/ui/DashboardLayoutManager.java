@@ -12,26 +12,30 @@ public class DashboardLayoutManager
         Map<PanelId, LayoutConstraints> layout = new HashMap<>();
         boolean showPlaylist = listSize > 1;
 
+        // Safety Margin: Some terminals scroll if we print to the very last character of the last line.
+        // We subtract 1 from the total height to be safe.
+        int safeHeight = termHeight - 1;
+
         // Static lines: Top Banner(1) + Bottom Border(1) = 2
-        int hNowPlaying = 3; // Minimum 3 lines for NowPlaying content
-        int hControls = 1;   // Minimum 1 line for Controls
-        int staticOverhead = 2 + 2; // 2 for Top/Bottom + 2 for NowPlaying wrapper (TitledPanel)
+        int hNowPlaying = 3; 
+        int hControls = 1;   
+        int staticOverhead = 2 + 2; // Banner/Bottom + NowPlaying wrapper
         
         int hChannels = 0;
         int hPlaylist = 0;
         boolean isHorizontal = false;
 
         // Target Two-Column requires:
-        // Struct(4) + NowPlayingMin(3) + Center(18: 16+TitledOverhead2) + Controls(1) = 26
-        if (termHeight >= 26) {
+        // Struct(4) + NowPlayingMin(3) + Center(18) + Controls(1) = 26
+        if (safeHeight >= 26) {
             isHorizontal = false;
             hChannels = 18;
             hPlaylist = 18;
             
-            int surplus = termHeight - 26;
+            int surplus = safeHeight - 26;
             
-            // 1. Give NowPlaying up to 6 lines (+3)
-            int addNow = Math.min(surplus, 3);
+            // 1. Give NowPlaying up to 10 lines (+7) to show extra metadata
+            int addNow = Math.min(surplus, 7);
             hNowPlaying += addNow;
             surplus -= addNow;
             
@@ -54,7 +58,7 @@ public class DashboardLayoutManager
             isHorizontal = true; // Stacked Mode
             // Calculate available lines for center blocks
             // Center = termHeight - 4 (struct) - hNowPlaying(3) - hControls(1) = termHeight - 8
-            int centerSpace = termHeight - 8;
+            int centerSpace = safeHeight - 8;
             
             if (centerSpace >= 6) { // Enough for Channels block (Header+4+Bottom=6)
                 hChannels = 6;
