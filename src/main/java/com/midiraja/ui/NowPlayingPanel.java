@@ -96,47 +96,46 @@ public class NowPlayingPanel implements Panel {
         // Consistent Alignment Prefix
         String p1 = "    ";
         
-        // Field Data
-        String fTitle = String.format("%-10s %s", "Title:", truncate(displayTitle, constraints.width() - 15));
-        String fTime  = String.format("%-10s %s%s / %s  %s  %3d%%", "Time:", pauseIndicator, curStr, totStr, bar, percent);
-        String fVol   = String.format("Volume: %d%%", (int)(volumeScale * 100));
-        String fPort  = String.format("Port: %s", portInfo);
-        String fTempo = String.format("Tempo: %3.0f BPM (%.1fx)", bpm, speed);
-        String fTrans = String.format("Transpose: %+d", transpose);
+        // Consistent Alignment Formats (10 chars padding for label)
+        String fmtTitle = "    %-10s %s\n";
+        String fmtTime  = "    %-10s %s%s / %s  %s  %3d%%\n";
+        String fmtVol   = "    %-10s %d%%\n";
+        String fmtPort  = "    %-10s %s\n";
+        String fmtTempo = "    %-10s %3.0f BPM (%.1fx)\n";
+        String fmtTrans = "    %-10s %+d\n";
         
         if (h <= 3) {
-            sb.append(p1).append(fTitle).append("\n");
-            sb.append(truncate(p1 + fTime, constraints.width() + (isPaused ? 11 : 0))).append("\n");
+            sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0))).append("\n");
             
-            // Pack all remaining into 1 line
-            String packed = String.format("%s | %s | %s | %s", fVol.replace("Volume: ", "Vol: "), fPort.replace("Port: ", ""), fTempo.replace("Tempo: ", "Spd:").replace(" BPM (", "("), fTrans.replace("Transpose: ", "Tr: "));
-            sb.append(truncate(p1 + packed, constraints.width())).append("\n");
+            // Pack all into 1 line
+            String packed = String.format("    Vol: %d%% | Port: %s | Spd: %.1fx | Tr: %+d", 
+                (int)(volumeScale * 100), portInfo, speed, transpose);
+            sb.append(truncate(packed, constraints.width())).append("\n");
         } 
         else if (h == 4) {
-            sb.append(p1).append(fTitle).append("\n");
-            sb.append(truncate(p1 + fTime, constraints.width() + (isPaused ? 11 : 0))).append("\n");
+            sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0))).append("\n");
             
-            // Pack into 2 lines
-            sb.append(truncate(p1 + String.format("%-15s | %s", fVol.replace("Volume: ", "Vol: "), fPort), constraints.width())).append("\n");
-            sb.append(truncate(p1 + String.format("%-15s | %s", fTempo.replace("Tempo: ", "BPM: "), fTrans), constraints.width())).append("\n");
+            // Pack Volume/Port and Tempo/Trans
+            sb.append(truncate(String.format("    %-10s %d%% | Port: %s", "Volume:", (int)(volumeScale * 100), portInfo), constraints.width())).append("\n");
+            sb.append(truncate(String.format("    %-10s %3.0f BPM (%.1fx) | Trans: %+d", "Tempo:", bpm, speed, transpose), constraints.width())).append("\n");
         }
         else if (h == 5) {
-            sb.append(p1).append(fTitle).append("\n");
-            sb.append(truncate(p1 + fTime, constraints.width() + (isPaused ? 11 : 0))).append("\n");
-            sb.append(truncate(p1 + fVol, constraints.width())).append("\n");
-            sb.append(truncate(p1 + fPort, constraints.width())).append("\n");
-            
-            // Pack Tempo and Transpose into 1 line
-            sb.append(truncate(p1 + String.format("%-25s | %s", fTempo, fTrans), constraints.width())).append("\n");
+            sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0))).append("\n");
+            sb.append(String.format(fmtVol, "Volume:", (int)(volumeScale * 100)));
+            sb.append(String.format(fmtPort, "Port:", truncate(portInfo, constraints.width() - 15)));
+            sb.append(truncate(String.format("    %-10s %3.0f BPM (%.1fx) | Trans: %+d", "Tempo:", bpm, speed, transpose), constraints.width())).append("\n");
         }
         else {
             // h >= 6 (Fully Unpacked)
-            sb.append(p1).append(fTitle).append("\n");
-            sb.append(truncate(p1 + fTime, constraints.width() + (isPaused ? 11 : 0))).append("\n");
-            sb.append(truncate(p1 + String.format("%-10s %d%%", "Volume:", (int)(volumeScale * 100)), constraints.width())).append("\n");
-            sb.append(truncate(p1 + String.format("%-10s %s", "Port:", portInfo), constraints.width())).append("\n");
-            sb.append(truncate(p1 + String.format("%-10s %3.0f BPM (%.1fx)", "Tempo:", bpm, speed), constraints.width())).append("\n");
-            sb.append(truncate(p1 + String.format("%-10s %+d", "Transpose:", transpose), constraints.width())).append("\n");
+            sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0))).append("\n");
+            sb.append(String.format(fmtVol, "Volume:", (int)(volumeScale * 100)));
+            sb.append(String.format(fmtPort, "Port:", truncate(portInfo, constraints.width() - 15)));
+            sb.append(String.format(fmtTempo, "Tempo:", bpm, speed));
+            sb.append(String.format(fmtTrans, "Transpose:", transpose));
             
             // Fill remaining with extra metadata
             int linesUsed = 6;

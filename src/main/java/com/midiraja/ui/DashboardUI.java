@@ -129,9 +129,9 @@ public class DashboardUI implements PlaybackUI
                     }
                 }
 
-                // Separator above controls (simple dashes, not a titled header)
-                sb.append("-".repeat(termWidth)).append("\n");
+                // Controls Panel (The bottom border of Channels/Playlist acts as the separator above)
                 controlsPanel.render(sb);
+                // No trailing newline on the bottom border to prevent scrolling
                 sb.append("=".repeat(termWidth));
 
                 String finalStr = sb.toString().replace("\n", "\033[K\n");
