@@ -55,7 +55,7 @@ public class TitledPanel implements Panel {
             content.render(innerSb);
             
             // split with -1 ensures trailing empty lines are preserved
-            String[] lines = innerSb.toString().split("\\n", -1);
+            String[] lines = innerSb.toString().split("\n", -1);
             int innerHeight = Math.max(0, constraints.height() - (noBottomBorder ? 1 : 2));
             int innerWidth = Math.max(0, constraints.width() - 2);
             
