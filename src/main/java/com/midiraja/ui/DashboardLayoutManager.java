@@ -25,79 +25,84 @@ public class DashboardLayoutManager
         int hPlaylist = 0;
         boolean isHorizontal = false;
 
-        // Minimum Heights:
-        // NowPlaying: Header(1) + MinContent(2) + Bottom(1) = 4
-        // Controls: 1
-        // Channels Stacked: Header(1) + Content(4) + Bottom(1) = 6
-        // Playlist Stacked: Header(1) + MinContent(Math.min(3, listSize)) + Bottom(1) = 2 + MinItems
+        // Absolute Minimum Constraints Requested by User:
+        // 1. NowPlaying: Header(1) + MinContent(2) + Bottom(1) = 4
+        int hNowPlayingMin = 4;
         
+        // 2. Channels: Header(1) + MinContent(4) + Bottom(1) = 6 (NEVER disappear)
+        int hChannelsMin = 6;
+        
+        // 3. Playlist: Header(1) + MinItems(Math.min(3, listSize)) + Bottom(1)
         int playListContentMin = Math.min(3, listSize);
         int hPlaylistMin = showPlaylist ? (2 + playListContentMin) : 0;
         
-        int minStackedHeight = 1 + 4 + 6 + hPlaylistMin + 1 + 1; // Banner + NowPlaying + Chan + Play + Ctrl + Bottom = 13 + hPlaylistMin
+        // 4. Controls: 1
+        int hControlsMin = 1;
         
-        // Two-Column mode threshold:
-        // Banner(1) + NowPlaying(4) + TwoCol(Header+16+Bot=18) + Ctrl(1) + Bot(1) = 25
-        if (safeHeight >= 25) {
-            isHorizontal = false;
-            hNowPlaying = 4; // 2 lines of content
-            hChannels = 18;
-            hPlaylist = showPlaylist ? 18 : 0;
-            hControls = 1;
-            
-            int surplus = safeHeight - 25;
-            
-            // 1. Give NowPlaying up to 6 lines of content (hNowPlaying = 8)
-            int addNow = Math.min(surplus, 4);
-            hNowPlaying += addNow;
-            surplus -= addNow;
-            
-            // 2. Give Controls up to 3 lines (hControls = 3)
-            int addCtrl = Math.min(surplus, 2);
-            hControls += addCtrl;
-            surplus -= addCtrl;
-            
-            // 3. Give remaining to extra metadata in NowPlaying (up to 12 lines)
-            int addMeta = Math.min(surplus, 4);
-            hNowPlaying += addMeta;
-            surplus -= addMeta;
-            
-            // 4. Any remaining infinite space goes to Channels and Playlist
-            hChannels += surplus;
-            if (showPlaylist) hPlaylist += surplus;
-            
+        // 5. Static: TopBanner(1) + BottomBorder(1) = 2
+        
+        // Base starting point is Stacked Mode at Absolute Minimums
+        isHorizontal = true;
+        hNowPlaying = hNowPlayingMin;
+        hChannels = hChannelsMin;
+        hPlaylist = hPlaylistMin;
+        hControls = hControlsMin;
+        
+        // Calculate the physical height required just to draw the minimums
+        int absoluteMinRequiredHeight = 2 + hNowPlayingMin + hChannelsMin + hPlaylistMin + hControlsMin;
+
+        if (safeHeight < absoluteMinRequiredHeight) {
+            // EXTREME SQUEEZE: The terminal is too small.
+            // Do NOT hide any panels or shrink them below their minimums!
+            // Let the UI render at the absolute minimums and overflow the terminal bounds at the bottom.
+            // (The terminal will naturally scroll or clip, which is expected behavior).
+            // No height calculation changes needed, just use the minimums initialized above.
         } else {
-            isHorizontal = true; // Stacked Mode
-            
-            hNowPlaying = 4; // 2 lines of content
-            hControls = 1;
-            
-            // Distribute remaining space carefully
-            int centerSpace = safeHeight - 1 - hNowPlaying - hControls - 1; // Subtract static lines
-            
-            if (centerSpace >= 6 + hPlaylistMin) {
-                hChannels = 6;
-                hPlaylist = showPlaylist ? (centerSpace - 6) : 0;
+            // We have enough space. Let's see if we can trigger Two-Column mode.
+            // Target Two-Column:
+            // Static(2) + NowPlaying(4) + Center(18: Header+16+Bottom) + Controls(1) = 25
+            if (safeHeight >= 25) {
+                isHorizontal = false;
+                hNowPlaying = 4; // 2 content lines
+                hChannels = 18;  // 16 content lines
+                hPlaylist = showPlaylist ? 18 : 0;
+                hControls = 1;
                 
-                // If playlist is huge, maybe steal for NowPlaying?
-                if (hPlaylist > hPlaylistMin + 2) {
-                    int steal = Math.min(2, hPlaylist - (hPlaylistMin + 2));
-                    hPlaylist -= steal;
-                    hNowPlaying += steal;
-                }
-            } else if (centerSpace >= hPlaylistMin) {
-                // Not enough for both. Drop channels to guarantee playlist visibility!
-                hChannels = 0;
-                hPlaylist = showPlaylist ? centerSpace : 0;
+                int surplus = safeHeight - 25;
+                
+                // Distribute surplus logically
+                int addNow = Math.min(surplus, 4); // Up to 6 content lines
+                hNowPlaying += addNow;
+                surplus -= addNow;
+                
+                int addCtrl = Math.min(surplus, 2); // Up to 3 lines for controls
+                hControls += addCtrl;
+                surplus -= addCtrl;
+                
+                int addMeta = Math.min(surplus, 4); // Extra metadata lines
+                hNowPlaying += addMeta;
+                surplus -= addMeta;
+                
+                // Infinite remaining to Center
+                hChannels += surplus;
+                if (showPlaylist) hPlaylist += surplus;
             } else {
-                // Extreme squeeze. Drop playlist too? No, just give it whatever is left.
-                hChannels = 0;
-                hPlaylist = showPlaylist ? centerSpace : 0;
+                // Comfortable Stacked Mode
+                isHorizontal = true;
                 
-                // If still negative, we must squeeze NowPlaying
-                if (hPlaylist <= 2 && showPlaylist) {
-                    hNowPlaying = Math.max(3, hNowPlaying - 1); // Compress to 1 line of content
-                    hPlaylist = safeHeight - 1 - hNowPlaying - hControls - 1;
+                // We start from minimums. How much surplus do we have to distribute?
+                int surplus = safeHeight - absoluteMinRequiredHeight;
+                
+                // 1. Give NowPlaying up to 2 more lines (Content 4 max in stacked)
+                int addNow = Math.min(surplus, 2);
+                hNowPlaying += addNow;
+                surplus -= addNow;
+                
+                // 2. Give Playlist the rest! It's better to show more songs.
+                if (showPlaylist) {
+                    hPlaylist += surplus;
+                } else {
+                    hChannels += surplus;
                 }
             }
         }
