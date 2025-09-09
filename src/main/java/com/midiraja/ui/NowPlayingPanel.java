@@ -61,8 +61,8 @@ public class NowPlayingPanel implements Panel {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    private String buildProgressBar(int percent, int termWidth) {
-        int barWidth = Math.max(10, termWidth - 40);
+    private String buildProgressBar(int percent, int barWidth) {
+        // barWidth passed from caller
         int filled = (int) ((percent / 100.0) * barWidth);
         StringBuilder bar = new StringBuilder("[");
         for (int i = 0; i < barWidth; i++) {
@@ -87,8 +87,18 @@ public class NowPlayingPanel implements Panel {
         String curStr = formatTime(currentMicros, incHrs);
         int percent = (int) (totalMicros > 0 ? (currentMicros * 100 / totalMicros) : 0);
         percent = Math.min(100, Math.max(0, percent));
-        String bar = buildProgressBar(percent, constraints.width());
+        
         String pauseIndicator = isPaused ? "\033[1;33m[PAUSED]\033[0m " : "";
+        int visiblePauseLen = isPaused ? 9 : 0;
+        
+        String timeStr = curStr + " / " + totStr;
+        int timeLen = timeStr.length();
+        
+        // "    " (4) + "Time:     " (10) + "[PAUSED] " (visiblePauseLen) + timeStr + "  " (2) + "  " (2) + "100%" (4)
+        // Total fixed visible = 22 + visiblePauseLen + timeLen
+        // But wait, what if constraints.width() is small? We enforce a minimum of 10.
+        int barWidth = Math.max(10, constraints.width() - 24 - visiblePauseLen - timeLen);
+        String bar = buildProgressBar(percent, barWidth);
         String portInfo = String.format("[%d] %s", context.targetPort().index(), context.targetPort().name());
         
         int h = constraints.height();
@@ -107,11 +117,11 @@ public class NowPlayingPanel implements Panel {
         if (h <= 2) {
             // Extreme minimum: Just Title and Time
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0))).append("\n");
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width())).append("\n");
         }
         else if (h == 3) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width()));
             
             // Pack all into 1 line
             String packed = String.format("    Vol: %d%% | Port: %s | Spd: %.1fx | Tr: %+d", 
@@ -120,7 +130,7 @@ public class NowPlayingPanel implements Panel {
         } 
         else if (h == 4) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width()));
             
             // Pack Volume/Port and Tempo/Trans
             sb.append(truncate(String.format("    %-10s %d%% | Port: %s", "Volume:", (int)(volumeScale * 100), portInfo), constraints.width())).append("\n");
@@ -128,7 +138,7 @@ public class NowPlayingPanel implements Panel {
         }
         else if (h == 5) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width()));
             sb.append(String.format(fmtVol, "Volume:", (int)(volumeScale * 100)));
             sb.append(String.format(fmtPort, "Port:", truncate(portInfo, constraints.width() - 15)));
             sb.append(truncate(String.format("    %-10s %3.0f BPM (%.1fx) | Trans: %+d", "Tempo:", bpm, speed, transpose), constraints.width())).append("\n");
@@ -136,23 +146,15 @@ public class NowPlayingPanel implements Panel {
         else {
             // h >= 6 (Fully Unpacked)
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width()));
             sb.append(String.format(fmtVol, "Volume:", (int)(volumeScale * 100)));
             sb.append(String.format(fmtPort, "Port:", truncate(portInfo, constraints.width() - 15)));
             sb.append(String.format(fmtTempo, "Tempo:", bpm, speed));
             sb.append(String.format(fmtTrans, "Transpose:", transpose));
             
-            // Fill remaining with extra metadata
-            int linesUsed = 6;
-            for (int i = 0; i < extraMetadata.size() && linesUsed < h; i++) {
-                sb.append(String.format("      %s\n", truncate(extraMetadata.get(i), constraints.width() - 6)));
-                linesUsed++;
-            }
-            
             // Fill any remaining space with blank lines
-            while (linesUsed < h) {
+            for (int i = 6; i < h; i++) {
                 sb.append("\n");
-                linesUsed++;
             }
         }
     }
