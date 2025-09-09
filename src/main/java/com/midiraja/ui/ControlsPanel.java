@@ -48,7 +48,7 @@ public class ControlsPanel implements Panel
         }
         else
         {
-            sb.append(truncate(minLine, constraints.width())).append("\n");
+            sb.append("  ").append(truncate(minLine.trim(), constraints.width() - 2)).append("\n");
         }
     }
 }

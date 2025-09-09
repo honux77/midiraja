@@ -104,7 +104,12 @@ public class NowPlayingPanel implements Panel {
         String fmtTempo = "    %-10s %3.0f BPM (%.1fx)\n";
         String fmtTrans = "    %-10s %+d\n";
         
-        if (h <= 3) {
+        if (h <= 2) {
+            // Extreme minimum: Just Title and Time
+            sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
+            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0))).append("\n");
+        }
+        else if (h == 3) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15)));
             sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width() + (isPaused ? 11 : 0)));
             

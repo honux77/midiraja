@@ -54,7 +54,8 @@ public class TitledPanel implements Panel {
             StringBuilder innerSb = new StringBuilder();
             content.render(innerSb);
             
-            String[] lines = innerSb.toString().split("\n");
+            // split with -1 ensures trailing empty lines are preserved
+            String[] lines = innerSb.toString().split("\\n", -1);
             int innerHeight = Math.max(0, constraints.height() - (noBottomBorder ? 1 : 2));
             int innerWidth = Math.max(0, constraints.width() - 2);
             
@@ -62,15 +63,23 @@ public class TitledPanel implements Panel {
             for (int i = 0; i < innerHeight; i++) {
                 String line = (i < lines.length) ? lines[i] : "";
                 
+                // Calculate visible length ignoring ANSI codes for proper padding
+                int visibleLength = line.replaceAll("\\033\\[[;\\d]*m", "").length();
+                
                 // Truncate or pad inner line to exact innerWidth
-                if (line.length() > innerWidth) {
-                    line = line.substring(0, innerWidth);
-                } else if (line.length() < innerWidth) {
-                    line = line + " ".repeat(innerWidth - line.length());
+                if (visibleLength > innerWidth) {
+                    // Truncating ANSI strings is hard, we just take the substring and hope no ANSI is cut.
+                    // For safety, we just allow overflow if it has ANSI, or we assume it fits.
+                    // In our app, mostly plain text is padded.
+                    if (visibleLength == line.length()) {
+                        line = line.substring(0, innerWidth);
+                    }
+                } else if (visibleLength < innerWidth) {
+                    line = line + " ".repeat(innerWidth - visibleLength);
                 }
                 
                 // Apply left and right padding!
-                sb.append(" ").append(line).append(" \n");
+                sb.append(" ").append(line).append(" \\n");
             }
         }
 

@@ -111,19 +111,16 @@ public class DashboardUI implements PlaybackUI
                 } else {
                     StringBuilder chanSb = new StringBuilder();
                     channelPanel.render(chanSb);
-                    String[] chanLines = chanSb.toString().split("\n");
+                    String[] chanLines = chanSb.toString().split("\n", -1);
 
                     StringBuilder playSb = new StringBuilder();
                     if (engine.getContext().files().size() > 1) {
                         titledPlaylistPanel.render(playSb);
                     }
-                    String[] playLines = playSb.toString().split("\n");
+                    String[] playLines = playSb.toString().split("\n", -1);
 
                     for (int i = 0; i < chanC.height(); i++) {
                         String left = i < chanLines.length ? chanLines[i] : "";
-                        if (left.length() > chanC.width()) left = left.substring(0, chanC.width());
-                        else left = left + " ".repeat(chanC.width() - left.length());
-                        
                         String right = i < playLines.length ? playLines[i] : "";
                         sb.append(left).append(right).append("\n");
                     }
