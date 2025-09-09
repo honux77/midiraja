@@ -79,7 +79,7 @@ public class TitledPanel implements Panel {
                 }
                 
                 // Apply left and right padding!
-                sb.append(" ").append(line).append(" \\n");
+                sb.append(" ").append(line).append(" \n");
             }
         }
 
