@@ -66,7 +66,7 @@ public class DashboardLayoutManager
                 int surplus = safeHeight - 25;
                 
                 // Distribute surplus logically
-                int addNow = Math.min(surplus, 2); // Up to 6 content lines
+                int addNow = Math.min(surplus, 4); // 4 + 4 = 8 total lines (6 content lines)
                 hNowPlaying += addNow;
                 surplus -= addNow;
                 
