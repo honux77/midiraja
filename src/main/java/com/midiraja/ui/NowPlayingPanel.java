@@ -124,11 +124,13 @@ public class NowPlayingPanel implements Panel {
         if (h <= 2) {
             // Extreme minimum: Just Title and Time
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15))).append("\n");
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width())).append("\n");
+            // Trust the bar width math, do not truncate. Truncate might be mistakenly counting ANSI or something weird.
+            sb.append(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent)).append("\n");
         }
         else if (h == 3) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15))).append("\n");
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width())).append("\n");
+            // Trust the bar width math, do not truncate. Truncate might be mistakenly counting ANSI or something weird.
+            sb.append(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent)).append("\n");
             
             // Pack all into 1 line
             String packed = String.format("    Vol: %d%% | Port: %s | Spd: %.1fx | Tr: %+d", 
@@ -137,7 +139,8 @@ public class NowPlayingPanel implements Panel {
         } 
         else if (h == 4) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15))).append("\n");
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width())).append("\n");
+            // Trust the bar width math, do not truncate. Truncate might be mistakenly counting ANSI or something weird.
+            sb.append(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent)).append("\n");
             
             // Pack Volume/Port and Tempo/Trans
             sb.append(truncate(String.format("    %-10s %d%% | Port: %s", "Volume:", (int)(volumeScale * 100), portInfo), constraints.width())).append("\n");
@@ -145,7 +148,8 @@ public class NowPlayingPanel implements Panel {
         }
         else if (h == 5) {
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15))).append("\n");
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width())).append("\n");
+            // Trust the bar width math, do not truncate. Truncate might be mistakenly counting ANSI or something weird.
+            sb.append(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent)).append("\n");
             sb.append(String.format(fmtVol, "Volume:", (int)(volumeScale * 100))).append("\n");
             sb.append(String.format(fmtPort, "Port:", truncate(portInfo, constraints.width() - 15))).append("\n");
             sb.append(truncate(String.format("    %-10s %3.0f BPM (%.1fx) | Trans: %+d", "Tempo:", bpm, speed, transpose), constraints.width())).append("\n");
@@ -153,7 +157,8 @@ public class NowPlayingPanel implements Panel {
         else {
             // h >= 6 (Fully Unpacked)
             sb.append(String.format(fmtTitle, "Title:", truncate(displayTitle, constraints.width() - 15))).append("\n");
-            sb.append(truncate(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent), constraints.width())).append("\n");
+            // Trust the bar width math, do not truncate. Truncate might be mistakenly counting ANSI or something weird.
+            sb.append(String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent)).append("\n");
             sb.append(String.format(fmtVol, "Volume:", (int)(volumeScale * 100))).append("\n");
             sb.append(String.format(fmtPort, "Port:", truncate(portInfo, constraints.width() - 15))).append("\n");
             sb.append(String.format(fmtTempo, "Tempo:", bpm, speed)).append("\n");
