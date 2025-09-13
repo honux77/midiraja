@@ -7,6 +7,22 @@ public class DashboardLayoutManager
 {
     public enum PanelId { METADATA, CHANNELS, PLAYLIST, CONTROLS }
 
+    // --- Layout Constants ---
+    private static final int TITLED_PANEL_OVERHEAD = 2; // Header (1) + Bottom Border (1)
+    private static final int APP_STATIC_OVERHEAD = 2;   // Top Banner (1) + Bottom Margin (1)
+    
+    private static final int NOW_PLAYING_MIN_CONTENT = 2; // Title, Time
+    private static final int NOW_PLAYING_MAX_CONTENT = 6; // Title, Time, Vol, Port, Tempo, Trans
+    
+    private static final int CHANNELS_MIN_CONTENT = 4;    // 4 rows of 4 channels
+    private static final int CHANNELS_MAX_CONTENT = 16;   // 16 rows of 1 channel
+    
+    private static final int PLAYLIST_MIN_CONTENT = 3;    // Minimum items to show if active
+    
+    private static final int CONTROLS_MIN_CONTENT = 1;    // 1 line condensed
+    private static final int CONTROLS_MAX_CONTENT = 3;    // 3 lines full
+    // ------------------------
+
     public Map<PanelId, LayoutConstraints> calculateLayout(int termWidth, int termHeight, int listSize)
     {
         Map<PanelId, LayoutConstraints> layout = new HashMap<>();
