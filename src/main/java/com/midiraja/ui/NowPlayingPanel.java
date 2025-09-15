@@ -62,13 +62,11 @@ public class NowPlayingPanel implements Panel {
     }
 
     private String buildProgressBar(int percent, int barWidth) {
-        // barWidth passed from caller
         int filled = (int) ((percent / 100.0) * barWidth);
         StringBuilder bar = new StringBuilder("[");
         for (int i = 0; i < barWidth; i++) {
-            if (i < filled - 1) bar.append("=");
-            else if (i == filled - 1) bar.append(">");
-            else bar.append("-");
+            if (i < filled) bar.append("█");
+            else bar.append("░");
         }
         bar.append("]");
         return bar.toString();
