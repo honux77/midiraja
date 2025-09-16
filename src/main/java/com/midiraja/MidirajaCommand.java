@@ -170,7 +170,12 @@ public class MidirajaCommand implements Callable<Integer>
         }
         else if (!isTestMode)
         {
-            portIndex = interactivePortSelection(ports);
+            if (uiOptions.classicMode) {
+                // In classic/batch mode, skip the fancy TUI menu and just use standard text prompt
+                portIndex = fallbackPortSelection(ports);
+            } else {
+                portIndex = interactivePortSelection(ports);
+            }
             if (portIndex == -1) return 0; // User quit
         }
         else
