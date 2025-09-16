@@ -46,7 +46,7 @@ public class LineUI implements PlaybackUI
         int idx = context.currentIndex();
         String indexStr = listSize > 1 ? String.format(" [%d/%d]", idx + 1, listSize) : "";
         
-        term.println("\033[1;36mPlaying" + indexStr + ":\033[0m " + fileName + "  [Port: " + context.targetPort().name() + "]");
+        term.println("\033[38;5;215mPlaying" + indexStr + ":\033[0m " + fileName + "  [Port: " + context.targetPort().name() + "]");
         staticLinesPrinted++;
         
         if (!title.isEmpty()) {
@@ -68,14 +68,14 @@ public class LineUI implements PlaybackUI
                 double[] levels = engine.getChannelLevels();
 
                 StringBuilder sb = new StringBuilder();
-                sb.append("\r\033[1;36mVol:[\033[0m");
+                sb.append("\r\033[38;5;215mVol:[\033[0m");
                 for (int i = 0; i < 16; i++) {
                     int levelIndex = (int) Math.round(levels[i] * 8);
                     levelIndex = Math.max(0, Math.min(8, levelIndex));
                     // Solid Cyan bars
                     sb.append("\033[36m").append(blocks[levelIndex]).append("\033[0m");
                 }
-                sb.append("\033[1;36m]\033[0m ");
+                sb.append("\033[38;5;215m]\033[0m ");
                 
                 long totalMicros = engine.getTotalMicroseconds();
                 long currentMicros = engine.getCurrentMicroseconds();
