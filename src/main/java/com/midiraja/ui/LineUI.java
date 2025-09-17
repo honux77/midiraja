@@ -81,13 +81,13 @@ public class LineUI implements PlaybackUI
                 long currentMicros = engine.getCurrentMicroseconds();
                 boolean incHrs = (totalMicros / 1000000) >= 3600;
                 
-                String timeStr = formatTime(currentMicros, incHrs) + " / " + formatTime(totalMicros, incHrs);
+                String timeStr = formatTime(currentMicros, incHrs) + "/" + formatTime(totalMicros, incHrs);
                 if (engine.isPaused()) {
                     timeStr = "\033[1;33m[PAUSED]\033[0m " + timeStr;
                 }
                 
                 double effectiveBpm = engine.getCurrentBpm() * engine.getCurrentSpeed();
-                buffer.append(String.format(" %s (Spd: %.1fx, BPM: %5.1f, Tr: %+d, Vol: %3d%%) ", 
+                buffer.append(String.format(" %s | Spd: %.1fx(BPM: %5.1f) | Tr: %+d | Vol: %3d%% ", 
                     timeStr, engine.getCurrentSpeed(), effectiveBpm, engine.getCurrentTranspose(), (int)(engine.getVolumeScale() * 100)));
                 
                 // Clear to end of line to prevent ghosting
