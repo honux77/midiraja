@@ -71,7 +71,7 @@ public class StatusPanel implements Panel
     }
 
     @Override
-    public void render(StringBuilder sb)
+    public void render(ScreenBuffer buffer)
     {
         if (constraints.height() <= 0) return;
         boolean incHrs = (totalMicros / 1000000) >= 3600;
@@ -94,24 +94,24 @@ public class StatusPanel implements Panel
         String pauseIndicator = isPaused ? "\033[1;33m[PAUSED]\033[0m " : "";
         if (constraints.height() == 1) {
             String s = String.format("    %s%s / %s %s %3d%%  Vol:%d%% Spd:%.1fx Tr:%+d", pauseIndicator, curStr, totStr, bar, percent, (int) (volumeScale * 100), speed, transpose);
-            sb.append(truncate(s, constraints.width())).append("\n");
+            buffer.append(truncate(s, constraints.width())).append("\n");
         } else if (constraints.height() >= 2 && constraints.height() <= 4) {
             String line1 = String.format("    Time: %s%s / %s  %s  %3d%%", pauseIndicator, curStr, totStr, bar, percent);
             String line2 = String.format("    Tempo: %3.0f BPM (%.1fx) | Vol: %d%% | Trans: %+d", bpm, speed, (int) (volumeScale * 100), transpose);
-            sb.append(truncate(line1, constraints.width() + (isPaused ? 11 : 0))).append("\n"); // +11 for ANSI escape code length
-            sb.append(truncate(line2, constraints.width())).append("\n");
-            for (int i = 2; i < constraints.height(); i++) sb.append("\n");
+            buffer.append(truncate(line1, constraints.width() + (isPaused ? 11 : 0))).append("\n"); // +11 for ANSI escape code length
+            buffer.append(truncate(line2, constraints.width())).append("\n");
+            for (int i = 2; i < constraints.height(); i++) buffer.append("\n");
         } else {
-            sb.append(String.format("    Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", bpm, speed));
-            sb.append(String.format("    Time:      %s%s / %s  %s  %3d%%\n", pauseIndicator, curStr, totStr, bar, percent));
-            sb.append(String.format("    Transpose: %+d\n", transpose));
-            sb.append(String.format("    Volume:    %d%%\n", (int) (volumeScale * 100)));
+            buffer.append(String.format("    Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", bpm, speed));
+            buffer.append(String.format("    Time:      %s%s / %s  %s  %3d%%\n", pauseIndicator, curStr, totStr, bar, percent));
+            buffer.append(String.format("    Transpose: %+d\n", transpose));
+            buffer.append(String.format("    Volume:    %d%%\n", (int) (volumeScale * 100)));
             String portInfo = context != null ? String.format("[%d] %s", context.targetPort().index(), context.targetPort().name()) : "Unknown";
-            sb.append(String.format("    Port:      %s\n", portInfo));
+            buffer.append(String.format("    Port:      %s\n", portInfo));
             
             // Fill any remaining height
             for (int i = 5; i < constraints.height(); i++) {
-                sb.append("\n");
+                buffer.append("\n");
             }
         }
     }

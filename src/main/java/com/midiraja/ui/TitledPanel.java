@@ -41,17 +41,17 @@ public class TitledPanel implements Panel {
     @Override public void onChannelActivity(int channel, int velocity) { content.onChannelActivity(channel, velocity); }
 
     @Override
-    public void render(StringBuilder sb) {
+    public void render(ScreenBuffer buffer) {
         if (constraints.height() <= 0) return;
         
         // Draw Header
         String header = " ≡≡[ " + title + " ]";
         int padding = Math.max(0, constraints.width() - header.length() - 1);
-        sb.append(header).append("≡".repeat(padding)).append(" \n");
+        buffer.append(header).append("≡".repeat(padding)).append(" \n");
 
         // Draw Content
         if (constraints.height() > 1) {
-            StringBuilder innerSb = new StringBuilder();
+            ScreenBuffer innerSb = new ScreenBuffer();
             content.render(innerSb);
             
             // split with -1 ensures trailing empty lines are preserved
@@ -79,13 +79,13 @@ public class TitledPanel implements Panel {
                 }
                 
                 // Apply left and right padding!
-                sb.append(" ").append(line).append(" \n");
+                buffer.append(" ").append(line).append(" \n");
             }
         }
 
         // Draw Bottom Border
         if (!noBottomBorder && constraints.height() > 1) {
-            sb.append("-".repeat(constraints.width())).append("\n");
+            buffer.append("-".repeat(constraints.width())).append("\n");
         }
     }
 }

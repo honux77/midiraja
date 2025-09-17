@@ -58,7 +58,7 @@ public class ChannelActivityPanel implements Panel
     }
 
     @Override
-    public void render(StringBuilder sb)
+    public void render(ScreenBuffer buffer)
     {
         if (constraints.height() <= 0) return;
 
@@ -75,7 +75,7 @@ public class ChannelActivityPanel implements Panel
                 int meterLength = (int) (channelLevels[i] * maxMeterLength);
                 String meter = "\033[38;5;215m" + "█".repeat(meterLength) + "\033[0m" + " ".repeat(maxMeterLength - meterLength);
                 String line = String.format("CH %02d %-11s : %s", i + 1, "(" + getChannelName(i) + ")", meter);
-                sb.append(truncate(line, constraints.width())).append("\n");
+                buffer.append(truncate(line, constraints.width())).append("\n");
             }
         }
         else if (constraints.height() >= 4)
@@ -95,7 +95,7 @@ public class ChannelActivityPanel implements Panel
                     else cell += " ".repeat(colWidth - cell.length());
                     rowSb.append(cell);
                 }
-                sb.append(truncate(rowSb.toString(), constraints.width())).append("\n");
+                buffer.append(truncate(rowSb.toString(), constraints.width())).append("\n");
             }
         }
     }

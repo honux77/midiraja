@@ -75,7 +75,7 @@ public class PlaylistPanel implements Panel {
     @Override public void onChannelActivity(int channel, int velocity) {}
 
     @Override
-    public void render(StringBuilder sb) {
+    public void render(ScreenBuffer buffer) {
         if (constraints.height() <= 0 || context == null) return;
         
         int listSize = context.files().size();
@@ -132,12 +132,12 @@ public class PlaylistPanel implements Panel {
                 }
             }
             
-            sb.append(String.format("%s%s %s%s\n", numStr, dotStr, displayName, status));
+            buffer.append(String.format("%s%s %s%s\n", numStr, dotStr, displayName, status));
         }
         
         int printed = (endIdx - startIdx + 1);
         for (int i = printed; i < constraints.height(); i++) {
-            sb.append("\n");
+            buffer.append("\n");
         }
     }
 }

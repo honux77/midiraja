@@ -17,9 +17,9 @@ public interface Panel extends LayoutListener, PlaybackEventListener
      * Renders the panel's content into the provided StringBuilder.
      * The panel should use its cached layout constraints and state.
      *
-     * @param sb The StringBuilder to append the rendered ANSI/text content to.
+     * @param buffer The ScreenBuffer to append the rendered ANSI/text content to.
      */
-    void render(StringBuilder sb);
+    void render(ScreenBuffer buffer);
 
     /**
      * Utility method to truncate long strings to fit the terminal width without wrapping.

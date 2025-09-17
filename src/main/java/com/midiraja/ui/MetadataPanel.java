@@ -43,22 +43,22 @@ public class MetadataPanel implements Panel
     }
 
     @Override
-    public void render(StringBuilder sb)
+    public void render(ScreenBuffer buffer)
     {
         if (constraints.height() <= 0) return;
         String rawTitle = title != null ? title : "Unknown";
 
         if (constraints.height() == 1)
         {
-            sb.append(truncate("  " + rawTitle, constraints.width())).append("\n");
+            buffer.append(truncate("  " + rawTitle, constraints.width())).append("\n");
         }
         else
         {
             // Always show headers if height > 1, no blank line below it.
             String header = " ≡≡≡[ NOW PLAYING ]";
             int padding = Math.max(0, constraints.width() - header.length() - 1);
-            sb.append(header).append("≡".repeat(padding)).append(" \n");
-            sb.append(String.format("    Title:     %s\n", truncate(rawTitle, constraints.width() - 16)));
+            buffer.append(header).append("≡".repeat(padding)).append(" \n");
+            buffer.append(String.format("    Title:     %s\n", truncate(rawTitle, constraints.width() - 16)));
         }
     }
 }

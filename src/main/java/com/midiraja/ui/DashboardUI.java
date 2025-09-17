@@ -89,14 +89,14 @@ public class DashboardUI implements PlaybackUI
                     engine.getCurrentBpm(), engine.getCurrentSpeed(), engine.getVolumeScale(), 
                     engine.getCurrentTranspose(), engine.isPaused(), engine.getContext());
 
-                StringBuilder sb = new StringBuilder();
-                sb.append("\033[H");
+                ScreenBuffer buffer = new ScreenBuffer(4096);
+                buffer.append("\033[H");
 
                 String banner = String.format(" Midiraja v%s - Terminal Lover's MIDI Player", com.midiraja.Version.VERSION);
                 int bannerPadding = Math.max(0, termWidth - banner.length());
-                sb.append("\033[7m").append(banner).append(" ".repeat(bannerPadding)).append("\033[0m\n");
+                buffer.append("\033[7m").append(banner).append(" ".repeat(bannerPadding)).append("\033[0m\n");
 
-                titledNowPlayingPanel.render(sb);
+                titledNowPlayingPanel.render(buffer);
 
                 Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = 
                     layoutManager.calculateLayout(termWidth, termHeight, engine.getContext().files().size());
@@ -105,16 +105,16 @@ public class DashboardUI implements PlaybackUI
                 LayoutConstraints playC = Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
 
                 if (chanC.isHorizontal()) {
-                    channelPanel.render(sb);
+                    channelPanel.render(buffer);
                     if (playC.height() > 0) {
-                        titledPlaylistPanel.render(sb);
+                        titledPlaylistPanel.render(buffer);
                     }
                 } else {
-                    StringBuilder chanSb = new StringBuilder();
+                    ScreenBuffer chanSb = new ScreenBuffer();
                     channelPanel.render(chanSb);
                     String[] chanLines = chanSb.toString().split("\n", -1);
 
-                    StringBuilder playSb = new StringBuilder();
+                    ScreenBuffer playSb = new ScreenBuffer();
                     if (engine.getContext().files().size() > 1) {
                         titledPlaylistPanel.render(playSb);
                     }
@@ -123,16 +123,16 @@ public class DashboardUI implements PlaybackUI
                     for (int i = 0; i < chanC.height(); i++) {
                         String left = i < chanLines.length ? chanLines[i] : "";
                         String right = i < playLines.length ? playLines[i] : "";
-                        sb.append(left).append(right).append("\n");
+                        buffer.append(left).append(right).append("\n");
                     }
                 }
 
                 // Controls Panel (The bottom border of Channels/Playlist acts as the separator above)
-                controlsPanel.render(sb);
+                controlsPanel.render(buffer);
                 // No trailing newline on the bottom border to prevent scrolling
-                sb.append("=".repeat(termWidth));
+                buffer.append("=".repeat(termWidth));
 
-                String finalStr = sb.toString().replace("\n", "\033[K\n");
+                String finalStr = buffer.toString().replace("\n", "\033[K\n");
                 // [J clears from the current cursor position to the end of the screen.
                 // Since we are using termHeight - 1, this will cleanly erase any previous artifacts at the bottom.
                 term.print(finalStr + "\033[J");

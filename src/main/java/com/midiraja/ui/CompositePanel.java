@@ -36,8 +36,8 @@ public class CompositePanel implements Panel {
     @Override public void onChannelActivity(int channel, int velocity) { panels.forEach(p -> p.onChannelActivity(channel, velocity)); }
 
     @Override
-    public void render(StringBuilder sb) {
+    public void render(ScreenBuffer buffer) {
         if (constraints.height() <= 0) return;
-        panels.forEach(p -> p.render(sb));
+        panels.forEach(p -> p.render(buffer));
     }
 }

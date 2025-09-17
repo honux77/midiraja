@@ -33,7 +33,7 @@ public class ControlsPanel implements Panel
     public void onChannelActivity(int channel, int velocity) {}
 
     @Override
-    public void render(StringBuilder sb)
+    public void render(ScreenBuffer buffer)
     {
         if (constraints.height() <= 0) return;
 
@@ -43,13 +43,13 @@ public class ControlsPanel implements Panel
         // As a result, the max needed height is now 2 lines instead of 3.
         if (constraints.height() >= 2)
         {
-            sb.append("[Spc]Pause [n p]Skip [◀ ▶]Seek [+-]Speed [<>]Trans [▲ ▼]Vol [Q]Quit\n");
-            sb.append("[Spc] Pause/Resume  [n p] Skip Track  [◀ ▶] Seek 10s  [Q] Quit\n");
-            sb.append("[▲ ▼] Volume        [+-]  Speed       [< >] Transpose\n");
+            buffer.append("[Spc]Pause [n p]Skip [◀ ▶]Seek [+-]Speed [<>]Trans [▲ ▼]Vol [Q]Quit\n");
+            buffer.append("[Spc] Pause/Resume  [n p] Skip Track  [◀ ▶] Seek 10s  [Q] Quit\n");
+            buffer.append("[▲ ▼] Volume        [+-]  Speed       [< >] Transpose\n");
         }
         else
         {
-            sb.append(truncate(minLine.trim(), constraints.width())).append("\n");
+            buffer.append(truncate(minLine.trim(), constraints.width())).append("\n");
         }
     }
 }

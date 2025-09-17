@@ -67,15 +67,15 @@ public class LineUI implements PlaybackUI
                 engine.decayChannelLevels(0.15);
                 double[] levels = engine.getChannelLevels();
 
-                StringBuilder sb = new StringBuilder();
-                sb.append("\r\033[38;5;215mVol:[\033[0m");
+                ScreenBuffer buffer = new ScreenBuffer();
+                buffer.append("\r\033[38;5;215mVol:[\033[0m");
                 for (int i = 0; i < 16; i++) {
                     int levelIndex = (int) Math.round(levels[i] * 8);
                     levelIndex = Math.max(0, Math.min(8, levelIndex));
                     // Solid Cyan bars
-                    sb.append("\033[36m").append(blocks[levelIndex]).append("\033[0m");
+                    buffer.append("\033[36m").append(blocks[levelIndex]).append("\033[0m");
                 }
-                sb.append("\033[38;5;215m]\033[0m ");
+                buffer.append("\033[38;5;215m]\033[0m ");
                 
                 long totalMicros = engine.getTotalMicroseconds();
                 long currentMicros = engine.getCurrentMicroseconds();
@@ -86,13 +86,13 @@ public class LineUI implements PlaybackUI
                     timeStr = "\033[1;33m[PAUSED]\033[0m " + timeStr;
                 }
                 
-                sb.append(String.format(" %s (BPM: %5.1f, Vol: %3d%%) ", 
+                buffer.append(String.format(" %s (BPM: %5.1f, Vol: %3d%%) ", 
                     timeStr, engine.getCurrentBpm(), (int)(engine.getVolumeScale() * 100)));
                 
                 // Clear to end of line to prevent ghosting
-                sb.append("\033[K");
+                buffer.append("\033[K");
                 
-                term.print(sb.toString());
+                term.print(buffer.toString());
                 Thread.sleep(33); // ~30 FPS as in the original
             }
             
