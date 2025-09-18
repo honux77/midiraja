@@ -10,10 +10,10 @@ public final class Theme {
     public static final String COLOR_RESET = "\033[0m";
     
     // Roland SC-55 Amber aesthetic (256 color code 215)
-    public static final String COLOR_AMBER = "\033[38;5;215m";
+    public static final String COLOR_HIGHLIGHT = "\033[38;5;215m"; // Default: Amber
     
     // Classic Cyan (for highlights, active tracks, etc.)
-    public static final String COLOR_CYAN = "\033[1;36m";
+    // public static final String COLOR_CYAN = "\033[1;36m"; // Replaced by semantic names
     
     // Warning Yellow (for PAUSED state)
     public static final String COLOR_YELLOW = "\033[1;33m";

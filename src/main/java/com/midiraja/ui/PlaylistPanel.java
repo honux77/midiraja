@@ -107,10 +107,10 @@ public class PlaylistPanel implements Panel {
                 numStr = ">".repeat(numLen);
                 dotStr = ">"; // Replace the dot with another >
                 
-                // Color the active track Amber!
-                displayName = Theme.COLOR_AMBER + displayName + Theme.COLOR_RESET;
-                status = Theme.COLOR_AMBER + status + Theme.COLOR_RESET;
-                numStr = Theme.COLOR_AMBER + numStr;
+                // Highlight the active track
+                displayName = Theme.COLOR_HIGHLIGHT + displayName + Theme.COLOR_RESET;
+                status = Theme.COLOR_HIGHLIGHT + status + Theme.COLOR_RESET;
+                numStr = Theme.COLOR_HIGHLIGHT + numStr;
                 dotStr = dotStr + Theme.COLOR_RESET;
             } else {
                 numStr = String.valueOf(i + 1);
@@ -125,7 +125,7 @@ public class PlaylistPanel implements Panel {
                 String stripped = displayName.replaceAll("\\033\\[[;\\d]*m", "");
                 if (stripped.length() > maxLen) {
                      if (i == idx) {
-                         displayName = Theme.COLOR_AMBER + stripped.substring(0, maxLen) + "...\033[0m";
+                         displayName = Theme.COLOR_HIGHLIGHT + stripped.substring(0, maxLen) + "...\033[0m";
                      } else {
                          displayName = stripped.substring(0, maxLen) + "...";
                      }

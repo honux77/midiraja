@@ -64,7 +64,7 @@ public class NowPlayingPanel implements Panel {
     private String buildProgressBar(int percent, int barWidth) {
         int filled = (int) ((percent / 100.0) * barWidth);
         StringBuilder bar = new StringBuilder("[");
-        bar.append(Theme.COLOR_AMBER); // Start Cyan
+        bar.append(Theme.COLOR_HIGHLIGHT); // Start Cyan
         for (int i = 0; i < barWidth; i++) {
             if (i == filled) bar.append(Theme.COLOR_RESET); // End Cyan, start plain
             if (i < filled) bar.append(Theme.CHAR_BLOCK_FULL);

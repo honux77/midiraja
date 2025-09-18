@@ -72,8 +72,8 @@ public class LineUI implements PlaybackUI
                 for (int i = 0; i < 16; i++) {
                     int levelIndex = (int) Math.round(levels[i] * 8);
                     levelIndex = Math.max(0, Math.min(8, levelIndex));
-                    // Amber bars
-                    buffer.append(Theme.COLOR_AMBER).append(blocks[levelIndex]).append(Theme.COLOR_RESET);
+                    // Highlight bars
+                    buffer.append(Theme.COLOR_HIGHLIGHT).append(blocks[levelIndex]).append(Theme.COLOR_RESET);
                 }
                 buffer.append("\033[38;5;215m]\033[0m ");
                 
