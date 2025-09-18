@@ -274,6 +274,13 @@ public class PlaybackEngine
             // Recalculate timing ratio if BPM changed during processEvent
             ticksToNanos = (60000000000.0 / (currentBpm * currentSpeed * resolution));
         }
+        
+        // Force broadcast 100% completion state before natural exit
+        if (isPlaying && endStatus == PlaybackStatus.FINISHED) {
+            currentMicroseconds = getTotalMicroseconds();
+            listeners.forEach(l -> l.onTick(currentMicroseconds));
+            try { Thread.sleep(100); } catch (Exception ignored) { /* Allow UI to render 100% frame */ }
+        }
     }
 
     private void processChaseEvent(MidiEvent event)
