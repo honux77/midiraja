@@ -66,72 +66,50 @@ public class JLineTerminalIO implements TerminalIO
         int ch = reader.read(10); // small timeout to avoid tight loop
         if (ch <= 0) return TerminalKey.NONE;
 
-        if (ch == ' ' || ch == 'p' || ch == 'P') {
-            // Need to separate 'P' (previous) from space (pause). Wait, 'p' was mapped to PREV_TRACK!
-            // Let's just use Space (' ') for PAUSE.
-        }
-        
-        if (ch == ' ')
-        {
-            return TerminalKey.PAUSE;
-        }
+        return switch (ch) {
+            case ' ' -> TerminalKey.PAUSE;
+            case 'q', 'Q' -> TerminalKey.QUIT;
+            
+            // Track Navigation (Main: Arrows, Aux: n/p)
+            case 'n', 'N' -> TerminalKey.NEXT_TRACK;
+            case 'p', 'P' -> TerminalKey.PREV_TRACK;
+            
+            // Volume (Main: +/-, Aux: u/d)
+            case '+', '=', 'u', 'U' -> TerminalKey.VOLUME_UP;
+            case '-', '_', 'd', 'D' -> TerminalKey.VOLUME_DOWN;
+            
+            // Speed (Main: [ / ])
+            case ']' -> TerminalKey.SPEED_UP;
+            case '[' -> TerminalKey.SPEED_DOWN;
+            
+            // Seek (Main: Left/Right Arrows, Aux: f/b)
+            case 'f', 'F' -> TerminalKey.SEEK_FORWARD;
+            case 'b', 'B' -> TerminalKey.SEEK_BACKWARD;
+            
+            // Transpose (Main: < / >)
+            case '.', '>' -> TerminalKey.TRANSPOSE_UP;
+            case ',', '<' -> TerminalKey.TRANSPOSE_DOWN;
 
-        if (ch == 'q' || ch == 'Q')
-        {
-            return TerminalKey.QUIT;
-        }
-
-        if (ch == 'n' || ch == 'N' || ch == ']')
-        {
-            return TerminalKey.NEXT_TRACK;
-        }
-        if (ch == 'p' || ch == 'P' || ch == '[')
-        {
-            return TerminalKey.PREV_TRACK;
-        }
-
-        if (ch == '+' || ch == '=')
-        {
-            return TerminalKey.SPEED_UP;
-        }
-        if (ch == '-' || ch == '_')
-        {
-            return TerminalKey.SPEED_DOWN;
-        }
-
-        if (ch == '.' || ch == '>')
-        {
-            return TerminalKey.TRANSPOSE_UP;
-        }
-        if (ch == ',' || ch == '<')
-        {
-            return TerminalKey.TRANSPOSE_DOWN;
-        }
-
-        // Handle ESC and Arrow Keys (typically ESC [ A, B, C, D)
-        if (ch == 27)
-        { // 27 is ESC
-            int next1 = reader.read(10);
-            if (next1 == '[')
-            { // It's an escape sequence!
-                int next2 = reader.read(10);
-                return switch (next2)
-                {
-                    case 'A' -> TerminalKey.VOLUME_UP;
-                    case 'B' -> TerminalKey.VOLUME_DOWN;
-                    case 'C' -> TerminalKey.SEEK_FORWARD;
-                    case 'D' -> TerminalKey.SEEK_BACKWARD;
-                    default -> TerminalKey.NONE;
-                };
+            // Handle ESC and Arrow Keys (typically ESC [ A, B, C, D)
+            case 27 -> {
+                int next1 = reader.read(10);
+                if (next1 == '[') {
+                    int next2 = reader.read(10);
+                    yield switch (next2) {
+                        case 'A' -> TerminalKey.PREV_TRACK;
+                        case 'B' -> TerminalKey.NEXT_TRACK;
+                        case 'C' -> TerminalKey.SEEK_FORWARD;
+                        case 'D' -> TerminalKey.SEEK_BACKWARD;
+                        default -> TerminalKey.NONE;
+                    };
+                } else if (next1 <= 0) {
+                    // Pure ESC key press
+                    yield TerminalKey.QUIT;
+                }
+                yield TerminalKey.NONE;
             }
-            else if (next1 <= 0)
-            {
-                // It was just a pure ESC key press (no sequence followed)
-                return TerminalKey.QUIT;
-            }
-        }
-
-        return TerminalKey.NONE;
+            default -> TerminalKey.NONE;
+        };
     }
 
     @Override
