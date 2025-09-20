@@ -61,15 +61,21 @@ public interface MidiOutProvider
         {
             try
             {
-                // Sustain Pedal Off (64), All Notes Off (123), All Sound Off (120), Reset All Controllers (121)
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0});
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 123, 0});
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 120, 0});
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 121, 0});
+                // 1. Send standard panic controllers
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0});  // Sustain Off
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 123, 0}); // All Notes Off
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 120, 0}); // All Sound Off
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 121, 0}); // Reset All Controllers
+                
+                // 2. Machine Gun Panic: Explicitly send Note Off for every single key
+                // Some synthesizers ignore CC 123, so this is the ultimate fallback.
+                for (int note = 0; note < 128; note++) {
+                    sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
+                }
             }
             catch (Exception ignored) { /* Ignore during panic */ }
         }
-        // Give the native MIDI driver a tiny window to flush these messages before the port closes
-        try { Thread.sleep(50); } catch (Exception ignored) { Thread.currentThread().interrupt(); }
+        // Increase flush window for the heavy Note Off barrage
+        try { Thread.sleep(100); } catch (Exception ignored) { Thread.currentThread().interrupt(); }
     }
 }
