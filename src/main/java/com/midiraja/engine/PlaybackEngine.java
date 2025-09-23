@@ -285,6 +285,7 @@ public class PlaybackEngine
 
     private void processChaseEvent(MidiEvent event)
     {
+        if (com.midiraja.MidirajaCommand.SHUTTING_DOWN) return;
         var msg = event.getMessage();
         var raw = msg.getMessage();
         int status = raw[0] & 0xFF;
@@ -327,6 +328,7 @@ public class PlaybackEngine
 
     private void processEvent(MidiEvent event)
     {
+        if (com.midiraja.MidirajaCommand.SHUTTING_DOWN) return;
         var msg = event.getMessage();
         var raw = msg.getMessage();
         int status = raw[0] & 0xFF;

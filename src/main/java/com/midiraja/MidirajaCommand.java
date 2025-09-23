@@ -39,6 +39,7 @@ import java.util.concurrent.Callable;
         description = "A fast, cross-platform CLI MIDI player.")
 public class MidirajaCommand implements Callable<Integer>
 {
+    public static volatile boolean SHUTTING_DOWN = false;
 
     @Parameters(index = "0..*", description = "The MIDI file(s) to play.", arity = "0..*")
     private List<File> files = new ArrayList<>();
@@ -191,6 +192,7 @@ public class MidirajaCommand implements Callable<Integer>
 
             // Add a shutdown hook to handle Ctrl+C (SIGINT) gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                SHUTTING_DOWN = true;
                 System.out.print(Theme.TERM_SHOW_CURSOR + Theme.TERM_ALT_SCREEN_DISABLE); // Restore cursor, exit alt screen
                 System.out.flush();
                 try
