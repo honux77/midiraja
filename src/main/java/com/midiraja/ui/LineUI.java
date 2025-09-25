@@ -59,7 +59,9 @@ public class LineUI implements PlaybackUI
     {
         var term = TerminalIO.CONTEXT.get();
         if (term.isInteractive()) {
-            term.print(Theme.TERM_HIDE_CURSOR); // Hide cursor
+            // Hide cursor and Disable Auto-Wrap (DECAWM) to absolutely prevent terminal 
+            // reflow from breaking the line during rapid window shrinks.
+            term.print(Theme.TERM_HIDE_CURSOR + "\033[?7l");
         }
         
         com.midiraja.engine.PlaylistContext context = engine.getContext();
@@ -146,7 +148,7 @@ public class LineUI implements PlaybackUI
                 term.println("");
             }
         } catch (InterruptedException _) {
-            if (term.isInteractive()) term.print(Theme.TERM_SHOW_CURSOR);
+            if (term.isInteractive()) term.print(Theme.TERM_SHOW_CURSOR + "\033[?7h");
         }
     }
 
