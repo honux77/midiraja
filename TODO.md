@@ -2,7 +2,7 @@
 
 This document outlines the roadmap for future enhancements to the Midiraja project.
 
-## 1. 🚀 Migrate to FFM API (Project Panama)
+## ~~1. 🚀 Migrate to FFM API (Project Panama)~~ (✅ DONE)
 **Goal:** Replace JNA with the modern `java.lang.foreign` API.
 **Benefits:**
 - **Zero JNA Dependency:** Removes the bulky JNA library, reducing the Native Image binary size.
@@ -11,7 +11,7 @@ This document outlines the roadmap for future enhancements to the Midiraja proje
 **Status/Feasibility:** 
 GraalVM Native Image fully supports FFM API (Downcalls and Upcalls). For the current Java 25 target, FFM will compile to native binaries beautifully. We'll need to use the `native-image-agent` (or `ffi-config.json`) to register the ALSA, WinMM, and CoreMIDI C-functions at build time.
 
-## 2. 🎨 Full-Screen TUI & Visualizer
+## ~~2. 🎨 Full-Screen TUI & Visualizer~~ (✅ DONE)
 **Goal:** Upgrade the UI from a single line to a rich terminal dashboard.
 **Benefits:**
 - **VU Meters:** Real-time 16-channel volume animations.

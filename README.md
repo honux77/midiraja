@@ -5,10 +5,13 @@
 Whether you want to quickly preview a `.mid` file, practice an instrument by changing the key and tempo on the fly, or just listen to a folder full of retro game soundtracks, `midra` makes it incredibly easy.
 
 ## ✨ Features
-* **Zero Config**: Automatically detects and plays through your native OS MIDI synthesizers (like Apple DLS Synth on macOS or ALSA/FluidSynth on Linux).
-* **Interactive UI**: No need to memorize port numbers. Just run `midra` and use your arrow keys to select where the sound should go.
-* **Live Controls**: Change the playback speed, transpose the key, or tweak the volume *while* the music is playing.
-* **Playlists**: Toss in a bunch of files. Shuffle, loop, and skip tracks with a single keystroke.
+* **Rich Terminal UI**: Experience MIDI like never before with three adaptive display modes:
+  * `--full` (`-3`): A glorious full-screen dashboard with 16-channel VU meters, progress bars, and a dynamic playlist.
+  * `--mini` (`-2`): A compact, single-line status widget perfect for background listening.
+  * `--classic` (`-1`): Standard, pipe-friendly console output.
+* **Zero Config**: Automatically detects and plays through your native OS MIDI synthesizers (CoreMIDI, ALSA, WinMM).
+* **Live Controls**: Change playback speed, transpose the key, or tweak the volume *while* the music is playing—and keep those settings across the entire playlist!
+* **Playlists**: Toss in a folder full of files. Shuffle, loop, and skip tracks seamlessly.
 
 ---
 
@@ -71,11 +74,12 @@ midra --transpose 12 --volume 50 song.mid
 
 While a song is playing, you don't need to restart the app to make changes. Just press these keys:
 
-* **`↑` / `↓`** : Volume Up / Down
-* **`←` / `→`** : Skip backward / forward 10 seconds
-* **`+` / `-`** : Speed Up / Down
-* **`>` / `<`** : Transpose Key Up / Down (You can also use `.` / `,`)
-* **`n` / `p`** : Next / Previous Track (You can also use `]` / `[`)
+* **`↑` / `↓`** : Next / Previous Track (or `n` / `p`)
+* **`←` / `→`** : Skip backward / forward 10 seconds (or `f` / `b`)
+* **`+` / `-`** : Volume Up / Down (or `u` / `d`)
+* **`>` / `<`** : Speed Up / Down
+* **`'` / `/`** : Transpose Key Up / Down (vertical placement)
+* **`Spc`** : Pause / Resume
 * **`q`** : Stop playback and Quit
 
 ---
