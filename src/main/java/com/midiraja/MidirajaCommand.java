@@ -73,6 +73,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"-l", "--list-ports"}, description = "List all available MIDI output ports.")
     private boolean listPorts;
 
+    @Option(names = {"--verbose"}, description = "Show verbose error messages and stack traces.")
+    private boolean verbose;
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
 
@@ -294,7 +297,9 @@ public class MidirajaCommand implements Callable<Integer>
         catch (Exception e)
         {
             err.println("Error during playback: " + e.getMessage());
-            e.printStackTrace(err);
+            if (verbose) {
+                e.printStackTrace(err);
+            }
             return 1;
         }
         finally
