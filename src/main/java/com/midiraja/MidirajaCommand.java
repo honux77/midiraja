@@ -107,6 +107,12 @@ public class MidirajaCommand implements Callable<Integer>
         this.isTestMode = true;
     }
 
+    private void logVerbose(String message) {
+        if (verbose) {
+            err.println("[VERBOSE] " + message);
+        }
+    }
+
     public static void main(String[] args)
     {
         int exitCode = new CommandLine(new MidirajaCommand()).execute(args);
@@ -120,6 +126,7 @@ public class MidirajaCommand implements Callable<Integer>
         if (provider == null)
         {
             provider = MidiProviderFactory.createProvider();
+            logVerbose("Detected OS and loaded native provider: " + provider.getClass().getSimpleName());
         }
 
         var ports = provider.getOutputPorts();
@@ -192,6 +199,10 @@ public class MidirajaCommand implements Callable<Integer>
 
         try
         {
+            int finalPortIndex = portIndex;
+            ports.stream().filter(p -> p.index() == finalPortIndex).findFirst().ifPresent(
+                p -> logVerbose("Opening MIDI Output Port [" + p.index() + "]: \"" + p.name() + "\"")
+            );
             provider.openPort(portIndex);
 
             // Add a shutdown hook to handle Ctrl+C (SIGINT) gracefully
@@ -230,20 +241,26 @@ public class MidirajaCommand implements Callable<Integer>
 
             if (uiOptions.classicMode) {
                 ui = new com.midiraja.ui.DumbUI();
+                logVerbose("UI Mode explicitly set to: classic (DumbUI)");
             } else if (uiOptions.miniMode) {
                 ui = new com.midiraja.ui.LineUI();
+                logVerbose("UI Mode explicitly set to: mini (LineUI)");
             } else if (uiOptions.fullMode) {
                 ui = new com.midiraja.ui.DashboardUI();
                 useAltScreen = true;
+                logVerbose("UI Mode explicitly set to: full (DashboardUI)");
             } else {
                 // Auto mode logic fallback
                 if (!isInteractive) {
                     ui = new com.midiraja.ui.DumbUI();
+                    logVerbose("Terminal is not interactive. Auto-selected UI: DumbUI");
                 } else if (activeIO.getHeight() < 10) {
                     ui = new com.midiraja.ui.LineUI();
+                    logVerbose("Terminal height is " + activeIO.getHeight() + " (too small). Auto-selected UI: LineUI");
                 } else {
                     ui = new com.midiraja.ui.DashboardUI();
                     useAltScreen = true;
+                    logVerbose("Terminal height is " + activeIO.getHeight() + ". Auto-selected UI: DashboardUI");
                 }
             }
 
@@ -257,6 +274,9 @@ public class MidirajaCommand implements Callable<Integer>
                 {
                     var file = playlist.get(currentTrackIdx);
                     var sequence = MidiSystem.getSequence(file);
+                    logVerbose(String.format("Loaded '%s' - Resolution: %d PPQ, Microsecond Length: %d", 
+                        file.getName(), sequence.getResolution(), sequence.getMicrosecondLength()));
+
                     String title = extractSequenceTitle(sequence);
                     var context = new PlaylistContext(playlist, currentTrackIdx, ports.get(portIndex), title);
                     
