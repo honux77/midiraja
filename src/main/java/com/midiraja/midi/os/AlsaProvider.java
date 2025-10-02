@@ -23,7 +23,7 @@ import static java.lang.System.err;
  * FFM API (Project Panama) based ALSA Sequencer provider for Linux.
  * Replaces the legacy JNA implementation.
  */
-public class LinuxProvider implements MidiOutProvider
+public class AlsaProvider implements MidiOutProvider
 {
     private static final Linker LINKER = Linker.nativeLinker();
     @Nullable private static final SymbolLookup ALSA_LOOKUP;

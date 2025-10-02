@@ -20,7 +20,7 @@ import java.util.List;
  * FFM API (Project Panama) based WinMM provider for Windows.
  * Replaces the legacy JNA implementation for zero-dependency native calls.
  */
-public class WindowsProvider implements MidiOutProvider
+public class WinMmProvider implements MidiOutProvider
 {
     private static final Linker LINKER = Linker.nativeLinker();
     // In Windows, WinMM is usually globally available or found via standard lookup.

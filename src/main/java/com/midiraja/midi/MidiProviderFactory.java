@@ -7,9 +7,9 @@
 
 package com.midiraja.midi;
 
-import com.midiraja.midi.os.LinuxProvider;
-import com.midiraja.midi.os.MacProvider;
-import com.midiraja.midi.os.WindowsProvider;
+import com.midiraja.midi.os.AlsaProvider;
+import com.midiraja.midi.os.CoreMidiProvider;
+import com.midiraja.midi.os.WinMmProvider;
 
 public class MidiProviderFactory
 {
@@ -30,9 +30,9 @@ public class MidiProviderFactory
 
         return switch (os)
         {
-            case MAC -> new MacProvider();
-            case WINDOWS -> new WindowsProvider();
-            case LINUX -> new LinuxProvider();
+            case MAC -> new CoreMidiProvider();
+            case WINDOWS -> new WinMmProvider();
+            case LINUX -> new AlsaProvider();
             case UNKNOWN -> throw new UnsupportedOperationException(
                     "Unsupported OS for native MIDI: " + osName);
         };

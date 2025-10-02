@@ -20,7 +20,7 @@ import java.util.List;
  * FFM API (Project Panama) based CoreMIDI provider for macOS.
  * Replaces the legacy JNA implementation for zero-dependency native calls.
  */
-public class MacProvider implements MidiOutProvider
+public class CoreMidiProvider implements MidiOutProvider
 {
     private static final Linker LINKER = Linker.nativeLinker();
     private static final SymbolLookup CF_LOOKUP = SymbolLookup.libraryLookup("/System/Library/Frameworks/CoreFoundation.framework/CoreFoundation", Arena.global());
