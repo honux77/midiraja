@@ -76,6 +76,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"--verbose"}, description = "Show verbose error messages and stack traces.")
     private boolean verbose;
 
+    @Option(names = {"--synth"}, description = "(Experimental) Use Java's built-in software synthesizer instead of OS native MIDI.")
+    private boolean useSynth;
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
 
@@ -125,8 +128,13 @@ public class MidirajaCommand implements Callable<Integer>
         java.util.concurrent.atomic.AtomicBoolean portClosed = new java.util.concurrent.atomic.AtomicBoolean(false);
         if (provider == null)
         {
-            provider = MidiProviderFactory.createProvider();
-            logVerbose("Detected OS and loaded native provider: " + provider.getClass().getSimpleName());
+            if (useSynth) {
+                provider = new com.midiraja.midi.JavaSynthProvider();
+                logVerbose("Using experimental Java Built-in Synthesizer (Software mode).");
+            } else {
+                provider = MidiProviderFactory.createProvider();
+                logVerbose("Detected OS and loaded native provider: " + provider.getClass().getSimpleName());
+            }
         }
 
         var ports = provider.getOutputPorts();
@@ -172,7 +180,11 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         int portIndex = -1;
-        if (port.isPresent())
+        if (useSynth)
+        {
+            portIndex = 0; // The JavaSynthProvider only has one port
+        }
+        else if (port.isPresent())
         {
             String portQuery = port.get();
             portIndex = findPortIndex(ports, portQuery);

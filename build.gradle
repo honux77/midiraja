@@ -104,8 +104,10 @@ graalvmNative {
             buildArgs.add('--enable-native-access=ALL-UNNAMED')
             buildArgs.add('--enable-preview')
             buildArgs.add('-H:+UnlockExperimentalVMOptions')
-            // Required for dynamic loading of JNA
+            // Required for dynamic loading of JNA/FFM
             buildArgs.add('-H:+SharedArenaSupport')
+            // Initialize sound properties at build time to prevent "Can't find java.home" error
+            buildArgs.add('--initialize-at-build-time=com.sun.media.sound.JSSecurityManager,com.sun.media.sound.JDK13Services,javax.sound.midi.MidiSystem')
             // Optimize binary size
             buildArgs.add('-Os') 
             buildArgs.add('--install-exit-handlers')
