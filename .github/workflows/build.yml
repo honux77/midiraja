@@ -1,53 +1,53 @@
-name: Build
+name: Cross-Platform Build & Test
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ master, main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ master, main ]
 
 jobs:
-  build:
+  build-and-test:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-    runs-on: ${{ matrix.os }}
+
     steps:
-      - uses: actions/checkout@v4
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-      # Windows requires visual studio build tools for native compilation
-      - name: Setup MSVC
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
+    - name: Setup GraalVM (Java 25)
+      uses: graalvm/setup-graalvm@v1
+      with:
+        java-version: '25'
+        distribution: 'graalvm-community'
+        github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set up GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          java-version: '25'
-          distribution: 'graalvm'
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        
-      - name: Make gradlew executable
-        if: runner.os != 'Windows'
-        run: chmod +x ./gradlew
-        
-      - name: Build with Gradle
-        run: ./gradlew build
-        
-      - name: Run Tests
-        run: ./gradlew test
+    - name: Install ALSA dependencies (Linux only)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        # Install ALSA libs for compilation
+        sudo apt-get install -y libasound2-dev
+        # Attempt to load the virtual ALSA sequencer module (requires sudo)
+        sudo modprobe snd-virmidi || sudo modprobe snd-dummy || echo "Kernel module load failed, relying on user-space ALSA."
 
-      - name: Build Native Image
-        run: ./gradlew nativeCompile
+    - name: Build JVM Classes
+      run: ./gradlew classes
 
-      - name: Verify Executable exists
-        run: |
-          if [ "$RUNNER_OS" == "Windows" ]; then
-            if [ -f build/native/nativeCompile/midra.exe ]; then echo "midra.exe exists"; else exit 1; fi
-          else
-            if [ -f build/native/nativeCompile/midra ]; then echo "midra exists"; else exit 1; fi
-          fi
-        shell: bash
+    - name: Run Unit Tests
+      run: ./gradlew test
+
+    - name: Compile Native Image
+      run: ./gradlew nativeCompile
+
+    - name: Upload Native Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: midra-${{ matrix.os }}
+        path: |
+          build/native/nativeCompile/midra
+          build/native/nativeCompile/midra.exe
