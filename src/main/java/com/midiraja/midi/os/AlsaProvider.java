@@ -67,24 +67,24 @@ public class AlsaProvider implements MidiOutProvider
     
     // Client Info
     @Nullable private static final MethodHandle snd_seq_client_info_malloc = getMH("snd_seq_client_info_malloc", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    @Nullable private static final MethodHandle snd_seq_client_info_free = getMH("snd_seq_client_info_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    @Nullable private static final MethodHandle snd_seq_client_info_free = getMH("snd_seq_client_info_free", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_query_next_client = getMH("snd_seq_query_next_client", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_client_info_get_client = getMH("snd_seq_client_info_get_client", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_client_info_get_name = getMH("snd_seq_client_info_get_name", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    
+
     // Port Info
     @Nullable private static final MethodHandle snd_seq_port_info_malloc = getMH("snd_seq_port_info_malloc", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    @Nullable private static final MethodHandle snd_seq_port_info_free = getMH("snd_seq_port_info_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    @Nullable private static final MethodHandle snd_seq_port_info_free = getMH("snd_seq_port_info_free", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_query_next_port = getMH("snd_seq_query_next_port", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
-    @Nullable private static final MethodHandle snd_seq_port_info_set_client = getMH("snd_seq_port_info_set_client", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
-    @Nullable private static final MethodHandle snd_seq_port_info_set_port = getMH("snd_seq_port_info_set_port", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+    @Nullable private static final MethodHandle snd_seq_port_info_set_client = getMH("snd_seq_port_info_set_client", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+    @Nullable private static final MethodHandle snd_seq_port_info_set_port = getMH("snd_seq_port_info_set_port", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
     @Nullable private static final MethodHandle snd_seq_port_info_get_port = getMH("snd_seq_port_info_get_port", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_port_info_get_capability = getMH("snd_seq_port_info_get_capability", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_port_info_get_name = getMH("snd_seq_port_info_get_name", FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
     // MIDI Event Parser
     @Nullable private static final MethodHandle snd_midi_event_new = getMH("snd_midi_event_new", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
-    @Nullable private static final MethodHandle snd_midi_event_free = getMH("snd_midi_event_free", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    @Nullable private static final MethodHandle snd_midi_event_free = getMH("snd_midi_event_free", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_midi_event_encode = getMH("snd_midi_event_encode", FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS));
     @Nullable private static final MethodHandle snd_seq_event_output_direct = getMH("snd_seq_event_output_direct", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     
@@ -120,8 +120,8 @@ public class AlsaProvider implements MidiOutProvider
             MemorySegment cInfoRef = arena.allocate(ValueLayout.ADDRESS);
             MemorySegment pInfoRef = arena.allocate(ValueLayout.ADDRESS);
 
-            snd_seq_client_info_malloc.invokeExact(cInfoRef);
-            snd_seq_port_info_malloc.invokeExact(pInfoRef);
+            if (snd_seq_client_info_malloc != null) { int _m1 = (int) snd_seq_client_info_malloc.invokeExact(cInfoRef); }
+            if (snd_seq_port_info_malloc != null) { int _m2 = (int) snd_seq_port_info_malloc.invokeExact(pInfoRef); }
 
             MemorySegment cInfo = cInfoRef.get(ValueLayout.ADDRESS, 0);
             MemorySegment pInfo = pInfoRef.get(ValueLayout.ADDRESS, 0);
@@ -133,10 +133,10 @@ public class AlsaProvider implements MidiOutProvider
                 if (client == SND_SEQ_CLIENT_SYSTEM) continue;
 
                 MemorySegment clientNamePtr = (MemorySegment) snd_seq_client_info_get_name.invokeExact(cInfo);
-                String clientName = clientNamePtr.getString(0);
+                String clientName = clientNamePtr.reinterpret(Long.MAX_VALUE).getString(0);
 
-                snd_seq_port_info_set_client.invokeExact(pInfo, client);
-                snd_seq_port_info_set_port.invokeExact(pInfo, -1);
+                if (snd_seq_port_info_set_client != null) { int _dummy1 = (int) snd_seq_port_info_set_client.invoke(pInfo, client); }
+                if (snd_seq_port_info_set_port != null) { int _dummy2 = (int) snd_seq_port_info_set_port.invoke(pInfo, -1); }
 
                 // Iterate over ports
                 while ((int) snd_seq_query_next_port.invokeExact(seq, pInfo) == 0)
@@ -147,16 +147,22 @@ public class AlsaProvider implements MidiOutProvider
                     if ((caps & PORT_CAP_MASK) == PORT_CAP_MASK)
                     {
                         MemorySegment portNamePtr = (MemorySegment) snd_seq_port_info_get_name.invokeExact(pInfo);
-                        String portName = portNamePtr.getString(0);
+                        String portName = portNamePtr.reinterpret(Long.MAX_VALUE).getString(0);
                         int globalPortIndex = (client << 16) | port;
                         ports.add(new MidiPort(globalPortIndex, clientName + " - " + portName));
                     }
                 }
             }
 
-            snd_seq_port_info_free.invokeExact(pInfo);
-            snd_seq_client_info_free.invokeExact(cInfo);
-            snd_seq_close.invokeExact(seq);
+            if (snd_seq_port_info_free != null) { 
+                int _dummy3 = (int) snd_seq_port_info_free.invoke(pInfo); 
+            }
+            if (snd_seq_client_info_free != null) { 
+                int _dummy4 = (int) snd_seq_client_info_free.invoke(cInfo); 
+            }
+            if (snd_seq_close != null) { 
+                int _dummy5 = (int) snd_seq_close.invoke(seq); 
+            }
         }
         catch (Throwable t)
         {
@@ -255,8 +261,12 @@ public class AlsaProvider implements MidiOutProvider
     {
         try
         {
-            if (midiEventParser != null) snd_midi_event_free.invokeExact(midiEventParser);
-            if (seqHandle != null) snd_seq_close.invokeExact(seqHandle);
+            if (midiEventParser != null && snd_midi_event_free != null) {
+                int _mf = (int) snd_midi_event_free.invokeExact(midiEventParser);
+            }
+            if (seqHandle != null && snd_seq_close != null) {
+                int _dummy = (int) snd_seq_close.invokeExact(seqHandle);
+            }
         }
         catch (Throwable _)
         {
