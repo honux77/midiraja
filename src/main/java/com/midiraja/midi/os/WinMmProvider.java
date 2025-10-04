@@ -151,7 +151,7 @@ public class WinMmProvider implements MidiOutProvider
         {
             if (handle != null)
             {
-                midiOutClose.invokeExact(handle);
+                int _dummy = (int) midiOutClose.invokeExact(handle);
             }
         }
         catch (Throwable _)
