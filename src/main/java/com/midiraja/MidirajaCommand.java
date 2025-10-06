@@ -73,6 +73,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"-l", "--list-ports"}, description = "List all available MIDI output ports.")
     private boolean listPorts;
 
+    @Option(names = {"-R", "--recursive"}, description = "Recursively search for MIDI files in given directories.")
+    private boolean recursive;
+
     @Option(names = {"--verbose"}, description = "Show verbose error messages and stack traces.")
     private boolean verbose;
 
@@ -135,6 +138,10 @@ public class MidirajaCommand implements Callable<Integer>
                         this.loop = true;
                         logVerbose("Applied directive from playlist: --loop");
                     }
+                    if (directive.contains("--recursive") || directive.contains("-R")) {
+                        this.recursive = true;
+                        logVerbose("Applied directive from playlist: --recursive");
+                    }
                     continue;
                 }
 
@@ -149,6 +156,8 @@ public class MidirajaCommand implements Callable<Integer>
                 
                 if (track.exists() && !track.isDirectory()) {
                     playlist.add(track);
+                } else if (track.isDirectory()) {
+                    parseDirectory(track, playlist);
                 } else {
                     logVerbose("Playlist track not found: " + track.getAbsolutePath());
                 }
@@ -156,6 +165,24 @@ public class MidirajaCommand implements Callable<Integer>
             logVerbose("Loaded playlist: " + playlistFile.getName() + " (" + lines.size() + " lines parsed)");
         } catch (Exception e) {
             err.println("Error reading playlist file '" + playlistFile.getName() + "': " + e.getMessage());
+            if (verbose) e.printStackTrace(err);
+        }
+    }
+
+    private void parseDirectory(File dir, List<File> playlist) {
+        try {
+            int maxDepth = recursive ? Integer.MAX_VALUE : 1;
+            try (var stream = java.nio.file.Files.walk(dir.toPath(), maxDepth)) {
+                stream.filter(java.nio.file.Files::isRegularFile)
+                      .map(java.nio.file.Path::toFile)
+                      .filter(f -> {
+                          String name = f.getName().toLowerCase(Locale.ROOT);
+                          return name.endsWith(".mid") || name.endsWith(".midi");
+                      })
+                      .forEach(playlist::add);
+            }
+        } catch (Exception e) {
+            err.println("Error reading directory '" + dir.getName() + "': " + e.getMessage());
             if (verbose) e.printStackTrace(err);
         }
     }
@@ -199,12 +226,7 @@ public class MidirajaCommand implements Callable<Integer>
             String nameLower = f.getName().toLowerCase(Locale.ROOT);
             if (f.isDirectory())
             {
-                var dirFiles = f.listFiles((_, name) -> name.toLowerCase(Locale.ROOT).endsWith(".mid")
-                        || name.toLowerCase(Locale.ROOT).endsWith(".midi"));
-                if (dirFiles != null)
-                {
-                    playlist.addAll(Arrays.asList(dirFiles));
-                }
+                parseDirectory(f, playlist);
             }
             else if (nameLower.endsWith(".m3u") || nameLower.endsWith(".m3u8") || nameLower.endsWith(".txt"))
             {
