@@ -41,9 +41,14 @@ public class PlaybackEngine
     private volatile boolean isPaused = false;
     private volatile boolean ignoreSysex = false;
     private volatile PlaybackStatus endStatus = PlaybackStatus.FINISHED;
+    private Optional<String> initialResetType = Optional.empty();
 
     public void setIgnoreSysex(boolean ignoreSysex) {
         this.ignoreSysex = ignoreSysex;
+    }
+
+    public void setInitialResetType(Optional<String> resetType) {
+        this.initialResetType = resetType;
     }
 
     private final double[] channelLevels = new double[16];
@@ -176,8 +181,51 @@ public class PlaybackEngine
         return sequence.getTickLength();
     }
 
+    private void sendInitialReset() {
+        if (initialResetType.isEmpty()) return;
+        String type = initialResetType.get().trim().toLowerCase(java.util.Locale.ROOT);
+        byte[] payload = null;
+
+        switch (type) {
+            case "gm":
+                payload = new byte[]{(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte) 0xF7};
+                break;
+            case "gm2":
+                payload = new byte[]{(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x03, (byte) 0xF7};
+                break;
+            case "gs":
+                payload = new byte[]{(byte) 0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, (byte) 0xF7};
+                break;
+            case "xg":
+                payload = new byte[]{(byte) 0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00, (byte) 0xF7};
+                break;
+            case "mt32":
+            case "mt-32":
+                payload = new byte[]{(byte) 0xF0, 0x41, 0x10, 0x16, 0x12, 0x7F, 0x00, 0x00, 0x00, (byte) 0xF7}; // Basic Roland SysEx reset (approx)
+                break;
+            default:
+                if (type.matches("^[0-9a-fA-F]+$") && type.length() % 2 == 0) {
+                    payload = new byte[type.length() / 2];
+                    for (int i = 0; i < payload.length; i++) {
+                        payload[i] = (byte) Integer.parseInt(type.substring(i * 2, i * 2 + 2), 16);
+                    }
+                }
+                break;
+        }
+
+        if (payload != null) {
+            try {
+                provider.sendMessage(payload);
+                Thread.sleep(50); // Give the hardware synthesizer 50ms to process the reset before slamming it with notes
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     private void playLoop() throws Exception
     {
+        sendInitialReset();
+        
         long lastTick = 0;
         int eventIndex = 0;
         long elapsedNanos = 0;

@@ -89,6 +89,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"--ignore-sysex"}, description = "Filter out hardware-specific System Exclusive (SysEx) messages.")
     private boolean ignoreSysex;
 
+    @Option(names = {"--reset"}, description = "Send a SysEx reset before each track (gm, gm2, gs, xg, mt32, or raw hex like F0...F7).")
+    private Optional<String> resetType = Optional.empty();
+
     @Option(names = {"--synth"}, description = "(Experimental) Use Java's built-in software synthesizer instead of OS native MIDI.")
     private boolean useSynth;
 
@@ -738,6 +741,9 @@ private void clearMenu(org.jline.terminal.Terminal terminal, int numPorts)
                     transpose);
             if (this.ignoreSysex) {
                 engine.setIgnoreSysex(true);
+            }
+            if (this.resetType.isPresent()) {
+                engine.setInitialResetType(this.resetType);
             }
             return ScopedValue.where(TerminalIO.CONTEXT, activeIO)
                     .call(() -> new PlaybackResult(engine.start(ui), 0, engine));
