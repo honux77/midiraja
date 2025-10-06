@@ -36,7 +36,14 @@ import java.util.*;
 import java.util.concurrent.Callable;
 
 @Command(name = "midra", mixinStandardHelpOptions = true, version = "midiraja " + Version.VERSION,
-        description = "A fast, cross-platform CLI MIDI player.")
+        description = "A fast, cross-platform CLI MIDI player.",
+        footer = {
+            "",
+            "Playlist Features:",
+            "  Supports .m3u and .txt files containing paths to .mid files.",
+            "  You can embed CLI options inside M3U files using the #MIDRA: prefix.",
+            "  Example: #MIDRA: --shuffle --loop"
+        })
 public class MidirajaCommand implements Callable<Integer>
 {
     public static volatile boolean SHUTTING_DOWN = false;
@@ -86,13 +93,13 @@ public class MidirajaCommand implements Callable<Integer>
     private UiModeOptions uiOptions = new UiModeOptions();
 
     static class UiModeOptions {
-        @Option(names = {"-1", "--classic"}, description = "Basic CLI mode (static logging, pipe-friendly).")
+        @Option(names = {"-1", "--classic"}, description = "Classic CLI mode (static line logging, best for pipes).")
         boolean classicMode;
 
-        @Option(names = {"-2", "--mini"}, description = "Minimal TUI mode (single-line status).")
+        @Option(names = {"-2", "--mini"}, description = "Mini TUI mode (single-line interactive status).")
         boolean miniMode;
 
-        @Option(names = {"-3", "--full"}, description = "Rich TUI mode (full-screen dashboard).")
+        @Option(names = {"-3", "--full"}, description = "Full TUI dashboard (default if terminal is large enough).")
         boolean fullMode;
     }
 
