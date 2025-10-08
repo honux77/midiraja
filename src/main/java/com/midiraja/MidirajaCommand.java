@@ -95,6 +95,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"--synth"}, description = "(Experimental) Use Java's built-in software synthesizer instead of OS native MIDI.")
     private boolean useSynth;
 
+    @Option(names = {"--soft-synth"}, description = "Pipe raw MIDI to an external software synthesizer (e.g. 'fluidsynth -i font.sf2 -').")
+    private Optional<String> softSynthCommand = Optional.empty();
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
 
@@ -239,7 +242,10 @@ public class MidirajaCommand implements Callable<Integer>
         java.util.concurrent.atomic.AtomicBoolean portClosed = new java.util.concurrent.atomic.AtomicBoolean(false);
         if (provider == null)
         {
-            if (useSynth) {
+            if (softSynthCommand.isPresent()) {
+                provider = new com.midiraja.midi.SoftSynthProvider(softSynthCommand.get());
+                logVerbose("Using external soft synth: " + softSynthCommand.get());
+            } else if (useSynth) {
                 provider = new com.midiraja.midi.JavaSynthProvider();
                 logVerbose("Using experimental Java Built-in Synthesizer (Software mode).");
             } else {
@@ -291,9 +297,9 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         int portIndex = -1;
-        if (useSynth)
+        if (softSynthCommand.isPresent() || useSynth)
         {
-            portIndex = 0; // The JavaSynthProvider only has one port
+            portIndex = 0; // External synth or JavaSynthProvider only has one port
         }
         else if (port.isPresent())
         {
