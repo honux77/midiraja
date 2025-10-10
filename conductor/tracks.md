@@ -15,6 +15,6 @@ This file tracks all major tracks for the project. Each track has its own detail
 
 ---
 
-- [ ] **Track: 외부 soft synth 프로세스를 subprocess 통합해서 운영하는 기능을 추가해줘.**
+- [x] **Track: 외부 soft synth 프로세스를 subprocess 통합해서 운영하는 기능을 추가해줘.**
 *Link: [./tracks/softsynth_subprocess_20260228/](./tracks/softsynth_subprocess_20260228/)*
 
