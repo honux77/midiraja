@@ -20,3 +20,6 @@
 - [x] Task: Perform a final code review and refactoring pass across all modified files (`SoftSynthProvider.java` and `MidirajaCommand.java`). [checkpoint: 347210a]
 - [x] Task: Run full integration tests to verify a MIDI file plays through an external synth without JVM/AOT conflicts, even when gracefully interrupted via `Ctrl+C`. [checkpoint: 347210a]
 - [x] Task: Conductor - User Manual Verification 'Phase 3: CLI Integration and Validation' (Protocol in workflow.md) [checkpoint: 347210a]
+
+## Phase: Review Fixes
+- [x] Task: Apply review suggestions [checkpoint: ea24795]
