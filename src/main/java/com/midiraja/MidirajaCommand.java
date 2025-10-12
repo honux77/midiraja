@@ -244,8 +244,8 @@ public class MidirajaCommand implements Callable<Integer>
         if (provider == null)
         {
             if (softSynthCommand.isPresent()) {
-                provider = new com.midiraja.midi.SoftSynthProvider(softSynthCommand.get());
-                logVerbose("Using external soft synth: " + softSynthCommand.get());
+                throw new UnsupportedOperationException("Soft synth WIP");
+                // logVerbose("Using external soft synth: " + softSynthCommand.get());
             } else if (useSynth) {
                 provider = new com.midiraja.midi.JavaSynthProvider();
                 logVerbose("Using experimental Java Built-in Synthesizer (Software mode).");
