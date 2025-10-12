@@ -334,6 +334,13 @@ public class MidirajaCommand implements Callable<Integer>
             );
             provider.openPort(portIndex);
 
+            int currentTrackIdx = 0;
+            Optional<String> currentStartTime = startTime;
+
+            var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
+            activeIO.init();
+            boolean isInteractive = activeIO.isInteractive();
+
             // Add a shutdown hook to handle Ctrl+C (SIGINT) gracefully
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 SHUTTING_DOWN = true;
@@ -343,6 +350,12 @@ public class MidirajaCommand implements Callable<Integer>
                     System.out.print(Theme.TERM_SHOW_CURSOR); // Just restore cursor
                 }
                 System.out.flush();
+                try
+                {
+                    activeIO.close(); // CRITICAL: Restores terminal from Raw mode on Ctrl+C
+                }
+                catch (Exception _) { // ignored
+                }
                 try
                 {
                     if (provider != null && portClosed.compareAndSet(false, true)) {
@@ -357,13 +370,6 @@ public class MidirajaCommand implements Callable<Integer>
                 catch (Exception _) { // ignored
                 }
             }));
-
-            int currentTrackIdx = 0;
-            Optional<String> currentStartTime = startTime;
-
-            var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
-            activeIO.init();
-            boolean isInteractive = activeIO.isInteractive();
             
             com.midiraja.ui.PlaybackUI ui;
             boolean useAltScreen = false;
