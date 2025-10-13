@@ -1,10 +1,10 @@
 # Implementation Plan: FluidSynth Dynamic Linking via FFM
 
 ## Phase 1: Abstraction and Test Scaffolding
-- [ ] Task: Create the `SoftSynthProvider.java` interface extending `MidiOutProvider` with a `loadSoundbank(String path)` method.
-- [ ] Task: Create `FluidSynthProviderTest.java` and write failing tests for library loading detection (e.g., verifying it throws a clear exception if the library is not found or handles it gracefully).
-- [ ] Task: Write failing tests for parsing raw MIDI messages (`byte[]`) into the correct FFM function calls (using a mock or spy for the `MethodHandles` if possible).
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Abstraction and Test Scaffolding' (Protocol in workflow.md)
+- [x] Task: Create the `SoftSynthProvider.java` interface extending `MidiOutProvider` with a `loadSoundbank(String path)` method. [checkpoint: 726c836]
+- [x] Task: Create `FluidSynthProviderTest.java` and write failing tests for library loading detection (e.g., verifying it throws a clear exception if the library is not found or handles it gracefully). [checkpoint: 726c836]
+- [x] Task: Write failing tests for parsing raw MIDI messages (`byte[]`) into the correct FFM function calls (using a mock or spy for the `MethodHandles` if possible). [checkpoint: bf618d7]
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Abstraction and Test Scaffolding' (Protocol in workflow.md) [checkpoint: manual]
 
 ## Phase 2: FFM Bindings and Provider Implementation
 - [ ] Task: Implement `FluidSynthProvider.java` implementing `SoftSynthProvider`.
