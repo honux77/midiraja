@@ -95,8 +95,11 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"--synth"}, description = "(Experimental) Use Java's built-in software synthesizer instead of OS native MIDI.")
     private boolean useSynth;
 
-    @Option(names = {"--soft-synth"}, description = "Pipe raw MIDI to an external software synthesizer (e.g. 'fluidsynth -i font.sf2 -').")
-    private Optional<String> softSynthCommand = Optional.empty();
+    @Option(names = {"--fluid"}, description = "Use built-in FluidSynth. Provide the path to a .sf2 SoundFont file.")
+    private Optional<String> fluidSoundfont = Optional.empty();
+
+    @Option(names = {"--fluid-driver"}, description = "Override the audio driver for FluidSynth (e.g. coreaudio, dsound, alsa).")
+    private Optional<String> fluidDriver = Optional.empty();
 
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
@@ -243,9 +246,10 @@ public class MidirajaCommand implements Callable<Integer>
         java.util.concurrent.atomic.AtomicBoolean portClosed = new java.util.concurrent.atomic.AtomicBoolean(false);
         if (provider == null)
         {
-            if (softSynthCommand.isPresent()) {
-                throw new UnsupportedOperationException("Soft synth WIP");
-                // logVerbose("Using external soft synth: " + softSynthCommand.get());
+            if (fluidSoundfont.isPresent()) {
+                var fluid = new com.midiraja.midi.FluidSynthProvider(fluidDriver.orElse(null));
+                logVerbose("Initializing FluidSynth with SoundFont: " + fluidSoundfont.get());
+                provider = fluid;
             } else if (useSynth) {
                 provider = new com.midiraja.midi.JavaSynthProvider();
                 logVerbose("Using experimental Java Built-in Synthesizer (Software mode).");
@@ -298,9 +302,9 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         int portIndex = -1;
-        if (softSynthCommand.isPresent() || useSynth)
+        if (fluidSoundfont.isPresent() || useSynth)
         {
-            portIndex = 0; // External synth or JavaSynthProvider only has one port
+            portIndex = 0; // FluidSynth or JavaSynthProvider only has one virtual port
         }
         else if (port.isPresent())
         {
@@ -334,6 +338,11 @@ public class MidirajaCommand implements Callable<Integer>
                 p -> logVerbose("Opening MIDI Output Port [" + p.index() + "]: \"" + p.name() + "\"")
             );
             provider.openPort(portIndex);
+            
+            if (provider instanceof com.midiraja.midi.SoftSynthProvider softSynth && fluidSoundfont.isPresent()) {
+                softSynth.loadSoundbank(fluidSoundfont.get());
+                logVerbose("SoundFont loaded successfully.");
+            }
 
             int currentTrackIdx = 0;
             Optional<String> currentStartTime = startTime;
