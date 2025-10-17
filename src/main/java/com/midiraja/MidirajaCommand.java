@@ -36,6 +36,7 @@ import java.util.*;
 import java.util.concurrent.Callable;
 
 @Command(name = "midra", mixinStandardHelpOptions = true, version = "midiraja " + Version.VERSION,
+        separator = " ",
         description = "A fast, cross-platform CLI MIDI player.",
         footer = {
             "",
