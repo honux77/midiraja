@@ -363,7 +363,8 @@ public class MidirajaCommand implements Callable<Integer>
                 if (ALT_SCREEN_ACTIVE) {
                     System.out.print(Theme.TERM_SHOW_CURSOR + Theme.TERM_ALT_SCREEN_DISABLE); // Restore cursor, exit alt screen
                 } else {
-                    System.out.print(Theme.TERM_SHOW_CURSOR); // Just restore cursor
+                    // Wipe the current line cleanly, show cursor, and CRITICAL: Re-enable Auto-Wrap (\033[?7h)
+                    System.out.print("\r\033[K" + Theme.TERM_SHOW_CURSOR + "\033[?7h\n");
                 }
                 System.out.flush();
                 try

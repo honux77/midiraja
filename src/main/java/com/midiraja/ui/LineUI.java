@@ -143,7 +143,7 @@ public class LineUI implements PlaybackUI
                     term.print(Theme.TERM_CURSOR_UP);
                 }
                 term.print(Theme.TERM_CLEAR_TO_END); // Clear from cursor to end of screen
-                term.print(Theme.TERM_SHOW_CURSOR); // Show cursor
+                term.print(Theme.TERM_SHOW_CURSOR + "\033[?7h"); // Show cursor, re-enable auto-wrap
             } else {
                 term.println("");
             }
