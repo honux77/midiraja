@@ -172,7 +172,7 @@ public class FluidSynthProvider implements SoftSynthProvider {
     }
 
     private SymbolLookup tryLoadLibrary(Arena arena, String... paths) {
-        IllegalArgumentException lastException = null;
+        java.util.List<String> failedPaths = new java.util.ArrayList<>();
         for (String path : paths) {
             try {
                 if (path.startsWith("/")) {
@@ -184,13 +184,10 @@ public class FluidSynthProvider implements SoftSynthProvider {
                     return SymbolLookup.libraryLookup(path, arena);
                 }
             } catch (IllegalArgumentException e) {
-                lastException = e;
+                failedPaths.add(path);
             }
         }
-        if (lastException != null) {
-            throw lastException;
-        }
-        throw new IllegalArgumentException("Library not found in specified paths.");
+        throw new IllegalArgumentException("Cannot open library. Searched paths: " + String.join(", ", failedPaths));
     }
 
     @Override
