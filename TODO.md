@@ -2,13 +2,13 @@
 
 This document outlines the roadmap for future enhancements to the Midiraja project.
 
-## 1. 🎹 Built-in Software Synthesizer (SoundFont Fallback)
-**Goal:** Allow playback even if the OS doesn't have a configured MIDI output port.
-**Current Status:** An experimental `--synth` flag is implemented using Java's built-in `Gervill` synthesizer, but it **only works in JVM mode**, not in the compiled GraalVM Native Image.
-**Technical Challenges & Future Work:**
-- **GraalVM & `java.desktop` compatibility:** Java's built-in audio output (`javax.sound.sampled`) relies heavily on JNI (`libjsound`), dynamic class loading, and system properties (`java.home`), which cause critical runtime errors (`Can't find java.home`) in AOT compiled binaries.
-- **The "FFM Audio" Barrier:** Bypassing `javax.sound` requires writing a completely new cross-platform digital audio engine. While we successfully used FFM for MIDI (which involves sending tiny, low-bandwidth event signals asynchronously), real-time PCM audio playback requires managing high-bandwidth data streams (e.g., 44.1kHz, 16bit stereo) using complex, OS-specific asynchronous callbacks (CoreAudio, WASAPI, ALSA PCM). FFM Upcalls for real-time audio callbacks carry significant performance and architectural overhead.
-- **Next Steps:** Keep `--synth` as a JVM-only developer tool for now. True AOT-compatible software synthesis might require integrating a C-based synthesizer (like `libfluidsynth`) or waiting for GraalVM to better support `javax.sound`.
+## 1. 🎹 Alternative Soft Synth Integrations via FFM
+**Goal:** Expand the successful FFM dynamic linking architecture beyond FluidSynth to support different MIDI standards and retro gaming aesthetics.
+**Ideas to Explore:**
+- **Munt (libmunt):** The ultimate Roland MT-32/CM-32L emulator. Essential for correctly playing early 90s DOS game MIDI files that sound incorrect on General MIDI/FluidSynth. Requires investigating its C API or writing a small C wrapper since Munt is primarily C++. (Target: `--munt /path/to/roms/`)
+- **TiMidity++ (libtimidity):** A classic alternative to FluidSynth that supports Gravis Ultrasound (`.pat`) patch sets for a different flavor of 90s nostalgia.
+- **OPL3 / AdLib Emulator:** FFM bindings for a Yamaha OPL3 FM synthesis emulator (like Nuked OPL3). Allows playing MIDI files using the iconic, gritty FM synth sound of early Sound Blaster cards without needing any external soundbank files. (Target: `--opl3`)
+- **TinySoundFont (TSF):** A single-header C library for SoundFont rendering. If compiled into a tiny shared library and bundled inside the jar, we could extract and link it at runtime to achieve true "Zero-Dependency" AOT software synthesis without requiring users to `brew install fluidsynth`.
 
 ## 2. 🌍 Automated Cross-Platform CI/CD
 **Goal:** Automate native binary compilation for Mac, Linux, and Windows via GitHub Actions.
