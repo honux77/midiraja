@@ -1,17 +1,17 @@
 # Implementation Plan: Munt (MT-32) Emulator Integration
 
 ## Phase 1: Audio Playback Engine (`miniaudio`)
-- [ ] Task: Research `miniaudio` (a single-header C audio library) for cross-platform, GraalVM AOT-compatible PCM audio playback.
-- [ ] Task: Create a minimal C shared library (`libmidiraja_audio`) wrapping `miniaudio` to provide a simple API for pushing PCM float/short buffers to the OS default audio output.
-- [ ] Task: Set up a basic Makefile/CMake to compile `libmidiraja_audio` for macOS, Linux, and Windows.
-- [ ] Task: Create a `NativeAudioEngine` Java class that binds to `libmidiraja_audio` via FFM.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Audio Playback Engine' (Protocol in workflow.md)
+- [x] Task: Research `miniaudio` (a single-header C audio library) for cross-platform, GraalVM AOT-compatible PCM audio playback. [checkpoint: 8de1d23]
+- [x] Task: Create a minimal C shared library (`libmidiraja_audio`) wrapping `miniaudio` to provide a simple API for pushing PCM float/short buffers to the OS default audio output. [checkpoint: 27011c9]
+- [x] Task: Set up a basic Makefile/CMake to compile `libmidiraja_audio` for macOS, Linux, and Windows. [checkpoint: 27011c9]
+- [x] Task: Create a `NativeAudioEngine` Java class that binds to `libmidiraja_audio` via FFM. [checkpoint: 27011c9]
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Audio Playback Engine' (Protocol in workflow.md) [checkpoint: manual]
 
 ## Phase 2: Munt FFM Bindings & Abstraction
-- [ ] Task: Write a CMake/Makefile script to build the official `mt32emu` library as a shared C library (`libmt32emu`) from the `ext/munt` submodule.
-- [ ] Task: Define a `MuntNativeBridge` interface for DIP and testability.
-- [ ] Task: Implement `FFMMuntNativeBridge.java` that uses `java.lang.foreign` to bind directly to the official `libmt32emu` C API (`c_interface.h`).
-- [ ] Task: Implement `MuntSynthProviderTest.java` with spec-level tests using a mocked bridge (verifying Note On/Off, CC, SysEx, and error handling).
+- [~] Task: Write a CMake/Makefile script to build the official `mt32emu` library as a shared C library (`libmt32emu`) from the `ext/munt` submodule.
+- [~] Task: Define a `MuntNativeBridge` interface for DIP and testability.
+- [~] Task: Implement `FFMMuntNativeBridge.java` that uses `java.lang.foreign` to bind directly to the official `libmt32emu` C API (`c_interface.h`).
+- [~] Task: Implement `MuntSynthProviderTest.java` with spec-level tests using a mocked bridge (verifying Note On/Off, CC, SysEx, and error handling).
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Munt FFM Bindings & Abstraction' (Protocol in workflow.md)
 
 ## Phase 3: Synthesizer Integration (`MuntSynthProvider`)
