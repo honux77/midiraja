@@ -8,11 +8,11 @@
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Audio Playback Engine' (Protocol in workflow.md) [checkpoint: manual]
 
 ## Phase 2: Munt FFM Bindings & Abstraction
-- [~] Task: Write a CMake/Makefile script to build the official `mt32emu` library as a shared C library (`libmt32emu`) from the `ext/munt` submodule.
-- [~] Task: Define a `MuntNativeBridge` interface for DIP and testability.
-- [~] Task: Implement `FFMMuntNativeBridge.java` that uses `java.lang.foreign` to bind directly to the official `libmt32emu` C API (`c_interface.h`).
-- [~] Task: Implement `MuntSynthProviderTest.java` with spec-level tests using a mocked bridge (verifying Note On/Off, CC, SysEx, and error handling).
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Munt FFM Bindings & Abstraction' (Protocol in workflow.md)
+- [x] Task: Write a CMake/Makefile script to build the official `mt32emu` library as a shared C library (`libmt32emu`) from the `ext/munt` submodule. [checkpoint: f62c4f2]
+- [x] Task: Define a `MuntNativeBridge` interface for DIP and testability. [checkpoint: f62c4f2]
+- [x] Task: Implement `FFMMuntNativeBridge.java` that uses `java.lang.foreign` to bind directly to the official `libmt32emu` C API (`c_interface.h`). [checkpoint: f62c4f2]
+- [x] Task: Implement `MuntSynthProviderTest.java` with spec-level tests using a mocked bridge (verifying Note On/Off, CC, SysEx, and error handling). [checkpoint: f62c4f2]
+- [~] Task: Conductor - User Manual Verification 'Phase 2: Munt FFM Bindings & Abstraction' (Protocol in workflow.md)
 
 ## Phase 3: Synthesizer Integration (`MuntSynthProvider`)
 - [ ] Task: Implement `MuntSynthProvider` implementing `SoftSynthProvider`.
