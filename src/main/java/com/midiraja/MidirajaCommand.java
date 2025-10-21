@@ -102,6 +102,9 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"--fluid-driver"}, description = "Override the audio driver for FluidSynth (e.g. coreaudio, dsound, alsa).")
     private Optional<String> fluidDriver = Optional.empty();
 
+    @Option(names = {"--munt"}, description = "Use built-in Munt (MT-32 Emulator). Provide the directory containing MT32_CONTROL.ROM and MT32_PCM.ROM.")
+    private Optional<String> muntRomsDir = Optional.empty();
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
 
@@ -252,7 +255,37 @@ public class MidirajaCommand implements Callable<Integer>
         java.util.concurrent.atomic.AtomicBoolean portClosed = new java.util.concurrent.atomic.AtomicBoolean(false);
         if (provider == null)
         {
-            if (fluidSoundfont.isPresent()) {
+            if (muntRomsDir.isPresent()) {
+                var bridge = new com.midiraja.midi.FFMMuntNativeBridge();
+                // Find libmidiraja_audio using the same resolution technique
+                java.lang.foreign.Arena arena = java.lang.foreign.Arena.ofShared();
+                String libName = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac") ? "libmidiraja_audio.dylib" : "libmidiraja_audio.so";
+                String devPath = new File("").getAbsolutePath() + "/src/main/c/miniaudio/" + libName;
+                String[] audioPaths = {libName, devPath};
+                String resolvedAudioPath = null;
+                for (String p : audioPaths) {
+                    try {
+                        if (p.startsWith("/")) {
+                            if (new File(p).exists()) {
+                                resolvedAudioPath = p;
+                                break;
+                            }
+                        } else {
+                            java.lang.foreign.SymbolLookup.libraryLookup(p, arena);
+                            resolvedAudioPath = p;
+                            break;
+                        }
+                    } catch (Exception ignored) {}
+                }
+                arena.close();
+                
+                if (resolvedAudioPath == null) throw new Exception("Could not find " + libName);
+                
+                var audio = new com.midiraja.midi.NativeAudioEngine(resolvedAudioPath);
+                var munt = new com.midiraja.midi.MuntSynthProvider(bridge, audio);
+                logVerbose("Initializing Munt (MT-32) Emulator with ROMs in: " + muntRomsDir.get());
+                provider = munt;
+            } else if (fluidSoundfont.isPresent()) {
                 var fluid = new com.midiraja.midi.FluidSynthProvider(fluidDriver.orElse(null));
                 logVerbose("Initializing FluidSynth with SoundFont: " + fluidSoundfont.get());
                 provider = fluid;
@@ -308,9 +341,9 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         int portIndex = -1;
-        if (fluidSoundfont.isPresent() || useSynth)
+        if (muntRomsDir.isPresent() || fluidSoundfont.isPresent() || useSynth)
         {
-            portIndex = 0; // FluidSynth or JavaSynthProvider only has one virtual port
+            portIndex = 0; // Soft synths only have one virtual port
         }
         else if (port.isPresent())
         {
@@ -345,9 +378,14 @@ public class MidirajaCommand implements Callable<Integer>
             );
             provider.openPort(portIndex);
             
-            if (provider instanceof com.midiraja.midi.SoftSynthProvider softSynth && fluidSoundfont.isPresent()) {
-                softSynth.loadSoundbank(fluidSoundfont.get());
-                logVerbose("SoundFont loaded successfully.");
+            if (provider instanceof com.midiraja.midi.SoftSynthProvider softSynth) {
+                if (muntRomsDir.isPresent()) {
+                    softSynth.loadSoundbank(muntRomsDir.get());
+                    logVerbose("Munt ROMs loaded successfully.");
+                } else if (fluidSoundfont.isPresent()) {
+                    softSynth.loadSoundbank(fluidSoundfont.get());
+                    logVerbose("SoundFont loaded successfully.");
+                }
             }
 
             int currentTrackIdx = 0;
