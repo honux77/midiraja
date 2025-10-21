@@ -15,15 +15,15 @@
 - [~] Task: Conductor - User Manual Verification 'Phase 2: Munt FFM Bindings & Abstraction' (Protocol in workflow.md)
 
 ## Phase 3: Synthesizer Integration (`MuntSynthProvider`)
-- [ ] Task: Implement `MuntSynthProvider` implementing `SoftSynthProvider`.
-- [ ] Task: Wire the initialization: create the munt context, load ROMs from the provided directory, and open the synth.
-- [ ] Task: Implement a background daemon thread in `MuntSynthProvider` that continuously calls `mt32emu_render_bit16s` and pipes the resulting PCM audio buffer to the `NativeAudioEngine`.
-- [ ] Task: Implement the `sendMessage` routing logic.
-- [ ] Task: Update `reachability-metadata.json` with the new FFM downcall signatures.
-- [ ] Task: Conductor - User Manual Verification 'Phase 3: Synthesizer Integration' (Protocol in workflow.md)
+- [x] Task: Implement `MuntSynthProvider` implementing `SoftSynthProvider`. [checkpoint: f62c4f2]
+- [x] Task: Wire the initialization: create the munt context, load ROMs from the provided directory, and open the synth. [checkpoint: f62c4f2]
+- [x] Task: Implement a background daemon thread in `MuntSynthProvider` that continuously calls `mt32emu_render_bit16s` and pipes the resulting PCM audio buffer to the `NativeAudioEngine`. [checkpoint: a0b0823]
+- [x] Task: Implement the `sendMessage` routing logic. [checkpoint: f62c4f2]
+- [x] Task: Update `reachability-metadata.json` with the new FFM downcall signatures. [checkpoint: 996b02b]
+- [x] Task: Conductor - User Manual Verification 'Phase 3: Synthesizer Integration' (Protocol in workflow.md) [checkpoint: manual]
 
 ## Phase 4: CLI Integration and Build Automation
-- [ ] Task: Update `MidirajaCommand.java` to add the `--munt <rom_dir>` option.
-- [ ] Task: Wire the `--munt` option to instantiate the `MuntSynthProvider`.
-- [ ] Task: Update the main `build.gradle` or shell scripts to automatically compile both `libmt32emu` and `libmidiraja_audio` before the Java build.
-- [ ] Task: Conductor - User Manual Verification 'Phase 4: CLI Integration and Build Automation' (Protocol in workflow.md)
+- [x] Task: Update `MidirajaCommand.java` to add the `--munt <rom_dir>` option. [checkpoint: 3e5581b]
+- [x] Task: Wire the `--munt` option to instantiate the `MuntSynthProvider`. [checkpoint: 3e5581b]
+- [x] Task: Update the main `build.gradle` or shell scripts to automatically compile both `libmt32emu` and `libmidiraja_audio` before the Java build. [checkpoint: 4c5f6e9]
+- [x] Task: Conductor - User Manual Verification 'Phase 4: CLI Integration and Build Automation' (Protocol in workflow.md) [checkpoint: manual]
