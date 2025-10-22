@@ -61,6 +61,7 @@ public class NativeAudioEngine implements AutoCloseable {
             MemorySegment pcmSeg = arena.allocateFrom(ValueLayout.JAVA_SHORT, pcmData);
             midiraja_audio_push.invokeExact(ctx, pcmSeg, pcmData.length);
         } catch (Throwable ignored) {
+            // Intentionally ignored to prevent tearing down the audio thread on a single dropped frame
         }
     }
 
