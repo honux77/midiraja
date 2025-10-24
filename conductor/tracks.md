@@ -18,8 +18,3 @@ This file tracks all major tracks for the project. Each track has its own detail
 - [x] **Track: fluid를 통합해줘.**
 *Link: [./tracks/fluid_integration_20260301/](./tracks/fluid_integration_20260301/)*
 
----
-
-- [x] **Track: munt를 통합해줘.**
-*Link: [./tracks/munt_integration_20260301/](./tracks/munt_integration_20260301/)*
-
