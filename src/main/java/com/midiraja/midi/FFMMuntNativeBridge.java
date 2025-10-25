@@ -18,6 +18,7 @@ import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
 
+@SuppressWarnings({"EmptyCatch", "UnusedVariable"})
 public class FFMMuntNativeBridge implements MuntNativeBridge {
 
     private final Arena arena;

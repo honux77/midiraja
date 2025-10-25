@@ -275,7 +275,9 @@ public class MidirajaCommand implements Callable<Integer>
                             resolvedAudioPath = p;
                             break;
                         }
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                        // ignored: we are looping to find a valid path
+                    }
                 }
                 arena.close();
                 

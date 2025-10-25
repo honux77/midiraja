@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 
+@SuppressWarnings("EmptyCatch")
 public class NativeAudioEngine implements AutoCloseable {
 
     private final Arena arena;

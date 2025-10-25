@@ -18,6 +18,7 @@ import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 
+@SuppressWarnings({"EmptyCatch", "UnusedVariable"})
 public class FluidSynthProvider implements SoftSynthProvider {
     
     private final Arena arena;
