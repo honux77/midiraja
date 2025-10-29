@@ -105,6 +105,10 @@ public class PlaybackEngine
         isPlaying = true;
         endStatus = PlaybackStatus.FINISHED;
 
+        // Clear any reverb tail / queued audio from a previous song before starting.
+        // No-op for hardware MIDI ports; Munt overrides this to flush the ring buffer.
+        provider.prepareForNewTrack();
+
         try (var scope = StructuredTaskScope.open())
         {
             scope.fork(() -> {
@@ -234,6 +238,11 @@ public class PlaybackEngine
 
     private void playLoop() throws Exception
     {
+        // Signal the provider that playback is about to begin. Munt uses this to resume its
+        // render thread (paused since prepareForNewTrack) with a fresh timing reference, so
+        // the ring buffer starts filling with real audio instead of silence.
+        provider.onPlaybackStarted();
+
         sendInitialReset();
         
         long lastTick = 0;
@@ -307,14 +316,16 @@ public class PlaybackEngine
                 elapsedNanos += (long) ((tick - lastTick) * ticksToNanos);
                 long targetNanos = startTimeNanos + elapsedNanos;
 
-                // High-resolution delay
+                // High-resolution delay. Cap each sleep at 50ms so seek/stop requests
+                // are detected within 50ms regardless of the gap between MIDI events.
                 long currentNanos = System.nanoTime();
                 while (currentNanos < targetNanos)
                 {
-                    long remainingMs = (targetNanos - currentNanos) / 1000000;
+                    if (seekTarget != -1 || !isPlaying) break;
+                    long remainingMs = (targetNanos - currentNanos) / 1_000_000L;
                     if (remainingMs > 1)
                     {
-                        Thread.sleep(remainingMs - 1);
+                        Thread.sleep(Math.min(remainingMs - 1, 50));
                     }
                     else
                     {
@@ -323,6 +334,9 @@ public class PlaybackEngine
                     currentNanos = System.nanoTime();
                 }
             }
+
+            // If seek or stop was triggered mid-wait, skip this event and re-check at loop top.
+            if (seekTarget != -1 || !isPlaying) continue;
 
             processEvent(event);
             lastTick = tick;
@@ -342,7 +356,7 @@ public class PlaybackEngine
         if (isPlaying && endStatus == PlaybackStatus.FINISHED) {
             currentMicroseconds = getTotalMicroseconds();
             listeners.forEach(l -> l.onTick(currentMicroseconds));
-            try { Thread.sleep(100); } catch (Exception ignored) { /* Allow UI to render 100% frame */ }
+            try { Thread.sleep(20); } catch (Exception ignored) { /* Allow UI to render 100% frame */ }
         }
     }
 

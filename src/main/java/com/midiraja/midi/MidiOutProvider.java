@@ -36,6 +36,24 @@ public interface MidiOutProvider
     void closePort();
 
     /**
+     * Prepares the audio pipeline for a new track. Called at the start of each song before
+     * playback begins. Default is a no-op for hardware MIDI ports. Soft-synth implementations
+     * (e.g. Munt) should override this to clear reverb tails and flush queued audio buffers
+     * so the new track starts cleanly. Implementations may leave their render thread paused
+     * here; {@link #onPlaybackStarted()} will resume it when playback actually begins.
+     */
+    default void prepareForNewTrack() {}
+
+    /**
+     * Called by {@code PlaybackEngine.playLoop()} at the very start of playback, just before
+     * the first MIDI event is dispatched. Soft-synth implementations that paused their render
+     * thread in {@link #prepareForNewTrack()} should resume it here, resetting any timing
+     * references so the first notes are scheduled with fresh, near-zero timestamps.
+     * Default is a no-op for hardware MIDI ports.
+     */
+    default void onPlaybackStarted() {}
+
+    /**
      * Returns the estimated audio output latency in nanoseconds. Used to synchronize visual
      * feedback (e.g. VU meters) with actual audible output. Default is 0 for hardware MIDI ports
      * where the OS driver handles latency transparently.
