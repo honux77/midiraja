@@ -364,8 +364,10 @@ public class FFMAdlMidiNativeBridge implements AdlMidiNativeBridge {
         }
 
         try {
-            // adl_generate takes stereoFrames (not total samples)
-            int ignored = (int) adl_generate.invokeExact(device, stereoFrames, renderBuffer);
+            // adl_generate sampleCount = total shorts in the buffer (L+R interleaved).
+            // Passing stereoFrames here only fills half the buffer with valid audio;
+            // the rest is garbage → wrong pitch and noise. Must pass buffer.length.
+            int ignored = (int) adl_generate.invokeExact(device, buffer.length, renderBuffer);
             MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
         } catch (Throwable ignored) {}
     }

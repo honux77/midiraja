@@ -79,10 +79,13 @@ public interface AdlMidiNativeBridge extends AutoCloseable {
     void panic();
 
     /**
-     * Renders {@code stereoFrames} stereo PCM frames into {@code buffer}.
-     * Buffer must have at least {@code stereoFrames * 2} elements.
+     * Renders PCM audio into {@code buffer}.
      *
-     * @param buffer      Output buffer (interleaved stereo 16-bit PCM).
+     * <p>{@code stereoFrames} is the number of stereo frames; the buffer must
+     * have at least {@code stereoFrames * 2} elements. Internally, libADLMIDI's
+     * {@code adl_generate} receives {@code buffer.length} (total shorts = frames × 2).
+     *
+     * @param buffer       Output buffer (interleaved stereo 16-bit PCM).
      * @param stereoFrames Number of stereo frames to render.
      */
     void generate(short[] buffer, int stereoFrames);
