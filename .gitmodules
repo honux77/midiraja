@@ -1,3 +1,6 @@
 [submodule "ext/munt"]
 	path = ext/munt
 	url = https://github.com/munt/munt.git
+[submodule "ext/libADLMIDI"]
+	path = ext/libADLMIDI
+	url = https://github.com/Wohlstand/libADLMIDI.git

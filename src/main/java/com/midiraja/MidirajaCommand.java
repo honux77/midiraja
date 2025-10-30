@@ -105,6 +105,10 @@ public class MidirajaCommand implements Callable<Integer>
     @Option(names = {"--munt"}, description = "Use built-in Munt (MT-32 Emulator). Provide the directory containing MT32_CONTROL.ROM and MT32_PCM.ROM.")
     private Optional<String> muntRomsDir = Optional.empty();
 
+    @Option(names = {"--opl"}, arity = "0..1", fallbackValue = "",
+            description = "Use built-in libADLMIDI OPL3 FM synthesizer. Optionally provide an embedded bank number (0-75) or a path to a .wopl bank file. Defaults to bank 0 (GeneralMidi).")
+    private Optional<String> oplBank = Optional.empty();
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
 
@@ -287,6 +291,31 @@ public class MidirajaCommand implements Callable<Integer>
                 var munt = new com.midiraja.midi.MuntSynthProvider(bridge, audio);
                 logVerbose("Initializing Munt (MT-32) Emulator with ROMs in: " + muntRomsDir.get());
                 provider = munt;
+            } else if (oplBank.isPresent()) {
+                java.lang.foreign.Arena oplArena = java.lang.foreign.Arena.ofShared();
+                String libName = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("mac") ? "libmidiraja_audio.dylib" : "libmidiraja_audio.so";
+                String devPath = new File("").getAbsolutePath() + "/src/main/c/miniaudio/" + libName;
+                String[] audioPaths = {libName, devPath};
+                String resolvedAudioPath = null;
+                for (String p : audioPaths) {
+                    try {
+                        if (p.startsWith("/")) {
+                            if (new File(p).exists()) { resolvedAudioPath = p; break; }
+                        } else {
+                            java.lang.foreign.SymbolLookup.libraryLookup(p, oplArena);
+                            resolvedAudioPath = p;
+                            break;
+                        }
+                    } catch (Exception ignored) {
+                        // ignored: we are looping to find a valid path
+                    }
+                }
+                oplArena.close();
+                if (resolvedAudioPath == null) throw new Exception("Could not find " + libName);
+                var oplAudio = new com.midiraja.midi.NativeAudioEngine(resolvedAudioPath);
+                var oplBridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
+                logVerbose("Initializing libADLMIDI OPL3 FM Synthesizer.");
+                provider = new com.midiraja.midi.AdlMidiSynthProvider(oplBridge, oplAudio);
             } else if (fluidSoundfont.isPresent()) {
                 var fluid = new com.midiraja.midi.FluidSynthProvider(fluidDriver.orElse(null));
                 logVerbose("Initializing FluidSynth with SoundFont: " + fluidSoundfont.get());
@@ -343,7 +372,7 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         int portIndex = -1;
-        if (muntRomsDir.isPresent() || fluidSoundfont.isPresent() || useSynth)
+        if (muntRomsDir.isPresent() || oplBank.isPresent() || fluidSoundfont.isPresent() || useSynth)
         {
             portIndex = 0; // Soft synths only have one virtual port
         }
@@ -384,6 +413,18 @@ public class MidirajaCommand implements Callable<Integer>
                 if (muntRomsDir.isPresent()) {
                     softSynth.loadSoundbank(muntRomsDir.get());
                     logVerbose("Munt ROMs loaded successfully.");
+                } else if (oplBank.isPresent()) {
+                    String val = oplBank.get();
+                    String soundbankArg;
+                    if (val.isEmpty()) {
+                        soundbankArg = "bank:0";              // default embedded bank
+                    } else if (val.matches("\\d+")) {
+                        soundbankArg = "bank:" + val;         // embedded bank by number
+                    } else {
+                        soundbankArg = val;                   // WOPL file path
+                    }
+                    softSynth.loadSoundbank(soundbankArg);
+                    logVerbose("OPL bank loaded: " + soundbankArg);
                 } else if (fluidSoundfont.isPresent()) {
                     softSynth.loadSoundbank(fluidSoundfont.get());
                     logVerbose("SoundFont loaded successfully.");

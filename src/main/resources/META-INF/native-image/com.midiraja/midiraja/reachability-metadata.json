@@ -13,6 +13,9 @@
                     "name": "loop"
                 },
                 {
+                    "name": "oplBank"
+                },
+                {
                     "name": "port"
                 },
                 {
@@ -360,6 +363,54 @@
                     "jint",
                     "void*",
                     "void*"
+                ],
+                "returnType": "jint"
+            },
+            {
+                "parameterTypes": [
+                    "jlong"
+                ],
+                "returnType": "void*"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
+                    "void*"
+                ],
+                "returnType": "jint"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
+                    "jint",
+                    "jint"
+                ],
+                "returnType": "jint"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
+                    "jint"
+                ],
+                "returnType": "void"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
+                    "jint",
+                    "jint"
+                ],
+                "returnType": "void"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "void*",
+                    "jlong"
                 ],
                 "returnType": "jint"
             }

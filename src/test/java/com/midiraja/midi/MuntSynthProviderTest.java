@@ -119,4 +119,30 @@ class MuntSynthProviderTest {
         provider.closePort();
         assertTrue(mockBridge.closed, "Bridge should be closed");
     }
+
+    @Test
+    void testPanic() throws Exception {
+        MockMuntBridge mockBridge = new MockMuntBridge();
+        MuntSynthProvider provider = new MuntSynthProvider(mockBridge, null);
+
+        provider.panic();
+
+        // 16 channels × (4 CCs + 128 note-offs) = 2112 messages total
+        int expectedCount = 16 * (4 + 128);
+        assertEquals(expectedCount, mockBridge.eventLog.size(),
+            "panic() must deliver 2112 MIDI messages (4 CCs + 128 note-offs per channel)");
+
+        // Spot-check first channel (sustain-off, all-notes-off, all-sound-off, reset-controllers)
+        assertEquals("CC ch:0 num:64 val:0",  mockBridge.eventLog.get(0));
+        assertEquals("CC ch:0 num:123 val:0", mockBridge.eventLog.get(1));
+        assertEquals("CC ch:0 num:120 val:0", mockBridge.eventLog.get(2));
+        assertEquals("CC ch:0 num:121 val:0", mockBridge.eventLog.get(3));
+        // First and last note-offs on channel 0
+        assertEquals("NOTE_OFF ch:0 key:0",   mockBridge.eventLog.get(4));
+        assertEquals("NOTE_OFF ch:0 key:127", mockBridge.eventLog.get(4 + 127));
+
+        // Spot-check last channel (ch 15)
+        int ch15Offset = 15 * (4 + 128);
+        assertEquals("CC ch:15 num:64 val:0", mockBridge.eventLog.get(ch15Offset));
+    }
 }

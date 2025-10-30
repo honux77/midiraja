@@ -11,13 +11,18 @@ import com.midiraja.io.MockTerminalIO;
 import com.midiraja.io.TerminalIO;
 import com.midiraja.midi.MidiOutProvider;
 import com.midiraja.midi.MidiPort;
+import com.midiraja.ui.DumbUI;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
+import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -46,6 +51,27 @@ class PlaybackEngineTest
         @Override
         public void closePort()
         {}
+
+        // Override to avoid the 200ms hardware-flush wait in the default implementation
+        @Override
+        public void panic()
+        {}
+    }
+
+    static class RecordingMidiProvider extends MockMidiProvider
+    {
+        final List<byte[]> messages = new ArrayList<>();
+
+        @Override
+        public void sendMessage(byte[] data) throws Exception
+        {
+            messages.add(data.clone());
+        }
+    }
+
+    private PlaylistContext ctx()
+    {
+        return new PlaylistContext(List.of(new File("test.mid")), 0, new MidiPort(0, "Mock"), null);
     }
 
     @BeforeEach
@@ -118,5 +144,75 @@ class PlaybackEngineTest
 
         assertDoesNotThrow(() -> java.lang.ScopedValue.where(TerminalIO.CONTEXT, mockIO)
                 .call(() -> engine.start(new com.midiraja.ui.DumbUI())));
+    }
+
+    @Test
+    void testSpeedBoundaries()
+    {
+        PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, ctx(), 100, 1.0,
+                Optional.empty(), Optional.empty());
+
+        assertEquals(1.0, engine.getCurrentSpeed(), 1e-9);
+
+        engine.adjustSpeed(10.0);   // clamps to 2.0
+        assertEquals(2.0, engine.getCurrentSpeed(), 1e-9);
+
+        engine.adjustSpeed(-10.0);  // clamps to 0.5
+        assertEquals(0.5, engine.getCurrentSpeed(), 1e-9);
+
+        engine.adjustSpeed(0.1);    // 0.5 + 0.1 = 0.6
+        assertEquals(0.6, engine.getCurrentSpeed(), 1e-6);
+    }
+
+    @Test
+    void testTransposeAdjustment()
+    {
+        PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, ctx(), 100, 1.0,
+                Optional.empty(), Optional.empty());
+
+        assertEquals(0, engine.getCurrentTranspose());
+
+        engine.adjustTranspose(2);
+        assertEquals(2, engine.getCurrentTranspose());
+
+        engine.adjustTranspose(-5);
+        assertEquals(-3, engine.getCurrentTranspose());
+    }
+
+    @Test
+    void testTogglePause()
+    {
+        PlaybackEngine engine = new PlaybackEngine(mockSequence, mockProvider, ctx(), 100, 1.0,
+                Optional.empty(), Optional.empty());
+
+        assertFalse(engine.isPaused());
+        engine.togglePause();
+        assertTrue(engine.isPaused());
+        engine.togglePause();
+        assertFalse(engine.isPaused());
+    }
+
+    @Test
+    void testMidiEventDelivery() throws Exception
+    {
+        // Build a minimal sequence with a NoteOn and NoteOff at tick 0 (processed immediately)
+        Sequence seq = new Sequence(Sequence.PPQ, 24);
+        Track track = seq.createTrack();
+        track.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_ON,  0, 60, 100), 0L));
+        track.add(new MidiEvent(new ShortMessage(ShortMessage.NOTE_OFF, 0, 60,   0), 0L));
+
+        RecordingMidiProvider recording = new RecordingMidiProvider();
+        PlaybackEngine engine = new PlaybackEngine(seq, recording, ctx(), 100, 1000.0,
+                Optional.empty(), Optional.empty());
+
+        ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO())
+                .call(() -> { engine.start(new DumbUI()); return null; });
+
+        boolean sawNoteOn  = recording.messages.stream()
+                .anyMatch(m -> (m[0] & 0xF0) == 0x90 && (m[1] & 0xFF) == 60 && (m[2] & 0xFF) == 100);
+        boolean sawNoteOff = recording.messages.stream()
+                .anyMatch(m -> (m[0] & 0xF0) == 0x80 && (m[1] & 0xFF) == 60);
+        assertTrue(sawNoteOn,  "NoteOn(ch0, key60, vel100) should reach the MIDI provider");
+        assertTrue(sawNoteOff, "NoteOff(ch0, key60) should reach the MIDI provider");
     }
 }
