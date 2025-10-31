@@ -84,6 +84,33 @@ While a song is playing, you don't need to restart the app to make changes. Just
 
 ---
 
+## 🎹 Soft Synthesizers
+
+`midra` includes three built-in software synthesizers alongside native OS MIDI output.
+
+| Synthesizer | Flag | Sound |
+|-------------|------|-------|
+| **FluidSynth** | `--fluid <soundfont.sf2>` | General MIDI · SF2 SoundFont |
+| **MT-32 / Munt** | `--munt <rom-dir>` | Roland MT-32 · authentic DOS-era game music |
+| **OPL / libADLMIDI** | `--opl [bank]` | AdLib / Sound Blaster FM · no install required |
+
+```bash
+# FluidSynth (requires: brew install fluid-synth + a .sf2 file)
+midra --fluid /path/to/soundfont.sf2 song.mid
+
+# MT-32 emulation (requires: brew install munt + ROM files)
+midra --munt ~/mt32-roms monkey_island.mid
+
+# OPL FM synthesis (no extra install — built into the binary)
+midra --opl song.mid
+midra --opl 14 song.mid                  # Doom built-in bank
+midra --opl /path/to/bank.wopl song.mid  # external bank file
+```
+
+For installation instructions, bank listings, and emulator options, see the **[Soft Synth Guide](docs/soft-synth-guide.md)**.
+
+---
+
 ## ⚖️ License & Credits
 * **Midiraja** is licensed under the [BSD 3-Clause License](LICENSE).
 * This project uses several open-source libraries. Please see [NOTICES.md](NOTICES.md) for full third-party license information and attributions.

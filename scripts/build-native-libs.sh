@@ -36,8 +36,8 @@ cd "$PROJECT_ROOT/src/main/c/adlmidi"
 if [[ "$OSTYPE" == "darwin"* ]]; then
     cmake -G "Unix Makefiles" \
         -DCMAKE_BUILD_TYPE=Release \
-        -DbuildSharedLibs=ON \
         -DlibADLMIDI_SHARED=ON \
+        -DlibADLMIDI_STATIC=ON \
         -DWITH_EMBEDDED_BANKS=ON \
         -DWITH_MUS_SUPPORT=OFF \
         -DWITH_XMI_SUPPORT=OFF \
@@ -49,8 +49,8 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     cmake -G "Unix Makefiles" \
         -DCMAKE_BUILD_TYPE=Release \
-        -DbuildSharedLibs=ON \
         -DlibADLMIDI_SHARED=ON \
+        -DlibADLMIDI_STATIC=ON \
         -DWITH_EMBEDDED_BANKS=ON \
         -DWITH_MUS_SUPPORT=OFF \
         -DWITH_XMI_SUPPORT=OFF \

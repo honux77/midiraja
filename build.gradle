@@ -107,8 +107,26 @@ graalvmNative {
             // Initialize sound properties at build time to prevent "Can't find java.home" error
             buildArgs.add('--initialize-at-build-time=com.sun.media.sound.JSSecurityManager,com.sun.media.sound.JDK13Services,javax.sound.midi.MidiSystem')
             // Optimize binary size
-            buildArgs.add('-Os') 
+            buildArgs.add('-Os')
             buildArgs.add('--install-exit-handlers')
+
+            // Statically link libADLMIDI: --opl works without distributing a .dylib/.so
+            def adlLib = "${projectDir}/src/main/c/adlmidi/libADLMIDI.a"
+            if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+                // Apple ld: -force_load includes all symbols from the archive (prevents dead-stripping
+                // of symbols referenced only via FFM MethodHandle string lookup at runtime)
+                buildArgs.add("-H:NativeLinkerOption=-force_load")
+                buildArgs.add("-H:NativeLinkerOption=${adlLib}")
+                // libADLMIDI is C++; link against LLVM's C++ stdlib (macOS default)
+                buildArgs.add("-H:NativeLinkerOption=-lc++")
+            } else if (org.gradle.internal.os.OperatingSystem.current().isLinux()) {
+                // GNU ld: equivalent of -force_load
+                buildArgs.add("-H:NativeLinkerOption=--whole-archive")
+                buildArgs.add("-H:NativeLinkerOption=${adlLib}")
+                buildArgs.add("-H:NativeLinkerOption=--no-whole-archive")
+                // libADLMIDI is C++; link against GNU C++ stdlib
+                buildArgs.add("-H:NativeLinkerOption=-lstdc++")
+            }
         }
     }
 }

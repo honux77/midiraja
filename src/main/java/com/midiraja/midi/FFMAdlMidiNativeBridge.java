@@ -99,7 +99,7 @@ public class FFMAdlMidiNativeBridge implements AdlMidiNativeBridge {
     public FFMAdlMidiNativeBridge() throws Exception {
         this.arena = Arena.ofShared();
 
-        SymbolLookup lib = tryLoadLibrary(arena, "libADLMIDI.dylib", "libADLMIDI.so");
+        SymbolLookup lib = findAdlMidiSymbols();
         Linker linker = Linker.nativeLinker();
 
         // ADL_MIDIPlayer* adl_init(long sample_rate)
@@ -205,7 +205,19 @@ public class FFMAdlMidiNativeBridge implements AdlMidiNativeBridge {
         );
     }
 
-    private SymbolLookup tryLoadLibrary(Arena arena, String... paths) {
+    /**
+     * In GraalVM native image, libADLMIDI is statically linked into the binary.
+     * {@code loaderLookup()} finds those symbols directly without any dlopen.
+     * In JVM mode, we fall back to loading the shared library from disk.
+     */
+    private SymbolLookup findAdlMidiSymbols() {
+        if (SymbolLookup.loaderLookup().find("adl_init").isPresent()) {
+            return SymbolLookup.loaderLookup();
+        }
+        return tryLoadSharedLibrary(arena, "libADLMIDI.dylib", "libADLMIDI.so");
+    }
+
+    private SymbolLookup tryLoadSharedLibrary(Arena arena, String... paths) {
         List<String> failedPaths = new ArrayList<>();
         String projectRoot = new File("").getAbsolutePath();
         String devPathMac   = projectRoot + "/src/main/c/adlmidi/libADLMIDI.dylib";
