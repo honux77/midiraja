@@ -75,9 +75,24 @@ public class AdlMidiSynthProvider implements SoftSynthProvider {
         return totalFrames * 1_000_000_000L / SAMPLE_RATE;
     }
 
+    private static final String[] EMULATOR_NAMES = {
+        "Nuked OPL3 v1.8",   // 0
+        "Nuked OPL3 v1.7.4", // 1
+        "DosBox",            // 2
+        "Opal",              // 3
+        "Java",              // 4
+        "ESFMu",             // 5
+        "MAME OPL2",         // 6
+        "YMFM OPL2",         // 7
+        "YMFM OPL3",         // 8
+    };
+
     @Override
     public List<MidiPort> getOutputPorts() {
-        return List.of(new MidiPort(0, "libADLMIDI OPL3 FM Synthesizer (Embedded)"));
+        String emuName = (emulatorId >= 0 && emulatorId < EMULATOR_NAMES.length)
+            ? EMULATOR_NAMES[emulatorId] : "Emulator " + emulatorId;
+        String portName = "libADLMIDI · " + emuName + " · " + numChips + " chip" + (numChips > 1 ? "s" : "");
+        return List.of(new MidiPort(0, portName));
     }
 
     @Override
