@@ -109,6 +109,12 @@ public class MidirajaCommand implements Callable<Integer>
             description = "Use built-in libADLMIDI OPL3 FM synthesizer. Optionally provide an embedded bank number (0-75) or a path to a .wopl bank file. Defaults to bank 0 (GeneralMidi).")
     private Optional<String> oplBank = Optional.empty();
 
+    @Option(names = {"--opl-emulator"}, description = "OPL emulator backend (default: 0). 0=Nuked OPL3 v1.8, 1=Nuked v1.7.4, 5=ESFMu, 6=MAME OPL2, 7=YMFM OPL2, 8=YMFM OPL3.")
+    private int oplEmulator = 0;
+
+    @Option(names = {"--opl-chips"}, description = "Number of OPL chips to emulate (default: 4). More chips = more polyphony. 1 chip = 18 channels, 4 chips = 72 channels.")
+    private int oplChips = 4;
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     private UiModeOptions uiOptions = new UiModeOptions();
 
@@ -314,8 +320,8 @@ public class MidirajaCommand implements Callable<Integer>
                 if (resolvedAudioPath == null) throw new Exception("Could not find " + libName);
                 var oplAudio = new com.midiraja.midi.NativeAudioEngine(resolvedAudioPath);
                 var oplBridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
-                logVerbose("Initializing libADLMIDI OPL3 FM Synthesizer.");
-                provider = new com.midiraja.midi.AdlMidiSynthProvider(oplBridge, oplAudio);
+                logVerbose("Initializing libADLMIDI OPL3 FM Synthesizer (emulator=" + oplEmulator + ", chips=" + oplChips + ").");
+                provider = new com.midiraja.midi.AdlMidiSynthProvider(oplBridge, oplAudio, oplEmulator, oplChips);
             } else if (fluidSoundfont.isPresent()) {
                 var fluid = new com.midiraja.midi.FluidSynthProvider(fluidDriver.orElse(null));
                 logVerbose("Initializing FluidSynth with SoundFont: " + fluidSoundfont.get());

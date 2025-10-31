@@ -16,6 +16,12 @@
                     "name": "oplBank"
                 },
                 {
+                    "name": "oplChips"
+                },
+                {
+                    "name": "oplEmulator"
+                },
+                {
                     "name": "port"
                 },
                 {

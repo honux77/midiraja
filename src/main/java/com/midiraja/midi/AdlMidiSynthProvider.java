@@ -46,10 +46,22 @@ public class AdlMidiSynthProvider implements SoftSynthProvider {
     // call bridge.panic() / bridge.reset() from the provider thread.
     private volatile boolean renderPaused = false;
 
+    private final int emulatorId;
+    private final int numChips;
+
+    /** Uses Nuked OPL3 (emulator 0) and 4 chips by default. */
     public AdlMidiSynthProvider(AdlMidiNativeBridge bridge,
             @org.jspecify.annotations.Nullable NativeAudioEngine audio) {
-        this.bridge = bridge;
-        this.audio  = audio;
+        this(bridge, audio, 0, 4);
+    }
+
+    public AdlMidiSynthProvider(AdlMidiNativeBridge bridge,
+            @org.jspecify.annotations.Nullable NativeAudioEngine audio,
+            int emulatorId, int numChips) {
+        this.bridge     = bridge;
+        this.audio      = audio;
+        this.emulatorId = emulatorId;
+        this.numChips   = numChips;
     }
 
     private static final int SAMPLE_RATE                 = 44100;
@@ -71,8 +83,8 @@ public class AdlMidiSynthProvider implements SoftSynthProvider {
     @Override
     public void openPort(int portIndex) throws Exception {
         bridge.init(SAMPLE_RATE);
-        // 4 chips = 72 polyphonic channels (rich polyphony for GM content)
-        bridge.setNumChips(4);
+        bridge.switchEmulator(emulatorId);
+        bridge.setNumChips(numChips);
     }
 
     @Override
