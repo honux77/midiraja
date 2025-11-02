@@ -554,6 +554,7 @@ public class MidirajaCommand implements Callable<Integer>
             if (useAltScreen && isInteractive) {
                 out.print("\033[?1049h\033[?25l"); // Alt screen, hide cursor
                 out.flush();
+                ALT_SCREEN_ACTIVE = true; // tell the shutdown hook to disable alt screen on Ctrl+C
             }
 
             try {
