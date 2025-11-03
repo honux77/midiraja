@@ -62,28 +62,25 @@ public class PlaylistParser {
                 if (line.toUpperCase(Locale.ROOT).startsWith("#MIDRA:")) {
                     String directive = line.substring(7).trim();
 
-                    // Boolean flags — short names now match CommonOptions:
-                    //   -s = --shuffle (was -z in old CLI)
-                    //   -r = --loop
-                    //   -R = --recursive
-                    if (directive.contains("--shuffle") || directive.contains("-s")) {
-                        common.shuffle = true;
-                        logVerbose("Applied directive from playlist: --shuffle");
-                    }
-                    if (directive.contains("--loop") || directive.contains("-r")) {
-                        common.loop = true;
-                        logVerbose("Applied directive from playlist: --loop");
-                    }
-                    if (directive.contains("--recursive") || directive.contains("-R")) {
-                        common.recursive = true;
-                        logVerbose("Applied directive from playlist: --recursive");
-                    }
-
-                    // Key-value directives
+                    // Parse all tokens in one pass; use exact equality to avoid
+                    // substring false-positives (e.g. -s inside --speed, -r inside --reset).
                     String[] tokens = directive.split("\\s+");
                     for (int i = 0; i < tokens.length; i++) {
                         String token = tokens[i];
 
+                        // Boolean flags
+                        if (token.equals("--shuffle") || token.equals("-s")) {
+                            common.shuffle = true;
+                            logVerbose("Applied directive from playlist: --shuffle");
+                        } else if (token.equals("--loop") || token.equals("-r")) {
+                            common.loop = true;
+                            logVerbose("Applied directive from playlist: --loop");
+                        } else if (token.equals("--recursive") || token.equals("-R")) {
+                            common.recursive = true;
+                            logVerbose("Applied directive from playlist: --recursive");
+                        }
+
+                        // Key-value directives
                         if (token.startsWith("--volume=") || token.startsWith("-v=")) {
                             try {
                                 common.volume = Integer.parseInt(token.substring(token.indexOf('=') + 1));
