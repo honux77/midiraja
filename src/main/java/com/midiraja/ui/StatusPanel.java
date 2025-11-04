@@ -25,16 +25,18 @@ public class StatusPanel implements Panel
     private boolean isPaused = false;
     @Nullable private PlaylistContext context;
 
-    @Override
-    public void onLayoutUpdated(LayoutConstraints bounds)
+    @Override public void onLayoutUpdated(LayoutConstraints bounds)
     {
         this.constraints = bounds;
     }
 
-    @Override
-    public void onPlaybackStateChanged() {} // Handled by polling properties for now, or we can add specific setters
+    @Override public void onPlaybackStateChanged()
+    {
+    } // Handled by polling properties for now, or we can add specific setters
 
-    public void updateState(long currentMicros, long totalMicros, float bpm, double speed, double volumeScale, int transpose, boolean isPaused, PlaylistContext context) {
+    public void updateState(long currentMicros, long totalMicros, float bpm, double speed,
+        double volumeScale, int transpose, boolean isPaused, PlaylistContext context)
+    {
         this.isPaused = isPaused;
         this.currentMicros = currentMicros;
         this.totalMicros = totalMicros;
@@ -45,20 +47,19 @@ public class StatusPanel implements Panel
         this.context = context;
     }
 
-    @Override
-    public void onTick(long currentMicroseconds)
+    @Override public void onTick(long currentMicroseconds)
     {
         this.currentMicros = currentMicroseconds;
     }
 
-    @Override
-    public void onTempoChanged(float bpm)
+    @Override public void onTempoChanged(float bpm)
     {
         this.bpm = bpm;
     }
 
-    @Override
-    public void onChannelActivity(int channel, int velocity) {}
+    @Override public void onChannelActivity(int channel, int velocity)
+    {
+    }
 
     private String formatTime(long microseconds, boolean includeHours)
     {
@@ -66,51 +67,71 @@ public class StatusPanel implements Panel
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
         long seconds = totalSeconds % 60;
-        if (includeHours) return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        if (includeHours)
+            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
         return String.format("%02d:%02d", minutes, seconds);
     }
 
-    @Override
-    public void render(ScreenBuffer buffer)
+    @Override public void render(ScreenBuffer buffer)
     {
-        if (constraints.height() <= 0) return;
+        if (constraints.height() <= 0)
+            return;
         boolean incHrs = (totalMicros / 1000000) >= 3600;
         String totStr = formatTime(totalMicros, incHrs);
         String curStr = formatTime(currentMicros, incHrs);
 
         int percent = (int) (totalMicros > 0 ? (currentMicros * 100 / totalMicros) : 0);
         percent = Math.min(100, Math.max(0, percent));
-        
+
         int barWidth = Math.max(10, constraints.width() - 40);
         int filled = (int) ((percent / 100.0) * barWidth);
         StringBuilder bar = new StringBuilder("[");
-        for (int i = 0; i < barWidth; i++) {
-            if (i < filled) bar.append("=");
-            else if (i == filled) bar.append(">");
-            else bar.append("-");
+        for (int i = 0; i < barWidth; i++)
+        {
+            if (i < filled)
+                bar.append("=");
+            else if (i == filled)
+                bar.append(">");
+            else
+                bar.append("-");
         }
         bar.append("]");
 
         String pauseIndicator = isPaused ? "\033[1;33m[PAUSED]\033[0m " : "";
-        if (constraints.height() == 1) {
-            String s = String.format("    %s%s / %s %s %3d%%  Vol:%d%% Spd:%.1fx Tr:%+d", pauseIndicator, curStr, totStr, bar, percent, (int) (volumeScale * 100), speed, transpose);
+        if (constraints.height() == 1)
+        {
+            String s =
+                String.format("    %s%s / %s %s %3d%%  Vol:%d%% Spd:%.1fx Tr:%+d", pauseIndicator,
+                    curStr, totStr, bar, percent, (int) (volumeScale * 100), speed, transpose);
             buffer.append(truncate(s, constraints.width())).append("\n");
-        } else if (constraints.height() >= 2 && constraints.height() <= 4) {
-            String line1 = String.format("    Time: %s%s / %s  %s  %3d%%", pauseIndicator, curStr, totStr, bar, percent);
-            String line2 = String.format("    Tempo: %3.0f BPM (%.1fx) | Vol: %d%% | Trans: %+d", bpm, speed, (int) (volumeScale * 100), transpose);
-            buffer.append(truncate(line1, constraints.width() + (isPaused ? 11 : 0))).append("\n"); // +11 for ANSI escape code length
+        }
+        else if (constraints.height() >= 2 && constraints.height() <= 4)
+        {
+            String line1 = String.format(
+                "    Time: %s%s / %s  %s  %3d%%", pauseIndicator, curStr, totStr, bar, percent);
+            String line2 = String.format("    Tempo: %3.0f BPM (%.1fx) | Vol: %d%% | Trans: %+d",
+                bpm, speed, (int) (volumeScale * 100), transpose);
+            buffer.append(truncate(line1, constraints.width() + (isPaused ? 11 : 0)))
+                .append("\n"); // +11 for ANSI escape code length
             buffer.append(truncate(line2, constraints.width())).append("\n");
             for (int i = 2; i < constraints.height(); i++) buffer.append("\n");
-        } else {
+        }
+        else
+        {
             buffer.append(String.format("    Tempo:     %3.0f BPM  (Speed: %3.1fx)\n", bpm, speed));
-            buffer.append(String.format("    Time:      %s%s / %s  %s  %3d%%\n", pauseIndicator, curStr, totStr, bar, percent));
+            buffer.append(String.format("    Time:      %s%s / %s  %s  %3d%%\n", pauseIndicator,
+                curStr, totStr, bar, percent));
             buffer.append(String.format("    Transpose: %+d\n", transpose));
             buffer.append(String.format("    Volume:    %d%%\n", (int) (volumeScale * 100)));
-            String portInfo = context != null ? String.format("[%d] %s", context.targetPort().index(), context.targetPort().name()) : "Unknown";
+            String portInfo = context != null
+                ? String.format(
+                      "[%d] %s", context.targetPort().index(), context.targetPort().name())
+                : "Unknown";
             buffer.append(String.format("    Port:      %s\n", portInfo));
-            
+
             // Fill any remaining height
-            for (int i = 5; i < constraints.height(); i++) {
+            for (int i = 5; i < constraints.height(); i++)
+            {
                 buffer.append("\n");
             }
         }

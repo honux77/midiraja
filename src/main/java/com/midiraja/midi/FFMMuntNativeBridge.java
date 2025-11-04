@@ -19,8 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings({"EmptyCatch", "UnusedVariable"})
-public class FFMMuntNativeBridge implements MuntNativeBridge {
-
+public class FFMMuntNativeBridge implements MuntNativeBridge
+{
     private final Arena arena;
     private MemorySegment context = MemorySegment.NULL;
 
@@ -36,7 +36,7 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
     // collapse to a 1-sample gap and are inaudible. The wall-clock offset
     // from the last completed render keeps timestamps strictly increasing
     // even while the render thread is blocked in audio.push().
-    private volatile int  lastRenderedSampleCount = 0;
+    private volatile int lastRenderedSampleCount = 0;
     private volatile long lastRenderCompletedNanos = System.nanoTime();
 
     /**
@@ -61,7 +61,8 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
      * checks for the 4-param "standard" form — the 5-param expanded form is added manually and
      * documented with a comment in the JSON.
      */
-    static List<FunctionDescriptor> allDowncallDescriptors() {
+    static List<FunctionDescriptor> allDowncallDescriptors()
+    {
         return List.of(
             // create_context
             FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
@@ -78,16 +79,20 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
             // set_midi_event_queue_size
             FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
             // play_msg_at
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
+                ValueLayout.JAVA_INT),
             // play_sysex_at
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
             // render_bit16s
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
-            // has_active_partials  (JAVA_BYTE return → same leaf type as JAVA_INT → covered by (void*)→jint above)
+            FunctionDescriptor.ofVoid(
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+            // has_active_partials  (JAVA_BYTE return → same leaf type as JAVA_INT → covered by
+            // (void*)→jint above)
             FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS),
             // get_playing_notes  (JAVA_BYTE param → "jint" in metadata after ABI widening)
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
-        );
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
+                ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     // FFM Method Handles
@@ -116,106 +121,96 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
     private final MethodHandle mt32emu_get_part_states;
     private final MethodHandle mt32emu_get_playing_notes;
 
-    public FFMMuntNativeBridge() throws Exception {
+    public FFMMuntNativeBridge() throws Exception
+    {
         this.arena = Arena.ofShared();
 
-        SymbolLookup lib = tryLoadLibrary(arena, "libmt32emu.dylib", "libmt32emu.so", "libmt32emu.dll");
+        SymbolLookup lib =
+            tryLoadLibrary(arena, "libmt32emu.dylib", "libmt32emu.so", "libmt32emu.dll");
         Linker linker = Linker.nativeLinker();
 
-        // mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void *instance_data)
+        // mt32emu_context mt32emu_create_context(mt32emu_report_handler_i report_handler, void
+        // *instance_data)
         mt32emu_create_context = linker.downcallHandle(
             lib.find("mt32emu_create_context").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
-        );
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
         // void mt32emu_free_context(mt32emu_context context)
-        mt32emu_free_context = linker.downcallHandle(
-            lib.find("mt32emu_free_context").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
-        );
+        mt32emu_free_context = linker.downcallHandle(lib.find("mt32emu_free_context").orElseThrow(),
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
         // mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename)
-        mt32emu_add_rom_file = linker.downcallHandle(
-            lib.find("mt32emu_add_rom_file").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
-        );
+        mt32emu_add_rom_file = linker.downcallHandle(lib.find("mt32emu_add_rom_file").orElseThrow(),
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
-        // void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double samplerate)
-        mt32emu_set_stereo_output_samplerate = linker.downcallHandle(
-            lib.find("mt32emu_set_stereo_output_samplerate").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE)
-        );
+        // void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double
+        // samplerate)
+        mt32emu_set_stereo_output_samplerate =
+            linker.downcallHandle(lib.find("mt32emu_set_stereo_output_samplerate").orElseThrow(),
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE));
 
-        // void mt32emu_set_master_volume_override(mt32emu_const_context context, mt32emu_bit8u volume_override)
-        // value > 100 disables the override; value <= 100 caps master volume to that value.
-        mt32emu_set_master_volume_override = linker.downcallHandle(
-            lib.find("mt32emu_set_master_volume_override").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE)
-        );
+        // void mt32emu_set_master_volume_override(mt32emu_const_context context, mt32emu_bit8u
+        // volume_override) value > 100 disables the override; value <= 100 caps master volume to
+        // that value.
+        mt32emu_set_master_volume_override =
+            linker.downcallHandle(lib.find("mt32emu_set_master_volume_override").orElseThrow(),
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
         // mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context)
-        mt32emu_open_synth = linker.downcallHandle(
-            lib.find("mt32emu_open_synth").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
-        );
+        mt32emu_open_synth = linker.downcallHandle(lib.find("mt32emu_open_synth").orElseThrow(),
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
         // void mt32emu_close_synth(mt32emu_const_context context)
-        mt32emu_close_synth = linker.downcallHandle(
-            lib.find("mt32emu_close_synth").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS)
-        );
+        mt32emu_close_synth = linker.downcallHandle(lib.find("mt32emu_close_synth").orElseThrow(),
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
         // mt32emu_return_code mt32emu_set_midi_event_queue_size(context, queue_size)
         mt32emu_set_midi_event_queue_size = linker.downcallHandle(
             lib.find("mt32emu_set_midi_event_queue_size").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
-        );
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
         // mt32emu_return_code mt32emu_play_msg_at(context, msg, timestamp) — thread-safe
-        mt32emu_play_msg_at = linker.downcallHandle(
-            lib.find("mt32emu_play_msg_at").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT)
-        );
+        mt32emu_play_msg_at = linker.downcallHandle(lib.find("mt32emu_play_msg_at").orElseThrow(),
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
+                ValueLayout.JAVA_INT));
 
         // mt32emu_return_code mt32emu_play_sysex_at(context, sysex, len, timestamp) — thread-safe
-        mt32emu_play_sysex_at = linker.downcallHandle(
-            lib.find("mt32emu_play_sysex_at").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT)
-        );
+        mt32emu_play_sysex_at =
+            linker.downcallHandle(lib.find("mt32emu_play_sysex_at").orElseThrow(),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
+                    ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
 
         // mt32emu_bit32u mt32emu_get_internal_rendered_sample_count(context)
         mt32emu_get_internal_rendered_sample_count = linker.downcallHandle(
             lib.find("mt32emu_get_internal_rendered_sample_count").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
-        );
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-        // void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream, mt32emu_bit32u len)
-        mt32emu_render_bit16s = linker.downcallHandle(
-            lib.find("mt32emu_render_bit16s").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT)
-        );
+        // void mt32emu_render_bit16s(mt32emu_const_context context, mt32emu_bit16s *stream,
+        // mt32emu_bit32u len)
+        mt32emu_render_bit16s =
+            linker.downcallHandle(lib.find("mt32emu_render_bit16s").orElseThrow(),
+                FunctionDescriptor.ofVoid(
+                    ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
         // mt32emu_boolean mt32emu_has_active_partials(context) — 0=inactive, non-zero=active
-        mt32emu_has_active_partials = linker.downcallHandle(
-            lib.find("mt32emu_has_active_partials").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS)
-        );
+        mt32emu_has_active_partials =
+            linker.downcallHandle(lib.find("mt32emu_has_active_partials").orElseThrow(),
+                FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
 
         // mt32emu_bit32u mt32emu_get_part_states(context) — bitmask: bit N = Part N+1 active
-        mt32emu_get_part_states = linker.downcallHandle(
-            lib.find("mt32emu_get_part_states").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS)
-        );
+        mt32emu_get_part_states =
+            linker.downcallHandle(lib.find("mt32emu_get_part_states").orElseThrow(),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
         // mt32emu_bit32u mt32emu_get_playing_notes(context, partNumber, keys*, velocities*)
-        mt32emu_get_playing_notes = linker.downcallHandle(
-            lib.find("mt32emu_get_playing_notes").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS, ValueLayout.ADDRESS)
-        );
+        mt32emu_get_playing_notes =
+            linker.downcallHandle(lib.find("mt32emu_get_playing_notes").orElseThrow(),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
+                    ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
-    private SymbolLookup tryLoadLibrary(Arena arena, String... paths) {
+    private SymbolLookup tryLoadLibrary(Arena arena, String... paths)
+    {
         List<String> failedPaths = new ArrayList<>();
         // Also look in our local build dir for development ease
         String projectRoot = new File("").getAbsolutePath();
@@ -227,28 +222,40 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
         allPaths[paths.length] = devPathMac;
         allPaths[paths.length + 1] = devPathLinux;
 
-        for (String path : allPaths) {
-            try {
-                if (path.startsWith("/")) {
+        for (String path : allPaths)
+        {
+            try
+            {
+                if (path.startsWith("/"))
+                {
                     File f = new File(path);
-                    if (f.exists()) {
+                    if (f.exists())
+                    {
                         return SymbolLookup.libraryLookup(f.toPath(), arena);
                     }
-                } else {
+                }
+                else
+                {
                     return SymbolLookup.libraryLookup(path, arena);
                 }
-            } catch (IllegalArgumentException e) {
+            }
+            catch (IllegalArgumentException e)
+            {
                 failedPaths.add(path);
             }
         }
-        throw new IllegalArgumentException("Cannot open libmt32emu. Searched paths: " + String.join(", ", failedPaths));
+        throw new IllegalArgumentException(
+            "Cannot open libmt32emu. Searched paths: " + String.join(", ", failedPaths));
     }
 
-    @Override
-    public void createSynth() throws Exception {
-        try {
-            context = (MemorySegment) mt32emu_create_context.invokeExact(MemorySegment.NULL, MemorySegment.NULL);
-            if (context.equals(MemorySegment.NULL)) {
+    @Override public void createSynth() throws Exception
+    {
+        try
+        {
+            context = (MemorySegment) mt32emu_create_context.invokeExact(
+                MemorySegment.NULL, MemorySegment.NULL);
+            if (context.equals(MemorySegment.NULL))
+            {
                 throw new Exception("Failed to create Munt context");
             }
             // Increase the MIDI event queue from the default 1024 to 4096.
@@ -257,51 +264,68 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
             // (MT32EMU_RC_QUEUE_FULL), leaving stuck voices that block new-song notes.
             // Must be called before open_synth. Queue size must be a power of 2.
             int ignored = (int) mt32emu_set_midi_event_queue_size.invokeExact(context, 4096);
-        } catch (Throwable t) {
+        }
+        catch (Throwable t)
+        {
             throw new Exception("Error creating Munt context", t);
         }
     }
 
-    @Override
-    public void loadRoms(String romDirectory) throws Exception {
-        if (context.equals(MemorySegment.NULL)) return;
+    @Override public void loadRoms(String romDirectory) throws Exception
+    {
+        if (context.equals(MemorySegment.NULL))
+            return;
 
         File dir = new File(romDirectory);
-        if (!dir.exists() || !dir.isDirectory()) {
+        if (!dir.exists() || !dir.isDirectory())
+        {
             throw new Exception("Munt ROM directory not found: " + romDirectory);
         }
 
         File controlRom = new File(dir, "MT32_CONTROL.ROM");
         File pcmRom = new File(dir, "MT32_PCM.ROM");
 
-        if (!controlRom.exists() || !pcmRom.exists()) {
-             // Let's also try lowercase
-             controlRom = new File(dir, "mt32_control.rom");
-             pcmRom = new File(dir, "mt32_pcm.rom");
-             if (!controlRom.exists() || !pcmRom.exists()) {
-                 throw new Exception("Missing MT32_CONTROL.ROM or MT32_PCM.ROM in " + romDirectory);
-             }
+        if (!controlRom.exists() || !pcmRom.exists())
+        {
+            // Let's also try lowercase
+            controlRom = new File(dir, "mt32_control.rom");
+            pcmRom = new File(dir, "mt32_pcm.rom");
+            if (!controlRom.exists() || !pcmRom.exists())
+            {
+                throw new Exception("Missing MT32_CONTROL.ROM or MT32_PCM.ROM in " + romDirectory);
+            }
         }
 
-        try {
+        try
+        {
             MemorySegment ctrlPathStr = arena.allocateFrom(controlRom.getAbsolutePath());
             int rc1 = (int) mt32emu_add_rom_file.invokeExact(context, ctrlPathStr);
-            if (rc1 <= 0) throw new Exception("Munt engine rejected control ROM (return code: " + rc1 + "): " + controlRom.getAbsolutePath());
+            if (rc1 <= 0)
+                throw new Exception("Munt engine rejected control ROM (return code: " + rc1
+                    + "): " + controlRom.getAbsolutePath());
 
             MemorySegment pcmPathStr = arena.allocateFrom(pcmRom.getAbsolutePath());
             int rc2 = (int) mt32emu_add_rom_file.invokeExact(context, pcmPathStr);
-            if (rc2 <= 0) throw new Exception("Munt engine rejected PCM ROM (return code: " + rc2 + "): " + pcmRom.getAbsolutePath());
-        } catch (Exception e) {
+            if (rc2 <= 0)
+                throw new Exception("Munt engine rejected PCM ROM (return code: " + rc2
+                    + "): " + pcmRom.getAbsolutePath());
+        }
+        catch (Exception e)
+        {
             throw e;
-        } catch (Throwable t) {
+        }
+        catch (Throwable t)
+        {
             throw new Exception("Error invoking Munt ROM API", t);
         }
     }
 
-    @Override
-    public void openSynth() throws Exception {
-        if (context.equals(MemorySegment.NULL)) return;
-        try {
+    @Override public void openSynth() throws Exception
+    {
+        if (context.equals(MemorySegment.NULL))
+            return;
+        try
+        {
             // Disable the master volume override before opening the synth.
             // Munt's Extensions struct is zero-initialized, leaving masterVolumeOverride = 0.
             // The condition in Synth::open() is "if (masterVolumeOverride < 100)", so value 0
@@ -313,7 +337,8 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
             mt32emu_set_stereo_output_samplerate.invokeExact(context, 32000.0);
 
             int rc = (int) mt32emu_open_synth.invokeExact(context);
-            if (rc != 0) throw new Exception("Failed to open Munt synth (Check if ROMs are valid)");
+            if (rc != 0)
+                throw new Exception("Failed to open Munt synth (Check if ROMs are valid)");
 
             // Reset timing reference so computeTimestamp() uses a fresh base.
             // Without this, the reference was set at construction time; any time spent
@@ -321,13 +346,15 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
             // in the future, causing seconds of initial silence.
             lastRenderedSampleCount = 0;
             lastRenderCompletedNanos = System.nanoTime();
-        } catch (Throwable t) {
+        }
+        catch (Throwable t)
+        {
             throw new Exception("Error opening Munt synth", t);
         }
     }
 
-    @Override
-    public void resetRenderTiming() {
+    @Override public void resetRenderTiming()
+    {
         lastRenderedSampleCount = 0;
         lastRenderCompletedNanos = System.nanoTime();
     }
@@ -343,9 +370,10 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
     // queued at a different wall-clock instant get a strictly-increasing future timestamp.
     // mt32emu_render_bit16s then places each event at the correct sample position within
     // the rendered chunk (Synth::doRenderStreams splits the chunk at event timestamps).
-    private int computeTimestamp() {
+    private int computeTimestamp()
+    {
         long elapsedNanos = System.nanoTime() - lastRenderCompletedNanos;
-        int elapsedSamples = (int)(elapsedNanos * 32000L / 1_000_000_000L);
+        int elapsedSamples = (int) (elapsedNanos * 32000L / 1_000_000_000L);
         // Cap to ring buffer capacity (4096 frames = 128ms at 32 kHz).
         // Prevents a stale timing reference from scheduling events arbitrarily far
         // in the future (e.g. before resetRenderTiming() has been called).
@@ -353,67 +381,94 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
         return lastRenderedSampleCount + elapsedSamples;
     }
 
-    private void playMsg(int packed) {
-        if (context.equals(MemorySegment.NULL)) return;
-        try { int ignored2 = (int) mt32emu_play_msg_at.invokeExact(context, packed, computeTimestamp()); }
-        catch (Throwable ignored) {}
+    private void playMsg(int packed)
+    {
+        if (context.equals(MemorySegment.NULL))
+            return;
+        try
+        {
+            int ignored2 =
+                (int) mt32emu_play_msg_at.invokeExact(context, packed, computeTimestamp());
+        }
+        catch (Throwable ignored)
+        {
+        }
     }
 
-    @Override
-    public void playNoteOn(int channel, int key, int velocity) {
+    @Override public void playNoteOn(int channel, int key, int velocity)
+    {
         playMsg(0x90 | channel | (key << 8) | (velocity << 16));
     }
 
-    @Override
-    public void playNoteOff(int channel, int key) {
+    @Override public void playNoteOff(int channel, int key)
+    {
         playMsg(0x80 | channel | (key << 8));
     }
 
-    @Override
-    public void playControlChange(int channel, int number, int value) {
+    @Override public void playControlChange(int channel, int number, int value)
+    {
         playMsg(0xB0 | channel | (number << 8) | (value << 16));
     }
 
-    @Override
-    public void playProgramChange(int channel, int program) {
+    @Override public void playProgramChange(int channel, int program)
+    {
         playMsg(0xC0 | channel | (program << 8));
     }
 
-    @Override
-    public void playPitchBend(int channel, int value) {
+    @Override public void playPitchBend(int channel, int value)
+    {
         int lsb = value & 0x7F;
         int msb = (value >> 7) & 0x7F;
         playMsg(0xE0 | channel | (lsb << 8) | (msb << 16));
     }
 
-    @Override
-    public void playSysex(byte[] sysexData) {
-        if (context.equals(MemorySegment.NULL) || sysexData == null || sysexData.length == 0) return;
+    @Override public void playSysex(byte[] sysexData)
+    {
+        if (context.equals(MemorySegment.NULL) || sysexData == null || sysexData.length == 0)
+            return;
         int timestamp = computeTimestamp();
         // Use a confined arena so native memory is freed immediately after the call.
         // mt32emu_play_sysex_at copies the data into its internal queue before returning.
-        try (Arena tempArena = Arena.ofConfined()) {
+        try (Arena tempArena = Arena.ofConfined())
+        {
             MemorySegment seg = tempArena.allocateFrom(ValueLayout.JAVA_BYTE, sysexData);
-            int ignored2 = (int) mt32emu_play_sysex_at.invokeExact(context, seg, sysexData.length, timestamp);
-        } catch (Throwable ignored) {}
+            int ignored2 =
+                (int) mt32emu_play_sysex_at.invokeExact(context, seg, sysexData.length, timestamp);
+        }
+        catch (Throwable ignored)
+        {
+        }
     }
 
-    @Override
-    public void reopenSynth() throws Exception {
-        if (context.equals(MemorySegment.NULL)) return;
+    @Override public void reopenSynth() throws Exception
+    {
+        if (context.equals(MemorySegment.NULL))
+            return;
         // Close the synth — immediately terminates all active voices without emulating
         // the MT-32's ~2-second hardware ROM initialization sequence.
-        try { mt32emu_close_synth.invokeExact(context); }
-        catch (Throwable t) { throw new Exception("Error closing Munt synth", t); }
+        try
+        {
+            mt32emu_close_synth.invokeExact(context);
+        }
+        catch (Throwable t)
+        {
+            throw new Exception("Error closing Munt synth", t);
+        }
         // Re-open exactly as in openSynth(): disable the masterVolumeOverride (which
         // defaults to 0 and would silence all output), then open.
-        try {
+        try
+        {
             mt32emu_set_master_volume_override.invokeExact(context, (byte) 0xFF);
             int rc = (int) mt32emu_open_synth.invokeExact(context);
-            if (rc != 0) throw new Exception("Failed to reopen Munt synth (rc=" + rc + ")");
-        } catch (Exception e) {
+            if (rc != 0)
+                throw new Exception("Failed to reopen Munt synth (rc=" + rc + ")");
+        }
+        catch (Exception e)
+        {
             throw e;
-        } catch (Throwable t) {
+        }
+        catch (Throwable t)
+        {
             throw new Exception("Error reopening Munt synth", t);
         }
         // After open_synth the internal rendered-sample counter restarts at 0.
@@ -432,78 +487,121 @@ public class FFMMuntNativeBridge implements MuntNativeBridge {
     // (populated by the playback thread via mt32emu_play_msg_at / mt32emu_play_sysex_at)
     // is drained automatically during mt32emu_render_bit16s at the correct sample
     // positions. No Java-side queue drain is needed here.
-    @Override
-    public void renderAudio(short[] buffer, int frames) {
-        if (context.equals(MemorySegment.NULL) || buffer == null || buffer.length == 0) return;
+    @Override public void renderAudio(short[] buffer, int frames)
+    {
+        if (context.equals(MemorySegment.NULL) || buffer == null || buffer.length == 0)
+            return;
 
         // Ensure the native render buffer is large enough.
         int requiredBytes = buffer.length * 2; // 2 bytes per short
-        if (currentRenderBufferSize < requiredBytes) {
-            try {
+        if (currentRenderBufferSize < requiredBytes)
+        {
+            try
+            {
                 renderBuffer = arena.allocate(requiredBytes);
                 currentRenderBufferSize = requiredBytes;
-            } catch (Throwable ignored) {
+            }
+            catch (Throwable ignored)
+            {
                 return; // Cannot allocate render buffer; skip this cycle
             }
         }
 
-        try {
+        try
+        {
             mt32emu_render_bit16s.invokeExact(context, renderBuffer, frames);
             MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
-        } catch (Throwable ignored) {}
+        }
+        catch (Throwable ignored)
+        {
+        }
 
         // Update the timing reference AFTER rendering so computeTimestamp() in the
         // playback thread produces timestamps relative to the just-completed render.
-        try {
-            lastRenderedSampleCount = (int) mt32emu_get_internal_rendered_sample_count.invokeExact(context);
-        } catch (Throwable ignored) {}
+        try
+        {
+            lastRenderedSampleCount =
+                (int) mt32emu_get_internal_rendered_sample_count.invokeExact(context);
+        }
+        catch (Throwable ignored)
+        {
+        }
         lastRenderCompletedNanos = System.nanoTime();
     }
 
-    @Override
-    public boolean hasActivePartials() {
-        if (context.equals(MemorySegment.NULL)) return false;
-        try { return (byte) mt32emu_has_active_partials.invokeExact(context) != 0; }
-        catch (Throwable ignored) { return false; }
+    @Override public boolean hasActivePartials()
+    {
+        if (context.equals(MemorySegment.NULL))
+            return false;
+        try
+        {
+            return (byte) mt32emu_has_active_partials.invokeExact(context) != 0;
+        }
+        catch (Throwable ignored)
+        {
+            return false;
+        }
     }
 
-    @Override
-    public int getPartStates() {
-        if (context.equals(MemorySegment.NULL)) return 0;
-        try { return (int) mt32emu_get_part_states.invokeExact(context); }
-        catch (Throwable ignored) { return 0; }
+    @Override public int getPartStates()
+    {
+        if (context.equals(MemorySegment.NULL))
+            return 0;
+        try
+        {
+            return (int) mt32emu_get_part_states.invokeExact(context);
+        }
+        catch (Throwable ignored)
+        {
+            return 0;
+        }
     }
 
-    @Override
-    public int getPlayingNotes(int partNumber, byte[] keys, byte[] velocities) {
-        if (context.equals(MemorySegment.NULL)) return 0;
+    @Override public int getPlayingNotes(int partNumber, byte[] keys, byte[] velocities)
+    {
+        if (context.equals(MemorySegment.NULL))
+            return 0;
         int capacity = (keys != null ? keys.length : 4);
-        try (Arena temp = Arena.ofConfined()) {
+        try (Arena temp = Arena.ofConfined())
+        {
             MemorySegment keySeg = temp.allocate(capacity);
             MemorySegment velSeg = temp.allocate(capacity);
             int count = (int) mt32emu_get_playing_notes.invokeExact(
                 context, (byte) partNumber, keySeg, velSeg);
             int toCopy = Math.min(count, capacity);
-            if (keys != null) {
+            if (keys != null)
+            {
                 for (int i = 0; i < toCopy; i++) keys[i] = keySeg.get(ValueLayout.JAVA_BYTE, i);
             }
-            if (velocities != null) {
-                for (int i = 0; i < toCopy; i++) velocities[i] = velSeg.get(ValueLayout.JAVA_BYTE, i);
+            if (velocities != null)
+            {
+                for (int i = 0; i < toCopy; i++)
+                    velocities[i] = velSeg.get(ValueLayout.JAVA_BYTE, i);
             }
             return count;
-        } catch (Throwable ignored) { return 0; }
+        }
+        catch (Throwable ignored)
+        {
+            return 0;
+        }
     }
 
-    @Override
-    public void close() {
-        if (!context.equals(MemorySegment.NULL)) {
-            try {
+    @Override public void close()
+    {
+        if (!context.equals(MemorySegment.NULL))
+        {
+            try
+            {
                 mt32emu_close_synth.invokeExact(context);
                 mt32emu_free_context.invokeExact(context);
-            } catch (Throwable ignored) {}
+            }
+            catch (Throwable ignored)
+            {
+            }
             context = MemorySegment.NULL;
         }
-        if (arena.scope().isAlive()) {
+        if (arena.scope().isAlive())
+        {
             arena.close();
         }
     }

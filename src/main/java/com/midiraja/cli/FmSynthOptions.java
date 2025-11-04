@@ -12,13 +12,14 @@ import picocli.CommandLine.Option;
 /**
  * Shared FM-synthesizer options mixed into OplCommand and OpnCommand.
  */
-public class FmSynthOptions {
-
+public class FmSynthOptions
+{
     @Option(names = {"-e", "--emulator"}, defaultValue = "0",
-            description = "Emulator backend (default: 0). Run 'midra opl --help' or 'midra opn --help' for IDs.")
+        description =
+            "Emulator backend (default: 0). Run 'midra opl --help' or 'midra opn --help' for IDs.")
     public int emulator = 0;
 
     @Option(names = {"-c", "--chips"}, defaultValue = "4",
-            description = "Number of chips to emulate (default: 4). More chips = more polyphony.")
+        description = "Number of chips to emulate (default: 4). More chips = more polyphony.")
     public int chips = 4;
 }

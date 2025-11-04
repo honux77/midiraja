@@ -7,6 +7,8 @@
 
 package com.midiraja.midi;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.io.IOException;
 import java.lang.foreign.AddressLayout;
 import java.lang.foreign.FunctionDescriptor;
@@ -21,10 +23,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Verifies that every FFM downcall {@link FunctionDescriptor} used in
@@ -73,29 +72,31 @@ import static org.junit.jupiter.api.Assertions.fail;
  *   <li>Run {@code ./gradlew nativeCompile} — the binary will start cleanly.
  * </ol>
  */
-class NativeMetadataConsistencyTest {
+class NativeMetadataConsistencyTest
+{
+    private static final Path METADATA_FILE =
+        Path.of("src/main/resources/META-INF/native-image/com.midiraja/midiraja/"
+                + "reachability-metadata.json");
 
-    private static final Path METADATA_FILE = Path.of(
-        "src/main/resources/META-INF/native-image/com.midiraja/midiraja/reachability-metadata.json"
-    );
-
-    @Test
-    void testAllFFMDescriptorsRegisteredInMetadata() throws IOException {
+    @Test void testAllFFMDescriptorsRegisteredInMetadata() throws IOException
+    {
         String json = Files.readString(METADATA_FILE);
         Set<String> registeredKeys = parseDowncallKeys(json);
 
         List<String> missing = new ArrayList<>();
-        for (FunctionDescriptor fd : FFMMuntNativeBridge.allDowncallDescriptors()) {
+        for (FunctionDescriptor fd : FFMMuntNativeBridge.allDowncallDescriptors())
+        {
             String key = toMetadataKey(fd);
-            if (!registeredKeys.contains(key)) {
-                missing.add(
-                    "  parameterTypes: " + paramTypesJson(fd) + ", returnType: \"" + returnType(fd) + "\""
-                    + "\n    (from FunctionDescriptor: " + fd + ")"
-                );
+            if (!registeredKeys.contains(key))
+            {
+                missing.add("  parameterTypes: " + paramTypesJson(fd) + ", returnType: \""
+                    + returnType(fd) + "\""
+                    + "\n    (from FunctionDescriptor: " + fd + ")");
             }
         }
 
-        if (!missing.isEmpty()) {
+        if (!missing.isEmpty())
+        {
             fail("""
                 The following FFM downcall descriptors are used in FFMMuntNativeBridge \
                 but are NOT registered in reachability-metadata.json.
@@ -113,23 +114,25 @@ class NativeMetadataConsistencyTest {
         }
     }
 
-    @Test
-    void testAllAdlMidiFFMDescriptorsRegisteredInMetadata() throws IOException {
+    @Test void testAllAdlMidiFFMDescriptorsRegisteredInMetadata() throws IOException
+    {
         String json = Files.readString(METADATA_FILE);
         Set<String> registeredKeys = parseDowncallKeys(json);
 
         List<String> missing = new ArrayList<>();
-        for (FunctionDescriptor fd : FFMAdlMidiNativeBridge.allDowncallDescriptors()) {
+        for (FunctionDescriptor fd : FFMAdlMidiNativeBridge.allDowncallDescriptors())
+        {
             String key = toMetadataKey(fd);
-            if (!registeredKeys.contains(key)) {
-                missing.add(
-                    "  parameterTypes: " + paramTypesJson(fd) + ", returnType: \"" + returnType(fd) + "\""
-                    + "\n    (from FunctionDescriptor: " + fd + ")"
-                );
+            if (!registeredKeys.contains(key))
+            {
+                missing.add("  parameterTypes: " + paramTypesJson(fd) + ", returnType: \""
+                    + returnType(fd) + "\""
+                    + "\n    (from FunctionDescriptor: " + fd + ")");
             }
         }
 
-        if (!missing.isEmpty()) {
+        if (!missing.isEmpty())
+        {
             fail("""
                 The following FFM downcall descriptors are used in FFMAdlMidiNativeBridge \
                 but are NOT registered in reachability-metadata.json.
@@ -147,23 +150,25 @@ class NativeMetadataConsistencyTest {
         }
     }
 
-    @Test
-    void testAllOpnMidiFFMDescriptorsRegisteredInMetadata() throws IOException {
+    @Test void testAllOpnMidiFFMDescriptorsRegisteredInMetadata() throws IOException
+    {
         String json = Files.readString(METADATA_FILE);
         Set<String> registeredKeys = parseDowncallKeys(json);
 
         List<String> missing = new ArrayList<>();
-        for (FunctionDescriptor fd : FFMOpnMidiNativeBridge.allDowncallDescriptors()) {
+        for (FunctionDescriptor fd : FFMOpnMidiNativeBridge.allDowncallDescriptors())
+        {
             String key = toMetadataKey(fd);
-            if (!registeredKeys.contains(key)) {
-                missing.add(
-                    "  parameterTypes: " + paramTypesJson(fd) + ", returnType: \"" + returnType(fd) + "\""
-                    + "\n    (from FunctionDescriptor: " + fd + ")"
-                );
+            if (!registeredKeys.contains(key))
+            {
+                missing.add("  parameterTypes: " + paramTypesJson(fd) + ", returnType: \""
+                    + returnType(fd) + "\""
+                    + "\n    (from FunctionDescriptor: " + fd + ")");
             }
         }
 
-        if (!missing.isEmpty()) {
+        if (!missing.isEmpty())
+        {
             fail("""
                 The following FFM downcall descriptors are used in FFMOpnMidiNativeBridge \
                 but are NOT registered in reachability-metadata.json.
@@ -189,14 +194,17 @@ class NativeMetadataConsistencyTest {
      *
      * <p>Format: {@code "void*,jint,void*,void*->jint"}
      */
-    static String toMetadataKey(FunctionDescriptor fd) {
-        String params = fd.argumentLayouts().stream()
-            .map(NativeMetadataConsistencyTest::layoutToMetadataType)
-            .collect(Collectors.joining(","));
+    static String toMetadataKey(FunctionDescriptor fd)
+    {
+        String params = fd.argumentLayouts()
+                            .stream()
+                            .map(NativeMetadataConsistencyTest::layoutToMetadataType)
+                            .collect(Collectors.joining(","));
         return params + "->" + returnType(fd);
     }
 
-    private static String returnType(FunctionDescriptor fd) {
+    private static String returnType(FunctionDescriptor fd)
+    {
         return fd.returnLayout()
             .map(NativeMetadataConsistencyTest::layoutToMetadataType)
             .orElse("void");
@@ -209,25 +217,30 @@ class NativeMetadataConsistencyTest {
      * {@code "jint"} because C ABI default argument promotion places them in
      * an int-sized register. GraalVM's leaf-type representation reflects this.
      */
-    static String layoutToMetadataType(MemoryLayout layout) {
-        if (layout instanceof AddressLayout) return "void*";
+    static String layoutToMetadataType(MemoryLayout layout)
+    {
+        if (layout instanceof AddressLayout)
+            return "void*";
         Class<?> carrier = ((ValueLayout) layout).carrier();
-        if (carrier == byte.class
-                || carrier == boolean.class
-                || carrier == short.class
-                || carrier == char.class
-                || carrier == int.class) return "jint";
-        if (carrier == long.class)   return "jlong";
-        if (carrier == float.class)  return "jfloat";
-        if (carrier == double.class) return "jdouble";
+        if (carrier == byte.class || carrier == boolean.class || carrier == short.class
+            || carrier == char.class || carrier == int.class)
+            return "jint";
+        if (carrier == long.class)
+            return "jlong";
+        if (carrier == float.class)
+            return "jfloat";
+        if (carrier == double.class)
+            return "jdouble";
         throw new IllegalArgumentException("Unknown ValueLayout carrier: " + carrier);
     }
 
     /** Formats the parameter types as a JSON array string (for the failure message). */
-    private static String paramTypesJson(FunctionDescriptor fd) {
-        String inner = fd.argumentLayouts().stream()
-            .map(l -> "\"" + layoutToMetadataType(l) + "\"")
-            .collect(Collectors.joining(", "));
+    private static String paramTypesJson(FunctionDescriptor fd)
+    {
+        String inner = fd.argumentLayouts()
+                           .stream()
+                           .map(l -> "\"" + layoutToMetadataType(l) + "\"")
+                           .collect(Collectors.joining(", "));
         return "[" + inner + "]";
     }
 
@@ -239,39 +252,43 @@ class NativeMetadataConsistencyTest {
      * section, then matches each {@code {"parameterTypes":[...],"returnType":"..."}}
      * entry regardless of field ordering or whitespace.
      */
-    private static Set<String> parseDowncallKeys(String json) {
+    private static Set<String> parseDowncallKeys(String json)
+    {
         Set<String> keys = new HashSet<>();
 
         int downcallsPos = json.indexOf("\"downcalls\"");
-        if (downcallsPos < 0) return keys;
+        if (downcallsPos < 0)
+            return keys;
         String section = json.substring(downcallsPos);
 
         // Matches a downcall entry in either field order, across newlines.
         // Group 1/2: paramTypes array content, returnType value (order A)
         // Group 3/4: returnType value, paramTypes array content (order B)
-        Pattern entryPattern = Pattern.compile(
-            "\\{[^{}]*"
-            + "\"parameterTypes\"\\s*:\\s*\\[([^\\]]*)\\][^{}]*"
-            + "\"returnType\"\\s*:\\s*\"([^\"]+)\"[^{}]*\\}"
-            + "|"
-            + "\\{[^{}]*"
-            + "\"returnType\"\\s*:\\s*\"([^\"]+)\"[^{}]*"
-            + "\"parameterTypes\"\\s*:\\s*\\[([^\\]]*)\\][^{}]*\\}",
-            Pattern.DOTALL
-        );
+        Pattern entryPattern = Pattern.compile("\\{[^{}]*"
+                + "\"parameterTypes\"\\s*:\\s*\\[([^\\]]*)\\][^{}]*"
+                + "\"returnType\"\\s*:\\s*\"([^\"]+)\"[^{}]*\\}"
+                + "|"
+                + "\\{[^{}]*"
+                + "\"returnType\"\\s*:\\s*\"([^\"]+)\"[^{}]*"
+                + "\"parameterTypes\"\\s*:\\s*\\[([^\\]]*)\\][^{}]*\\}",
+            Pattern.DOTALL);
         // Matches individual quoted string values inside an array
         Pattern stringPattern = Pattern.compile("\"([^\"]+)\"");
 
         Matcher m = entryPattern.matcher(section);
-        while (m.find()) {
+        while (m.find())
+        {
             String rawParams;
             String returnType;
-            if (m.group(1) != null) {
-                rawParams  = m.group(1);
+            if (m.group(1) != null)
+            {
+                rawParams = m.group(1);
                 returnType = m.group(2);
-            } else {
+            }
+            else
+            {
                 returnType = m.group(3);
-                rawParams  = m.group(4);
+                rawParams = m.group(4);
             }
 
             List<String> params = new ArrayList<>();

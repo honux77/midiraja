@@ -11,7 +11,8 @@ package com.midiraja.midi;
  * An extended interface for software synthesizer providers that require a soundbank (e.g., .sf2)
  * to produce audio.
  */
-public interface SoftSynthProvider extends MidiOutProvider {
+public interface SoftSynthProvider extends MidiOutProvider
+{
     /**
      * Loads a soundbank file into the synthesizer engine.
      *

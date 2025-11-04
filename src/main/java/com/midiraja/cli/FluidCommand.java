@@ -8,50 +8,49 @@
 package com.midiraja.cli;
 
 import com.midiraja.MidirajaCommand;
-
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
 import org.jspecify.annotations.Nullable;
-
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-
 /**
  * Plays MIDI files through the built-in FluidSynth SoundFont synthesizer.
  */
-@Command(name = "fluid", mixinStandardHelpOptions = true, description = "Play with FluidSynth using a SoundFont (.sf2) file.")
-public class FluidCommand implements Callable<Integer> {
-
-    @ParentCommand
-    @Nullable
-    private MidirajaCommand parent;
+@Command(name = "fluid", mixinStandardHelpOptions = true,
+    description = "Play with FluidSynth using a SoundFont (.sf2) file.")
+public class FluidCommand implements Callable<Integer>
+{
+    @ParentCommand @Nullable private MidirajaCommand parent;
 
     @Parameters(index = "0", description = "Path to the SoundFont (.sf2) file.")
     private File soundfont = new File("");
 
-    @Parameters(index = "1..*", arity = "1..*", description = "MIDI files, directories, or .m3u playlists to play.")
+    @Parameters(index = "1..*", arity = "1..*",
+        description = "MIDI files, directories, or .m3u playlists to play.")
     private List<File> files = new ArrayList<>();
 
-    @Option(names = {"--driver"}, description = "Override the audio driver (e.g. coreaudio, dsound, alsa).")
+    @Option(names = {"--driver"},
+        description = "Override the audio driver (e.g. coreaudio, dsound, alsa).")
     private Optional<String> driver = Optional.empty();
 
-    @Mixin
-    private CommonOptions common = new CommonOptions();
+    @Mixin private CommonOptions common = new CommonOptions();
 
-    @Override
-    public Integer call() throws Exception {
+    @Override public Integer call() throws Exception
+    {
         var p = java.util.Objects.requireNonNull(parent);
 
         var provider = new com.midiraja.midi.FluidSynthProvider(driver.orElse(null));
 
-        var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
-        return runner.run(provider, true, Optional.empty(), Optional.of(soundfont.getPath()), files, common);
+        var runner =
+            new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
+        return runner.run(
+            provider, true, Optional.empty(), Optional.of(soundfont.getPath()), files, common);
     }
 }

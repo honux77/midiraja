@@ -5,7 +5,6 @@
  * directory of this source tree.
  */
 
-@NullMarked
-package com.midiraja.cli;
+@NullMarked package com.midiraja.cli;
 
 import org.jspecify.annotations.NullMarked;

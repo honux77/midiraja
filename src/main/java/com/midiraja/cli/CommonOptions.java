@@ -7,28 +7,29 @@
 
 package com.midiraja.cli;
 
+import java.util.Optional;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
-
-import java.util.Optional;
 
 /**
  * Shared playback options mixed into every command (root and all subcommands).
  */
-public class CommonOptions {
-
-    @Option(names = {"-v", "--volume"}, description = "Initial volume percentage (0-100).", defaultValue = "100")
+public class CommonOptions
+{
+    @Option(names = {"-v", "--volume"}, description = "Initial volume percentage (0-100).",
+        defaultValue = "100")
     public int volume = 100;
 
-    @Option(names = {"-x", "--speed"}, description = "Playback speed multiplier (e.g. 1.0, 1.2).", defaultValue = "1.0")
+    @Option(names = {"-x", "--speed"}, description = "Playback speed multiplier (e.g. 1.0, 1.2).",
+        defaultValue = "1.0")
     public double speed = 1.0;
 
     @Option(names = {"-S", "--start"},
-            description = "Playback start time (e.g. 01:10:12, 05:30, or 90 for seconds).")
+        description = "Playback start time (e.g. 01:10:12, 05:30, or 90 for seconds).")
     public Optional<String> startTime = Optional.empty();
 
     @Option(names = {"-t", "--transpose"},
-            description = "Transpose by semitones (e.g. 12 for one octave up, -5 for down).")
+        description = "Transpose by semitones (e.g. 12 for one octave up, -5 for down).")
     public Optional<Integer> transpose = Optional.empty();
 
     @Option(names = {"-s", "--shuffle"}, description = "Shuffle the playlist before playing.")
@@ -37,16 +38,20 @@ public class CommonOptions {
     @Option(names = {"-r", "--loop"}, description = "Loop the playlist indefinitely.")
     public boolean loop;
 
-    @Option(names = {"-R", "--recursive"}, description = "Recursively search for MIDI files in given directories.")
+    @Option(names = {"-R", "--recursive"},
+        description = "Recursively search for MIDI files in given directories.")
     public boolean recursive;
 
     @Option(names = {"--verbose"}, description = "Show verbose error messages and stack traces.")
     public boolean verbose;
 
-    @Option(names = {"--ignore-sysex"}, description = "Filter out hardware-specific System Exclusive (SysEx) messages.")
+    @Option(names = {"--ignore-sysex"},
+        description = "Filter out hardware-specific System Exclusive (SysEx) messages.")
     public boolean ignoreSysex;
 
-    @Option(names = {"--reset"}, description = "Send a SysEx reset before each track (gm, gm2, gs, xg, mt32, or raw hex like F0...F7).")
+    @Option(names = {"--reset"},
+        description = "Send a SysEx reset before each track (gm, gm2, gs, xg, mt32, or raw hex "
+                      + "like F0...F7).")
     public Optional<String> resetType = Optional.empty();
 
     @ArgGroup(exclusive = true, multiplicity = "0..1")

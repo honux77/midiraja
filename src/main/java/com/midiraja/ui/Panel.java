@@ -11,7 +11,8 @@ package com.midiraja.ui;
  * Represents a modular, responsive UI component that receives state updates via events
  * and renders its current internal representation.
  */
-public interface Panel extends LayoutListener, PlaybackEventListener
+public interface Panel extends LayoutListener,
+                               PlaybackEventListener
 {
     /**
      * Renders the panel's content into the provided StringBuilder.
@@ -26,12 +27,15 @@ public interface Panel extends LayoutListener, PlaybackEventListener
      */
     default String truncate(String text, int maxLength)
     {
-        if (text == null) return "";
+        if (text == null)
+            return "";
         // Strip ANSI codes to calculate visible length
         String stripped = text.replaceAll("\\033\\[[;\\d]*m", "");
-        if (stripped.length() <= maxLength) return text;
-        
-        // If we must truncate, it's safer to truncate the stripped version to avoid breaking ANSI codes
+        if (stripped.length() <= maxLength)
+            return text;
+
+        // If we must truncate, it's safer to truncate the stripped version to avoid breaking ANSI
+        // codes
         return stripped.substring(0, Math.max(0, maxLength - 3)) + "...";
     }
 }

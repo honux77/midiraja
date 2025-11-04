@@ -7,12 +7,11 @@
 
 package com.midiraja.midi;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIf;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledIf;
 
 /**
  * Smoke test for FFMMuntNativeBridge with the real Munt library.
@@ -22,10 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Requires ROM files in munt_roms/ (MT32_CONTROL.ROM + MT32_PCM.ROM).
  * Automatically skipped if ROM files are absent.
  */
-@EnabledIf("muntRomsPresent")
-class FFMMuntNativeBridgeIntegrationTest {
-
-    static boolean muntRomsPresent() {
+@EnabledIf("muntRomsPresent") class FFMMuntNativeBridgeIntegrationTest
+{
+    static boolean muntRomsPresent()
+    {
         boolean hasControl = new File("munt_roms/MT32_CONTROL.ROM").exists()
             || new File("munt_roms/mt32_control.rom").exists();
         boolean hasPcm = new File("munt_roms/MT32_PCM.ROM").exists()
@@ -33,8 +32,8 @@ class FFMMuntNativeBridgeIntegrationTest {
         return hasControl && hasPcm;
     }
 
-    @Test
-    void testNoteOnProducesAudio() throws Exception {
+    @Test void testNoteOnProducesAudio() throws Exception
+    {
         FFMMuntNativeBridge bridge = new FFMMuntNativeBridge();
         bridge.createSynth();
         bridge.loadRoms("munt_roms");
@@ -55,10 +54,16 @@ class FFMMuntNativeBridgeIntegrationTest {
         bridge.playNoteOn(1, 60, 100);
         short[] audioBuf = new short[1024];
         boolean hasAudio = false;
-        for (int chunk = 0; chunk < 20 && !hasAudio; chunk++) {
+        for (int chunk = 0; chunk < 20 && !hasAudio; chunk++)
+        {
             bridge.renderAudio(audioBuf, 512);
-            for (short s : audioBuf) {
-                if (s != 0) { hasAudio = true; break; }
+            for (short s : audioBuf)
+            {
+                if (s != 0)
+                {
+                    hasAudio = true;
+                    break;
+                }
             }
         }
         assertTrue(hasAudio, "NoteOn should produce non-silent PCM output via renderAudio()");

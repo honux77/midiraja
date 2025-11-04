@@ -19,5 +19,8 @@ public interface LayoutListener
      */
     void onLayoutUpdated(LayoutConstraints bounds);
 
-    static record LayoutConstraints(int width, int height, boolean showHeaders, boolean isHorizontal) { }
+    static record LayoutConstraints(
+        int width, int height, boolean showHeaders, boolean isHorizontal)
+    {
+    }
 }

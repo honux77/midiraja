@@ -6,7 +6,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-@NullMarked
-package com.midiraja;
+@NullMarked package com.midiraja;
 
 import org.jspecify.annotations.NullMarked;

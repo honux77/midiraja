@@ -16,8 +16,8 @@ package com.midiraja.midi;
  * render thread, except MIDI routing methods which are called from the
  * playback thread but queued in AdlMidiSynthProvider before dispatching.
  */
-public interface AdlMidiNativeBridge extends AutoCloseable {
-
+public interface AdlMidiNativeBridge extends AutoCloseable
+{
     /**
      * Initializes the OPL synthesizer device at the given sample rate.
      * Must be called before any other method.
@@ -91,9 +91,11 @@ public interface AdlMidiNativeBridge extends AutoCloseable {
     void generate(short[] buffer, int stereoFrames);
 
     /** Returns the number of built-in banks available. */
-    default int getBanksCount() { return 0; }
+    default int getBanksCount()
+    {
+        return 0;
+    }
 
     /** Closes and frees all native resources. */
-    @Override
-    void close();
+    @Override void close();
 }

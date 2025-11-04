@@ -14,31 +14,34 @@ public class ControlsPanel implements Panel
 {
     private LayoutConstraints constraints = new LayoutConstraints(80, 1, false, false);
 
-    @Override
-    public void onLayoutUpdated(LayoutConstraints bounds)
+    @Override public void onLayoutUpdated(LayoutConstraints bounds)
     {
         this.constraints = bounds;
     }
 
-    @Override
-    public void onPlaybackStateChanged() {}
-
-    @Override
-    public void onTick(long currentMicroseconds) {}
-
-    @Override
-    public void onTempoChanged(float bpm) {}
-
-    @Override
-    public void onChannelActivity(int channel, int velocity) {}
-
-    @Override
-    public void render(ScreenBuffer buffer)
+    @Override public void onPlaybackStateChanged()
     {
-        if (constraints.height() <= 0) return;
+    }
+
+    @Override public void onTick(long currentMicroseconds)
+    {
+    }
+
+    @Override public void onTempoChanged(float bpm)
+    {
+    }
+
+    @Override public void onChannelActivity(int channel, int velocity)
+    {
+    }
+
+    @Override public void render(ScreenBuffer buffer)
+    {
+        if (constraints.height() <= 0)
+            return;
 
         String minLine = "[Spc]Pause [▲ ▼]Track [◀ ▶]Seek [+-]Vol [<>]Speed [/\']Trans [Q]Quit";
-        
+
         // We removed the "[CONTROLS]" header to save space per user request.
         // As a result, the max needed height is now 2 lines instead of 3.
         if (constraints.height() >= 2)

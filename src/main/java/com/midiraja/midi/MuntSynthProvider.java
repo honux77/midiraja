@@ -9,9 +9,8 @@ package com.midiraja.midi;
 
 import java.util.List;
 
-@SuppressWarnings("ThreadPriorityCheck")
-public class MuntSynthProvider implements SoftSynthProvider {
-
+@SuppressWarnings("ThreadPriorityCheck") public class MuntSynthProvider implements SoftSynthProvider
+{
     private final MuntNativeBridge bridge;
     private final @org.jspecify.annotations.Nullable NativeAudioEngine audio;
     private @org.jspecify.annotations.Nullable Thread renderThread;
@@ -21,7 +20,9 @@ public class MuntSynthProvider implements SoftSynthProvider {
     // ensuring close_synth / open_synth are never called concurrently with rendering.
     private volatile boolean renderPaused = false;
 
-    public MuntSynthProvider(MuntNativeBridge bridge, @org.jspecify.annotations.Nullable NativeAudioEngine audio) {
+    public MuntSynthProvider(
+        MuntNativeBridge bridge, @org.jspecify.annotations.Nullable NativeAudioEngine audio)
+    {
         this.bridge = bridge;
         this.audio = audio;
     }
@@ -34,25 +35,27 @@ public class MuntSynthProvider implements SoftSynthProvider {
     // capacity gives a stable, conservative latency estimate vs a dynamic snapshot.
     private static final int RING_BUFFER_CAPACITY_FRAMES = 4096;
 
-    @Override
-    public long getAudioLatencyNanos() {
-        if (audio == null) return 0L;
+    @Override public long getAudioLatencyNanos()
+    {
+        if (audio == null)
+            return 0L;
         // Ring buffer capacity + miniaudio pipeline + CoreAudio hardware latency
         long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES + audio.getDeviceLatencyFrames();
         return totalFrames * 1_000_000_000L / MUNT_SAMPLE_RATE;
     }
 
-    @Override
-    public List<MidiPort> getOutputPorts() {
+    @Override public List<MidiPort> getOutputPorts()
+    {
         return List.of(new MidiPort(0, "Munt MT-32 Emulator (Embedded)"));
     }
 
-    @Override
-    public void openPort(int portIndex) throws Exception {
+    @Override public void openPort(int portIndex) throws Exception
+    {
         bridge.createSynth();
     }
 
-    private void startRenderThread() {
+    private void startRenderThread()
+    {
         running = true;
         renderThread = new Thread(() -> {
             // Reset the render-clock reference to "now" so events queued between
@@ -64,13 +67,18 @@ public class MuntSynthProvider implements SoftSynthProvider {
             final int framesToRender = 512;
             short[] pcmBuffer = new short[framesToRender * 2];
 
-            while (running) {
+            while (running)
+            {
                 // Spin while prepareForNewTrack() is cycling the Munt synth context.
                 // close_synth / open_synth are NOT thread-safe with render_bit16s.
-                if (renderPaused) {
-                    try {
+                if (renderPaused)
+                {
+                    try
+                    {
                         Thread.sleep(1);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e)
+                    {
                         Thread.currentThread().interrupt();
                         break;
                     }
@@ -82,13 +90,19 @@ public class MuntSynthProvider implements SoftSynthProvider {
 
                 // Push it to the miniaudio ring buffer.
                 // This call will safely block if the buffer is full, pacing the thread.
-                if (audio != null) {
+                if (audio != null)
+                {
                     audio.push(pcmBuffer);
-                } else {
+                }
+                else
+                {
                     // If no audio engine, just sleep to simulate time passing
-                    try {
+                    try
+                    {
                         Thread.sleep(16);
-                    } catch (InterruptedException e) {
+                    }
+                    catch (InterruptedException e)
+                    {
                         Thread.currentThread().interrupt();
                         break;
                     }
@@ -102,52 +116,65 @@ public class MuntSynthProvider implements SoftSynthProvider {
         renderThread.start();
     }
 
-    @Override
-    @SuppressWarnings("EmptyCatch")
-    public void panic() {
+    @Override @SuppressWarnings("EmptyCatch") public void panic()
+    {
         // For Munt, skip the default 200ms wait: all note-offs are timestamped and
         // processed by the render thread in the next render cycle (<16ms). A 20ms wait
         // is sufficient. Then flush the ring buffer immediately so the next song or seek
         // starts with an empty buffer instead of waiting ~128ms for queued silence to drain.
-        for (int ch = 0; ch < 16; ch++) {
-            try {
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0});  // Sustain Off
+        for (int ch = 0; ch < 16; ch++)
+        {
+            try
+            {
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0}); // Sustain Off
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 123, 0}); // All Notes Off
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 120, 0}); // All Sound Off
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 121, 0}); // Reset All Controllers
-                for (int note = 0; note < 128; note++) {
+                for (int note = 0; note < 128; note++)
+                {
                     sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
                 }
-            } catch (Exception ignored) {}
+            }
+            catch (Exception ignored)
+            {
+            }
         }
         // No sleep needed: note-offs have future timestamps and are processed by the render
         // thread asynchronously. Flushing the ring buffer immediately discards any old audio;
         // the note-off decay will be rendered fresh into the now-empty ring buffer.
-        if (audio != null) {
+        if (audio != null)
+        {
             audio.flush();
         }
     }
 
-    @Override
-    public void loadSoundbank(String path) throws Exception {
+    @Override public void loadSoundbank(String path) throws Exception
+    {
         bridge.loadRoms(path);
         bridge.openSynth();
 
-        if (audio != null) {
+        if (audio != null)
+        {
             audio.init(32000, 2, RING_BUFFER_CAPACITY_FRAMES); // Munt renders at 32000Hz natively
             startRenderThread();
         }
     }
 
-    @Override
-    @SuppressWarnings("EmptyCatch")
-    public void prepareForNewTrack() {
-        if (audio == null) return;
+    @Override @SuppressWarnings("EmptyCatch") public void prepareForNewTrack()
+    {
+        if (audio == null)
+            return;
 
         // Step 1: Pause the render thread so we can call renderAudio() directly below.
         // The 20ms sleep guarantees any in-progress renderAudio() call has completed.
         renderPaused = true;
-        try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+        try
+        {
+            Thread.sleep(20);
+        }
+        catch (InterruptedException ignored)
+        {
+        }
 
         // Step 2: Flush the ring buffer to discard audio from the previous song.
         audio.flush();
@@ -168,7 +195,8 @@ public class MuntSynthProvider implements SoftSynthProvider {
         // in roughly 100-200ms of wall-clock time.
         short[] drainBuf = new short[1024];
         int maxDrainChunks = (MUNT_SAMPLE_RATE / 512) * 2; // up to 2s = 125 chunks
-        for (int i = 0; i < maxDrainChunks && bridge.hasActivePartials(); i++) {
+        for (int i = 0; i < maxDrainChunks && bridge.hasActivePartials(); i++)
+        {
             bridge.renderAudio(drainBuf, 512);
         }
 
@@ -177,8 +205,8 @@ public class MuntSynthProvider implements SoftSynthProvider {
         // so the ring buffer starts filling with real audio (not silence) from the start.
     }
 
-    @Override
-    public void onPlaybackStarted() {
+    @Override public void onPlaybackStarted()
+    {
         // Reset the render-clock reference so the first events get near-zero future timestamps
         // instead of timestamps capped at 4096 from a stale reference. Safe to call here
         // because the render thread is still paused (renderPaused = true).
@@ -188,12 +216,14 @@ public class MuntSynthProvider implements SoftSynthProvider {
         renderPaused = false;
     }
 
-    @Override
-    public void sendMessage(byte[] data) throws Exception {
-        if (data == null || data.length == 0) return;
+    @Override public void sendMessage(byte[] data) throws Exception
+    {
+        if (data == null || data.length == 0)
+            return;
 
         int status = data[0] & 0xFF;
-        if (status >= 0xF0) {
+        if (status >= 0xF0)
+        {
             bridge.playSysex(data);
             return;
         }
@@ -201,11 +231,13 @@ public class MuntSynthProvider implements SoftSynthProvider {
         int command = status & 0xF0;
         int channel = status & 0x0F;
 
-        if (data.length >= 2) {
+        if (data.length >= 2)
+        {
             int data1 = data[1] & 0xFF;
             int data2 = (data.length >= 3) ? (data[2] & 0xFF) : 0;
 
-            switch (command) {
+            switch (command)
+            {
                 case 0x90:
                     bridge.playNoteOn(channel, data1, data2);
                     break;
@@ -226,21 +258,25 @@ public class MuntSynthProvider implements SoftSynthProvider {
         }
     }
 
-    @Override
-    @SuppressWarnings("EmptyCatch")
-    public void closePort() {
+    @Override @SuppressWarnings("EmptyCatch") public void closePort()
+    {
         running = false;
-        if (renderThread != null) {
+        if (renderThread != null)
+        {
             renderThread.interrupt();
-            try {
+            try
+            {
                 renderThread.join(500);
-            } catch (InterruptedException ignored) {
+            }
+            catch (InterruptedException ignored)
+            {
                 // Expected during shutdown
             }
         }
 
         bridge.close();
-        if (audio != null) {
+        if (audio != null)
+        {
             audio.close();
         }
     }

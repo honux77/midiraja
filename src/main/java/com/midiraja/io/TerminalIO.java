@@ -17,7 +17,6 @@ import java.lang.ScopedValue;
  */
 public interface TerminalIO
 {
-
     /**
      * Context propagation for the active terminal session, preventing the need to pass TerminalIO
      * instances down the call stack or across virtual threads.
@@ -29,7 +28,18 @@ public interface TerminalIO
      */
     enum TerminalKey
     {
-        NONE, SEEK_FORWARD, SEEK_BACKWARD, VOLUME_UP, VOLUME_DOWN, SPEED_UP, SPEED_DOWN, TRANSPOSE_UP, TRANSPOSE_DOWN, NEXT_TRACK, PREV_TRACK, QUIT,
+        NONE,
+        SEEK_FORWARD,
+        SEEK_BACKWARD,
+        VOLUME_UP,
+        VOLUME_DOWN,
+        SPEED_UP,
+        SPEED_DOWN,
+        TRANSPOSE_UP,
+        TRANSPOSE_DOWN,
+        NEXT_TRACK,
+        PREV_TRACK,
+        QUIT,
         PAUSE
     }
 
@@ -66,12 +76,14 @@ public interface TerminalIO
     void println(String str);
 
     /**
-     * Returns the current width of the terminal (number of columns). Returns a default (e.g. 80) if not interactive or unknown.
+     * Returns the current width of the terminal (number of columns). Returns a default (e.g. 80) if
+     * not interactive or unknown.
      */
     int getWidth();
 
     /**
-     * Returns the current height of the terminal (number of rows). Returns a default (e.g. 24) if not interactive or unknown.
+     * Returns the current height of the terminal (number of rows). Returns a default (e.g. 24) if
+     * not interactive or unknown.
      */
     int getHeight();
 }

@@ -9,8 +9,8 @@
 package com.midiraja.midi;
 
 public record MidiPort(int index, String name) {
-    @Override
-    public String toString() {
+    @Override public String toString()
+    {
         return String.format("[%d] %s", index, name);
     }
 }

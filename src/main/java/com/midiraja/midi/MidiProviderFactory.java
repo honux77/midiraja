@@ -15,7 +15,10 @@ public class MidiProviderFactory
 {
     private enum OS
     {
-        MAC, WINDOWS, LINUX, UNKNOWN
+        MAC,
+        WINDOWS,
+        LINUX,
+        UNKNOWN
     }
 
     public static MidiOutProvider createProvider()
@@ -23,17 +26,18 @@ public class MidiProviderFactory
         String osName = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT);
 
         OS os = osName.contains("mac") ? OS.MAC
-                : osName.contains("win") ? OS.WINDOWS
-                        : osName.contains("nix") || osName.contains("nux") || osName.contains("aix")
-                                ? OS.LINUX
-                                : OS.UNKNOWN;
+            : osName.contains("win")   ? OS.WINDOWS
+            : osName.contains("nix") || osName.contains("nux") || osName.contains("aix")
+            ? OS.LINUX
+            : OS.UNKNOWN;
 
         return switch (os)
         {
             case MAC -> new CoreMidiProvider();
             case WINDOWS -> new WinMmProvider();
             case LINUX -> new AlsaProvider();
-            case UNKNOWN -> throw new UnsupportedOperationException(
+            case UNKNOWN ->
+                throw new UnsupportedOperationException(
                     "Unsupported OS for native MIDI: " + osName);
         };
     }

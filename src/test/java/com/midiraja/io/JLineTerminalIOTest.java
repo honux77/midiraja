@@ -7,35 +7,39 @@
 
 package com.midiraja.io;
 
-import org.junit.jupiter.api.Test;
-import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+
+import java.io.IOException;
+import org.junit.jupiter.api.Test;
 
 class JLineTerminalIOTest
 {
-    @Test
-    void testDefaultDimensionsWhenUninitialized()
+    @Test void testDefaultDimensionsWhenUninitialized()
     {
         JLineTerminalIO io = new JLineTerminalIO();
         assertEquals(80, io.getWidth(), "Uninitialized width should default to 80");
         assertEquals(24, io.getHeight(), "Uninitialized height should default to 24");
     }
 
-    @Test
-    void testDimensionsAfterInit() throws IOException
+    @Test void testDimensionsAfterInit() throws IOException
     {
         // Skip terminal initialization if running in a headless CI environment
-        if (System.getenv("CI") != null) return;
-        
+        if (System.getenv("CI") != null)
+            return;
+
         JLineTerminalIO io = new JLineTerminalIO();
-        try {
+        try
+        {
             io.init();
             // A real terminal will likely return sizes > 0
             // Even if a dumb terminal returns 0, JLine handles terminal size querying
-            // The exact size depends on the host executing the test, so we just test it doesn't crash
+            // The exact size depends on the host executing the test, so we just test it doesn't
+            // crash
             io.getWidth();
             io.getHeight();
-        } finally {
+        }
+        finally
+        {
             io.close();
         }
     }

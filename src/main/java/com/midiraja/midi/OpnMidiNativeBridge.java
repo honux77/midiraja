@@ -20,8 +20,8 @@ package com.midiraja.midi;
  * render thread, except MIDI routing methods which are called from the
  * playback thread but queued in OpnMidiSynthProvider before dispatching.
  */
-public interface OpnMidiNativeBridge extends AutoCloseable {
-
+public interface OpnMidiNativeBridge extends AutoCloseable
+{
     /**
      * Initializes the OPN2 synthesizer device at the given sample rate.
      * Must be called before any other method.
@@ -96,6 +96,5 @@ public interface OpnMidiNativeBridge extends AutoCloseable {
     void generate(short[] buffer, int stereoFrames);
 
     /** Closes and frees all native resources. */
-    @Override
-    void close();
+    @Override void close();
 }

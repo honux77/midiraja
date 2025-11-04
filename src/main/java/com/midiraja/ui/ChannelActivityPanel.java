@@ -14,29 +14,32 @@ import java.util.Arrays;
  */
 public class ChannelActivityPanel implements Panel
 {
-    private static final String[] GM_FAMILIES = {"Piano", "Chrom Perc", "Organ", "Guitar", "Bass", "Strings", "Ensemble", "Brass", "Reed", "Pipe", "Synth Lead", "Synth Pad", "Synth FX", "Ethnic", "Percussive", "SFX"};
+    private static final String[] GM_FAMILIES = {"Piano", "Chrom Perc", "Organ", "Guitar", "Bass",
+        "Strings", "Ensemble", "Brass", "Reed", "Pipe", "Synth Lead", "Synth Pad", "Synth FX",
+        "Ethnic", "Percussive", "SFX"};
 
     private LayoutConstraints constraints = new LayoutConstraints(80, 16, false, false);
     private final double[] channelLevels = new double[16];
     private final int[] channelPrograms = new int[16];
 
-    @Override
-    public void onLayoutUpdated(LayoutConstraints bounds)
+    @Override public void onLayoutUpdated(LayoutConstraints bounds)
     {
         this.constraints = bounds;
     }
 
-    @Override
-    public void onPlaybackStateChanged() {}
+    @Override public void onPlaybackStateChanged()
+    {
+    }
 
-    @Override
-    public void onTick(long currentMicroseconds) {}
+    @Override public void onTick(long currentMicroseconds)
+    {
+    }
 
-    @Override
-    public void onTempoChanged(float bpm) {}
+    @Override public void onTempoChanged(float bpm)
+    {
+    }
 
-    @Override
-    public void onChannelActivity(int channel, int velocity)
+    @Override public void onChannelActivity(int channel, int velocity)
     {
         if (channel >= 0 && channel < 16)
         {
@@ -51,19 +54,22 @@ public class ChannelActivityPanel implements Panel
 
     private String getChannelName(int ch)
     {
-        if (ch == 9) return "Drums";
+        if (ch == 9)
+            return "Drums";
         int family = channelPrograms[ch] / 8;
-        if (family >= 0 && family < GM_FAMILIES.length) return GM_FAMILIES[family];
+        if (family >= 0 && family < GM_FAMILIES.length)
+            return GM_FAMILIES[family];
         return "Unknown";
     }
 
-    @Override
-    public void render(ScreenBuffer buffer)
+    @Override public void render(ScreenBuffer buffer)
     {
-        if (constraints.height() <= 0) return;
+        if (constraints.height() <= 0)
+            return;
 
         // Internal Decay Logic
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 16; i++)
+        {
             channelLevels[i] = Math.max(0, channelLevels[i] - 0.05);
         }
 
@@ -73,8 +79,10 @@ public class ChannelActivityPanel implements Panel
             for (int i = 0; i < 16; i++)
             {
                 int meterLength = (int) (channelLevels[i] * maxMeterLength);
-                String meter = Theme.COLOR_HIGHLIGHT + Theme.CHAR_BLOCK_FULL.repeat(meterLength) + Theme.COLOR_RESET + " ".repeat(maxMeterLength - meterLength);
-                String line = String.format("CH %02d %-11s : %s", i + 1, "(" + getChannelName(i) + ")", meter);
+                String meter = Theme.COLOR_HIGHLIGHT + Theme.CHAR_BLOCK_FULL.repeat(meterLength)
+                    + Theme.COLOR_RESET + " ".repeat(maxMeterLength - meterLength);
+                String line = String.format(
+                    "CH %02d %-11s : %s", i + 1, "(" + getChannelName(i) + ")", meter);
                 buffer.append(truncate(line, constraints.width())).append("\n");
             }
         }
@@ -89,13 +97,16 @@ public class ChannelActivityPanel implements Panel
                 {
                     int ch = row + (col * 4);
                     int meterLength = (int) (channelLevels[ch] * maxMeterLength);
-                    String meter = Theme.COLOR_HIGHLIGHT + Theme.CHAR_BLOCK_FULL.repeat(meterLength) + Theme.COLOR_RESET + " ".repeat(maxMeterLength - meterLength);
+                    String meter = Theme.COLOR_HIGHLIGHT + Theme.CHAR_BLOCK_FULL.repeat(meterLength)
+                        + Theme.COLOR_RESET + " ".repeat(maxMeterLength - meterLength);
                     String cell = String.format("C%02d:%s", ch + 1, meter);
-                    int visibleLen = 4 + maxMeterLength; // "C01:" is 4 chars, meter is maxMeterLength chars
-                    if (visibleLen > colWidth) {
-                        // In extremely narrow terminals we might need to truncate the meter string itself,
-                        // but since maxMeterLength = max(2, colWidth - 7), visibleLen is (colWidth - 3).
-                        // So visibleLen is NEVER > colWidth in reality!
+                    int visibleLen =
+                        4 + maxMeterLength; // "C01:" is 4 chars, meter is maxMeterLength chars
+                    if (visibleLen > colWidth)
+                    {
+                        // In extremely narrow terminals we might need to truncate the meter string
+                        // itself, but since maxMeterLength = max(2, colWidth - 7), visibleLen is
+                        // (colWidth - 3). So visibleLen is NEVER > colWidth in reality!
                     }
                     int padding = Math.max(0, colWidth - visibleLen);
                     cell += " ".repeat(padding);

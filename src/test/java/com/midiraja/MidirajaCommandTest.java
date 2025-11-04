@@ -7,15 +7,11 @@
 
 package com.midiraja;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import com.midiraja.io.MockTerminalIO;
 import com.midiraja.midi.MidiOutProvider;
 import com.midiraja.midi.MidiPort;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
-import picocli.CommandLine;
-
-import javax.sound.midi.*;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,12 +20,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import javax.sound.midi.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import picocli.CommandLine;
 
 class MidirajaCommandTest
 {
-
     private MidirajaCommand app;
     private MockMidiProvider provider;
     private ByteArrayOutputStream outBytes;
@@ -39,31 +37,29 @@ class MidirajaCommandTest
 
     static class MockMidiProvider implements MidiOutProvider
     {
-        @Override
-        public List<MidiPort> getOutputPorts()
+        @Override public List<MidiPort> getOutputPorts()
         {
             return List.of(new MidiPort(0, "Mock Port"));
         }
 
-        @Override
-        public void openPort(int portIndex) throws Exception
-        {}
+        @Override public void openPort(int portIndex) throws Exception
+        {
+        }
 
-        @Override
-        public void sendMessage(byte[] data) throws Exception
-        {}
+        @Override public void sendMessage(byte[] data) throws Exception
+        {
+        }
 
-        @Override
-        public void closePort()
-        {}
+        @Override public void closePort()
+        {
+        }
 
-        @Override
-        public void panic()
-        {}
+        @Override public void panic()
+        {
+        }
     }
 
-    @BeforeEach
-    void setUp()
+    @BeforeEach void setUp()
     {
         app = new MidirajaCommand();
         provider = new MockMidiProvider();
@@ -76,8 +72,7 @@ class MidirajaCommandTest
 
     // ── Root command: native MIDI playback ──────────────────────────────────────
 
-    @Test
-    void testPlayMidiWithVolumeScaling(@TempDir Path tempDir) throws Exception
+    @Test void testPlayMidiWithVolumeScaling(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 
@@ -87,8 +82,7 @@ class MidirajaCommandTest
         assertEquals(0, exitCode);
     }
 
-    @Test
-    void testPlayMidiWithSpeedOption(@TempDir Path tempDir) throws Exception
+    @Test void testPlayMidiWithSpeedOption(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 
@@ -98,8 +92,7 @@ class MidirajaCommandTest
         assertEquals(0, exitCode);
     }
 
-    @Test
-    void testNoFilesReturnsError()
+    @Test void testNoFilesReturnsError()
     {
         CommandLine cmd = new CommandLine(app);
         int exitCode = cmd.execute();
@@ -108,8 +101,7 @@ class MidirajaCommandTest
         assertTrue(errBytes.toString().contains("No MIDI files specified"));
     }
 
-    @Test
-    void testShuffleFlag(@TempDir Path tempDir) throws Exception
+    @Test void testShuffleFlag(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 
@@ -119,8 +111,7 @@ class MidirajaCommandTest
         assertEquals(0, exitCode);
     }
 
-    @Test
-    void testShortShuffleFlag(@TempDir Path tempDir) throws Exception
+    @Test void testShortShuffleFlag(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 
@@ -130,8 +121,7 @@ class MidirajaCommandTest
         assertEquals(0, exitCode);
     }
 
-    @Test
-    void testStartTimeFlag(@TempDir Path tempDir) throws Exception
+    @Test void testStartTimeFlag(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 
@@ -143,8 +133,7 @@ class MidirajaCommandTest
 
     // ── Port index lookup ───────────────────────────────────────────────────────
 
-    @Test
-    void testFindPortIndex()
+    @Test void testFindPortIndex()
     {
         List<MidiPort> ports = new ArrayList<>();
         ports.add(new MidiPort(0, "IAC Driver Bus 1"));
@@ -169,8 +158,7 @@ class MidirajaCommandTest
 
     // ── Help output ─────────────────────────────────────────────────────────────
 
-    @Test
-    void testRootHelpMentionsSubcommands()
+    @Test void testRootHelpMentionsSubcommands()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -185,8 +173,7 @@ class MidirajaCommandTest
         assertTrue(helpOutput.contains("ports"), "Help should mention 'ports' subcommand");
     }
 
-    @Test
-    void testOplHelpShowsEmulatorIds()
+    @Test void testOplHelpShowsEmulatorIds()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -197,8 +184,7 @@ class MidirajaCommandTest
         assertTrue(helpOutput.contains("--bank"), "opl help should mention --bank");
     }
 
-    @Test
-    void testOpnHelpShowsEmulatorIds()
+    @Test void testOpnHelpShowsEmulatorIds()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -208,8 +194,7 @@ class MidirajaCommandTest
         assertTrue(helpOutput.contains("OPN2"), "opn help should mention OPN2");
     }
 
-    @Test
-    void testMuntHelp()
+    @Test void testMuntHelp()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -219,8 +204,7 @@ class MidirajaCommandTest
         assertTrue(helpOutput.contains("MT-32"), "munt help should mention MT-32");
     }
 
-    @Test
-    void testFluidHelp()
+    @Test void testFluidHelp()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -230,8 +214,7 @@ class MidirajaCommandTest
         assertTrue(helpOutput.contains("FluidSynth"), "fluid help should mention FluidSynth");
     }
 
-    @Test
-    void testJavaHelp()
+    @Test void testJavaHelp()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -241,8 +224,7 @@ class MidirajaCommandTest
         assertTrue(helpOutput.contains("Java"), "java help should mention Java");
     }
 
-    @Test
-    void testPortsHelp()
+    @Test void testPortsHelp()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setOut(new java.io.PrintWriter(out));
@@ -254,8 +236,7 @@ class MidirajaCommandTest
 
     // ── Subcommand: missing files argument ──────────────────────────────────────
 
-    @Test
-    void testOplWithNoFilesReturnsError()
+    @Test void testOplWithNoFilesReturnsError()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setErr(new java.io.PrintWriter(err));
@@ -265,8 +246,7 @@ class MidirajaCommandTest
         assertEquals(2, exitCode);
     }
 
-    @Test
-    void testOpnWithNoFilesReturnsError()
+    @Test void testOpnWithNoFilesReturnsError()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setErr(new java.io.PrintWriter(err));
@@ -275,8 +255,7 @@ class MidirajaCommandTest
         assertEquals(2, exitCode);
     }
 
-    @Test
-    void testMuntWithNoArgsReturnsError()
+    @Test void testMuntWithNoArgsReturnsError()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setErr(new java.io.PrintWriter(err));
@@ -285,8 +264,7 @@ class MidirajaCommandTest
         assertEquals(2, exitCode);
     }
 
-    @Test
-    void testFluidWithNoArgsReturnsError()
+    @Test void testFluidWithNoArgsReturnsError()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setErr(new java.io.PrintWriter(err));
@@ -295,8 +273,7 @@ class MidirajaCommandTest
         assertEquals(2, exitCode);
     }
 
-    @Test
-    void testJavaWithNoFilesReturnsError()
+    @Test void testJavaWithNoFilesReturnsError()
     {
         CommandLine cmd = new CommandLine(app);
         cmd.setErr(new java.io.PrintWriter(err));
@@ -307,8 +284,7 @@ class MidirajaCommandTest
 
     // ── UI mode flags ───────────────────────────────────────────────────────────
 
-    @Test
-    void testClassicUiFlag(@TempDir Path tempDir) throws Exception
+    @Test void testClassicUiFlag(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 
@@ -318,8 +294,7 @@ class MidirajaCommandTest
         assertEquals(0, exitCode);
     }
 
-    @Test
-    void testMiniUiFlag(@TempDir Path tempDir) throws Exception
+    @Test void testMiniUiFlag(@TempDir Path tempDir) throws Exception
     {
         File midiFile = createTestMidi(tempDir, "test.mid");
 

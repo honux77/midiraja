@@ -42,7 +42,9 @@ public interface MidiOutProvider
      * so the new track starts cleanly. Implementations may leave their render thread paused
      * here; {@link #onPlaybackStarted()} will resume it when playback actually begins.
      */
-    default void prepareForNewTrack() {}
+    default void prepareForNewTrack()
+    {
+    }
 
     /**
      * Called by {@code PlaybackEngine.playLoop()} at the very start of playback, just before
@@ -51,14 +53,17 @@ public interface MidiOutProvider
      * references so the first notes are scheduled with fresh, near-zero timestamps.
      * Default is a no-op for hardware MIDI ports.
      */
-    default void onPlaybackStarted() {}
+    default void onPlaybackStarted()
+    {
+    }
 
     /**
      * Returns the estimated audio output latency in nanoseconds. Used to synchronize visual
      * feedback (e.g. VU meters) with actual audible output. Default is 0 for hardware MIDI ports
      * where the OS driver handles latency transparently.
      */
-    default long getAudioLatencyNanos() {
+    default long getAudioLatencyNanos()
+    {
         return 0L;
     }
 
@@ -67,14 +72,17 @@ public interface MidiOutProvider
      */
     default void setVolume(int volume)
     {
-        if (volume < 0 || volume > 127) return;
+        if (volume < 0 || volume > 127)
+            return;
         for (int ch = 0; ch < 16; ch++)
         {
             try
             {
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 7, (byte) volume});
             }
-            catch (Exception ignored) { /* Ignore during panic */ }
+            catch (Exception ignored)
+            { /* Ignore during panic */
+            }
         }
     }
 
@@ -89,23 +97,33 @@ public interface MidiOutProvider
             try
             {
                 // 1. Send standard panic controllers
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0});  // Sustain Off
+                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0}); // Sustain Off
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 123, 0}); // All Notes Off
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 120, 0}); // All Sound Off
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 121, 0}); // Reset All Controllers
-                
+
                 // 2. Machine Gun Panic: Explicitly send Note Off for every single key
                 // Some synthesizers ignore CC 123, so this is the ultimate fallback.
-                for (int note = 0; note < 128; note++) {
+                for (int note = 0; note < 128; note++)
+                {
                     sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
                 }
             }
-            catch (Exception ignored) { /* Ignore during panic */ }
+            catch (Exception ignored)
+            { /* Ignore during panic */
+            }
         }
         // Increase flush window for the heavy Note Off barrage
         long endWait = System.currentTimeMillis() + 200;
-        while (System.currentTimeMillis() < endWait) {
-            try { Thread.sleep(Math.max(1, endWait - System.currentTimeMillis())); } catch (Exception ignored) { /* force wait */ }
+        while (System.currentTimeMillis() < endWait)
+        {
+            try
+            {
+                Thread.sleep(Math.max(1, endWait - System.currentTimeMillis()));
+            }
+            catch (Exception ignored)
+            { /* force wait */
+            }
         }
     }
 }

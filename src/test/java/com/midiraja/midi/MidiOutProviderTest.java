@@ -7,43 +7,38 @@
 
 package com.midiraja.midi;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
 
 class MidiOutProviderTest
 {
-
     static class MockMidiProvider implements MidiOutProvider
     {
         List<byte[]> sentMessages = new ArrayList<>();
 
-        @Override
-        public List<MidiPort> getOutputPorts()
+        @Override public List<MidiPort> getOutputPorts()
         {
             return new ArrayList<>();
         }
 
-        @Override
-        public void openPort(int portIndex) throws Exception
-        {}
+        @Override public void openPort(int portIndex) throws Exception
+        {
+        }
 
-        @Override
-        public void sendMessage(byte[] data) throws Exception
+        @Override public void sendMessage(byte[] data) throws Exception
         {
             sentMessages.add(data);
         }
 
-        @Override
-        public void closePort()
-        {}
+        @Override public void closePort()
+        {
+        }
     }
 
-    @Test
-    void testSetVolumeSendsCC7ToAllChannels() throws Exception
+    @Test void testSetVolumeSendsCC7ToAllChannels() throws Exception
     {
         MockMidiProvider provider = new MockMidiProvider();
         provider.setVolume(64);

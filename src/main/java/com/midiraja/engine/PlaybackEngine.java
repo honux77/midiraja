@@ -7,18 +7,16 @@
 
 package com.midiraja.engine;
 
-import java.util.Optional;
-
 import com.midiraja.midi.MidiOutProvider;
 import com.midiraja.ui.PlaybackEventListener;
-
-import javax.sound.midi.*;
 import java.util.*;
+import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.StructuredTaskScope;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
+import javax.sound.midi.*;
 
 /**
  * Orchestrates real-time MIDI playback, managing timing, user input, and UI updates. Utilizes
@@ -28,7 +26,10 @@ public class PlaybackEngine
 {
     public enum PlaybackStatus
     {
-        FINISHED, NEXT, PREVIOUS, QUIT_ALL
+        FINISHED,
+        NEXT,
+        PREVIOUS,
+        QUIT_ALL
     }
 
     private final Sequence sequence;
@@ -46,11 +47,13 @@ public class PlaybackEngine
     private volatile PlaybackStatus endStatus = PlaybackStatus.FINISHED;
     private Optional<String> initialResetType = Optional.empty();
 
-    public void setIgnoreSysex(boolean ignoreSysex) {
+    public void setIgnoreSysex(boolean ignoreSysex)
+    {
         this.ignoreSysex = ignoreSysex;
     }
 
-    public void setInitialResetType(Optional<String> resetType) {
+    public void setInitialResetType(Optional<String> resetType)
+    {
         this.initialResetType = resetType;
     }
 
@@ -60,15 +63,18 @@ public class PlaybackEngine
     private final PlaylistContext context;
     private final int[] channelPrograms = new int[16];
 
-    private final List<PlaybackEventListener> listeners = new java.util.concurrent.CopyOnWriteArrayList<>();
-    private final ScheduledExecutorService notificationScheduler = Executors.newSingleThreadScheduledExecutor(r -> {
-        Thread t = new Thread(r, "midi-notify");
-        t.setDaemon(true);
-        return t;
-    });
+    private final List<PlaybackEventListener> listeners =
+        new java.util.concurrent.CopyOnWriteArrayList<>();
+    private final ScheduledExecutorService notificationScheduler =
+        Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "midi-notify");
+            t.setDaemon(true);
+            return t;
+        });
 
-    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, PlaylistContext context, int initialVolumePercent,
-            double initialSpeed, Optional<String> startTimeStr, Optional<Integer> initialTranspose)
+    public PlaybackEngine(Sequence sequence, MidiOutProvider provider, PlaylistContext context,
+        int initialVolumePercent, double initialSpeed, Optional<String> startTimeStr,
+        Optional<Integer> initialTranspose)
     {
         this.sequence = sequence;
         this.provider = provider;
@@ -78,9 +84,11 @@ public class PlaybackEngine
         this.resolution = sequence.getResolution();
         this.context = context;
 
-        this.sortedEvents = Arrays.stream(sequence.getTracks())
+        this.sortedEvents =
+            Arrays.stream(sequence.getTracks())
                 .flatMap(track -> IntStream.range(0, track.size()).mapToObj(track::get))
-                .sorted(Comparator.comparingLong(MidiEvent::getTick)).toList();
+                .sorted(Comparator.comparingLong(MidiEvent::getTick))
+                .toList();
 
         if (startTimeStr.isPresent() && !startTimeStr.get().isBlank())
         {
@@ -157,7 +165,8 @@ public class PlaybackEngine
 
     private long getTickForTime(long targetMicroseconds)
     {
-        if (targetMicroseconds <= 0) return -1;
+        if (targetMicroseconds <= 0)
+            return -1;
         long targetNanos = targetMicroseconds * 1000;
         long currentNanos = 0;
         long lastTick = 0;
@@ -194,44 +203,56 @@ public class PlaybackEngine
         return sequence.getTickLength();
     }
 
-    @SuppressWarnings("EmptyCatch")
-    private void sendInitialReset() {
-        if (initialResetType.isEmpty()) return;
+    @SuppressWarnings("EmptyCatch") private void sendInitialReset()
+    {
+        if (initialResetType.isEmpty())
+            return;
         String type = initialResetType.get().trim().toLowerCase(java.util.Locale.ROOT);
         byte[] payload = null;
 
-        switch (type) {
+        switch (type)
+        {
             case "gm":
-                payload = new byte[]{(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte) 0xF7};
+                payload = new byte[] {(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte) 0xF7};
                 break;
             case "gm2":
-                payload = new byte[]{(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x03, (byte) 0xF7};
+                payload = new byte[] {(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x03, (byte) 0xF7};
                 break;
             case "gs":
-                payload = new byte[]{(byte) 0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, (byte) 0xF7};
+                payload = new byte[] {
+                    (byte) 0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, (byte) 0xF7};
                 break;
             case "xg":
-                payload = new byte[]{(byte) 0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00, (byte) 0xF7};
+                payload =
+                    new byte[] {(byte) 0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00, (byte) 0xF7};
                 break;
             case "mt32":
             case "mt-32":
-                payload = new byte[]{(byte) 0xF0, 0x41, 0x10, 0x16, 0x12, 0x7F, 0x00, 0x00, 0x00, 0x01, (byte) 0xF7}; // Correct 11-byte Roland SysEx reset
+                payload = new byte[] {(byte) 0xF0, 0x41, 0x10, 0x16, 0x12, 0x7F, 0x00, 0x00, 0x00,
+                    0x01, (byte) 0xF7}; // Correct 11-byte Roland SysEx reset
                 break;
             default:
-                if (type.matches("^[0-9a-fA-F]+$") && type.length() % 2 == 0) {
+                if (type.matches("^[0-9a-fA-F]+$") && type.length() % 2 == 0)
+                {
                     payload = new byte[type.length() / 2];
-                    for (int i = 0; i < payload.length; i++) {
+                    for (int i = 0; i < payload.length; i++)
+                    {
                         payload[i] = (byte) Integer.parseInt(type.substring(i * 2, i * 2 + 2), 16);
                     }
                 }
                 break;
         }
 
-        if (payload != null) {
-            try {
+        if (payload != null)
+        {
+            try
+            {
                 provider.sendMessage(payload);
-                Thread.sleep(50); // Give the hardware synthesizer 50ms to process the reset before slamming it with notes
-            } catch (Exception ignored) {
+                Thread.sleep(50); // Give the hardware synthesizer 50ms to process the reset before
+                                  // slamming it with notes
+            }
+            catch (Exception ignored)
+            {
             }
         }
     }
@@ -244,7 +265,7 @@ public class PlaybackEngine
         provider.onPlaybackStarted();
 
         sendInitialReset();
-        
+
         long lastTick = 0;
         int eventIndex = 0;
         long elapsedNanos = 0;
@@ -270,11 +291,12 @@ public class PlaybackEngine
                 long chaseNanos = 0;
                 long chaseLastTick = 0;
                 double chaseTicksToNanos =
-                        (60000000000.0 / (currentBpm * currentSpeed * resolution));
+                    (60000000000.0 / (currentBpm * currentSpeed * resolution));
 
                 for (MidiEvent ev : sortedEvents)
                 {
-                    if (ev.getTick() >= target) break;
+                    if (ev.getTick() >= target)
+                        break;
                     long t = ev.getTick();
                     chaseNanos += (long) ((t - chaseLastTick) * chaseTicksToNanos);
                     chaseLastTick = t;
@@ -288,7 +310,7 @@ public class PlaybackEngine
                 chaseNanos += (long) ((target - chaseLastTick) * chaseTicksToNanos);
 
                 // 4. Resume playback from the new position
-                
+
                 lastTick = target;
                 eventIndex = newIndex;
                 elapsedNanos = chaseNanos;
@@ -300,12 +322,15 @@ public class PlaybackEngine
                 continue;
             }
 
-            while (isPaused && isPlaying) {
+            while (isPaused && isPlaying)
+            {
                 Thread.sleep(50); // Hold the playback thread
                 // If user seeks while paused, break out to let the seek logic run
-                if (seekTarget != -1) break;
-                // Keep pushing the startTime forward so we don't instantly "catch up" when unpaused!
-                startTimeNanos += 50_000_000; 
+                if (seekTarget != -1)
+                    break;
+                // Keep pushing the startTime forward so we don't instantly "catch up" when
+                // unpaused!
+                startTimeNanos += 50_000_000;
             }
 
             var event = sortedEvents.get(eventIndex);
@@ -321,7 +346,8 @@ public class PlaybackEngine
                 long currentNanos = System.nanoTime();
                 while (currentNanos < targetNanos)
                 {
-                    if (seekTarget != -1 || !isPlaying) break;
+                    if (seekTarget != -1 || !isPlaying)
+                        break;
                     long remainingMs = (targetNanos - currentNanos) / 1_000_000L;
                     if (remainingMs > 1)
                     {
@@ -336,33 +362,42 @@ public class PlaybackEngine
             }
 
             // If seek or stop was triggered mid-wait, skip this event and re-check at loop top.
-            if (seekTarget != -1 || !isPlaying) continue;
+            if (seekTarget != -1 || !isPlaying)
+                continue;
 
             processEvent(event);
             lastTick = tick;
-            
+
             currentMicroseconds = elapsedNanos / 1000;
-            
+
             long finalMicros = currentMicroseconds;
             listeners.forEach(l -> l.onTick(finalMicros));
-            
+
             eventIndex++;
 
             // Recalculate timing ratio if BPM changed during processEvent
             ticksToNanos = (60000000000.0 / (currentBpm * currentSpeed * resolution));
         }
-        
+
         // Force broadcast 100% completion state before natural exit
-        if (isPlaying && endStatus == PlaybackStatus.FINISHED) {
+        if (isPlaying && endStatus == PlaybackStatus.FINISHED)
+        {
             currentMicroseconds = getTotalMicroseconds();
             listeners.forEach(l -> l.onTick(currentMicroseconds));
-            try { Thread.sleep(20); } catch (Exception ignored) { /* Allow UI to render 100% frame */ }
+            try
+            {
+                Thread.sleep(20);
+            }
+            catch (Exception ignored)
+            { /* Allow UI to render 100% frame */
+            }
         }
     }
 
     private void processChaseEvent(MidiEvent event)
     {
-        if (com.midiraja.MidirajaCommand.SHUTTING_DOWN) return;
+        if (com.midiraja.MidirajaCommand.SHUTTING_DOWN)
+            return;
         var msg = event.getMessage();
         var raw = msg.getMessage();
         int status = raw[0] & 0xFF;
@@ -419,10 +454,12 @@ public class PlaybackEngine
 
     private void processEvent(MidiEvent event)
     {
-        if (com.midiraja.MidirajaCommand.SHUTTING_DOWN) return;
+        if (com.midiraja.MidirajaCommand.SHUTTING_DOWN)
+            return;
         var msg = event.getMessage();
 
-        if (ignoreSysex && msg instanceof javax.sound.midi.SysexMessage) {
+        if (ignoreSysex && msg instanceof javax.sound.midi.SysexMessage)
+        {
             return;
         }
 
@@ -480,7 +517,7 @@ public class PlaybackEngine
             if (cmd == 0x90 && raw.length >= 3 && (raw[2] & 0xFF) > 0)
             {
                 final int velocity = raw[2] & 0xFF;
-                final int channel  = ch;
+                final int channel = ch;
                 final long latencyNanos = provider.getAudioLatencyNanos();
                 if (latencyNanos > 0)
                 {
@@ -509,72 +546,135 @@ public class PlaybackEngine
 
     // --- Engine API (For UI and External Control) ---
 
-    public PlaylistContext getContext() { return context; }
-    public Sequence getSequence() { return sequence; }
-    
-    public long getCurrentMicroseconds() { return currentMicroseconds; }
-    
-    public long getTotalMicroseconds() { return sequence.getMicrosecondLength(); }
-    
-    public double[] getChannelLevels() { return channelLevels; }
-    
-    public int[] getChannelPrograms() { return channelPrograms; }
-    
-    public float getCurrentBpm() { return currentBpm; }
-    
-    public double getCurrentSpeed() { return currentSpeed; }
-    
-    public int getCurrentTranspose() { return currentTranspose; }
-    
-    public double getVolumeScale() { return volumeScale; }
-    
-    public boolean isPlaying() { return isPlaying; }
+    public PlaylistContext getContext()
+    {
+        return context;
+    }
+    public Sequence getSequence()
+    {
+        return sequence;
+    }
 
-    public void requestStop(PlaybackStatus status) {
+    public long getCurrentMicroseconds()
+    {
+        return currentMicroseconds;
+    }
+
+    public long getTotalMicroseconds()
+    {
+        return sequence.getMicrosecondLength();
+    }
+
+    public double[] getChannelLevels()
+    {
+        return channelLevels;
+    }
+
+    public int[] getChannelPrograms()
+    {
+        return channelPrograms;
+    }
+
+    public float getCurrentBpm()
+    {
+        return currentBpm;
+    }
+
+    public double getCurrentSpeed()
+    {
+        return currentSpeed;
+    }
+
+    public int getCurrentTranspose()
+    {
+        return currentTranspose;
+    }
+
+    public double getVolumeScale()
+    {
+        return volumeScale;
+    }
+
+    public boolean isPlaying()
+    {
+        return isPlaying;
+    }
+
+    public void requestStop(PlaybackStatus status)
+    {
         this.isPlaying = false;
         this.endStatus = status;
     }
 
-    public void adjustVolume(double delta) {
+    public void adjustVolume(double delta)
+    {
         volumeScale = Math.max(0.0, Math.min(1.0, volumeScale + delta));
-        for (int ch = 0; ch < 16; ch++) {
+        for (int ch = 0; ch < 16; ch++)
+        {
             byte[] msg = new byte[] {(byte) (0xB0 | ch), 7, (byte) (100 * volumeScale)};
-            try { provider.sendMessage(msg); } catch (Exception ignored) { /* Ignore */ }
+            try
+            {
+                provider.sendMessage(msg);
+            }
+            catch (Exception ignored)
+            { /* Ignore */
+            }
         }
         listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
-    public void adjustSpeed(double delta) {
+    public void adjustSpeed(double delta)
+    {
         currentSpeed = Math.max(0.5, Math.min(2.0, currentSpeed + delta));
         listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
-    public void togglePause() {
+    public void togglePause()
+    {
         isPaused = !isPaused;
-        if (isPaused) {
-            try { provider.panic(); } catch (Exception ignored) { /* Ignore */ }
+        if (isPaused)
+        {
+            try
+            {
+                provider.panic();
+            }
+            catch (Exception ignored)
+            { /* Ignore */
+            }
         }
         listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
-    
-    public boolean isPaused() {
+
+    public boolean isPaused()
+    {
         return isPaused;
     }
 
-    public synchronized void adjustTranspose(int delta) {
+    public synchronized void adjustTranspose(int delta)
+    {
         currentTranspose += delta;
-        try { provider.panic(); } catch (Exception ignored) { /* Ignore */ }
+        try
+        {
+            provider.panic();
+        }
+        catch (Exception ignored)
+        { /* Ignore */
+        }
         listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
-    public void seekRelative(long microsecondsDelta) {
-        if (seekTarget == -1) {
+    public void seekRelative(long microsecondsDelta)
+    {
+        if (seekTarget == -1)
+        {
             seekTarget = getTickForTime(Math.max(0, currentMicroseconds + microsecondsDelta));
         }
     }
 
-    public void decayChannelLevels(double decayAmount) {
-        for (int i = 0; i < 16; i++) {
+    public void decayChannelLevels(double decayAmount)
+    {
+        for (int i = 0; i < 16; i++)
+        {
             channelLevels[i] = Math.max(0, channelLevels[i] - decayAmount);
         }
     }

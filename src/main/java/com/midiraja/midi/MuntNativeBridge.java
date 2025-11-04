@@ -9,11 +9,11 @@ package com.midiraja.midi;
 
 /**
  * Dependency Inversion interface for Munt's native C API (`libmt32emu`).
- * This isolates the FFM MethodHandles, allowing the MuntSynthProvider's 
+ * This isolates the FFM MethodHandles, allowing the MuntSynthProvider's
  * core logic to be tested purely in Java using a mock implementation.
  */
-public interface MuntNativeBridge extends AutoCloseable {
-
+public interface MuntNativeBridge extends AutoCloseable
+{
     /** Initializes the Munt emulation context. */
     void createSynth() throws Exception;
 
@@ -29,7 +29,9 @@ public interface MuntNativeBridge extends AutoCloseable {
      * render get near-zero future timestamps instead of stale construction-time offsets.
      * Default no-op for bridge implementations that do not use wall-clock timestamps.
      */
-    default void resetRenderTiming() {}
+    default void resetRenderTiming()
+    {
+    }
 
     /**
      * Stops all MT-32 voices immediately by cycling the synth context (close + reopen),
@@ -41,7 +43,9 @@ public interface MuntNativeBridge extends AutoCloseable {
      * and {@code open_synth} are not thread-safe with {@code render_bit16s}.
      * Default no-op for non-MT-32 bridge implementations.
      */
-    default void reopenSynth() throws Exception {}
+    default void reopenSynth() throws Exception
+    {
+    }
 
     // --- MIDI Event Routing ---
     void playNoteOn(int channel, int key, int velocity);
@@ -64,23 +68,31 @@ public interface MuntNativeBridge extends AutoCloseable {
      * Returns true if at least one Munt partial is actively sounding (Attack or Sustain state).
      * Default is false for implementations that do not support this query.
      */
-    default boolean hasActivePartials() { return false; }
+    default boolean hasActivePartials()
+    {
+        return false;
+    }
 
     /**
      * Returns a bitmask of active parts: bit 0 = Part 1, bit 7 = Part 8, bit 8 = Rhythm.
      * A set bit means at least one partial on that part is active.
      * Default is 0 for implementations that do not support this query.
      */
-    default int getPartStates() { return 0; }
+    default int getPartStates()
+    {
+        return 0;
+    }
 
     /**
      * Returns the count of currently playing notes on the specified part (0–7 for Parts 1–8,
      * 8 for the Rhythm part). Fills {@code keys} and {@code velocities} with up to 4 entries.
      * Default is 0 for implementations that do not support this query.
      */
-    default int getPlayingNotes(int partNumber, byte[] keys, byte[] velocities) { return 0; }
+    default int getPlayingNotes(int partNumber, byte[] keys, byte[] velocities)
+    {
+        return 0;
+    }
 
     /** Closes and frees all native resources. */
-    @Override
-    void close();
+    @Override void close();
 }

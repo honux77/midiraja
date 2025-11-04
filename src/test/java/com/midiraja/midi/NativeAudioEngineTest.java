@@ -7,45 +7,49 @@
 
 package com.midiraja.midi;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.File;
+import org.junit.jupiter.api.Test;
 
-class NativeAudioEngineTest {
-
-    @Test
-    void testAudioEngineInitializationAndClose() {
+class NativeAudioEngineTest
+{
+    @Test void testAudioEngineInitializationAndClose()
+    {
         // Find the compiled dylib/so/dll
         File libFile = new File("src/main/c/miniaudio/libmidiraja_audio.dylib");
-        if (!libFile.exists()) {
+        if (!libFile.exists())
+        {
             libFile = new File("src/main/c/miniaudio/libmidiraja_audio.so");
         }
-        
+
         // If the library isn't compiled yet in this environment, skip the test gracefully.
-        if (!libFile.exists()) {
-            System.out.println("Skipping NativeAudioEngineTest because shared library is not built.");
+        if (!libFile.exists())
+        {
+            System.out.println(
+                "Skipping NativeAudioEngineTest because shared library is not built.");
             return;
         }
 
         final File finalLibFile = libFile;
         assertDoesNotThrow(() -> {
-            try (NativeAudioEngine engine = new NativeAudioEngine(finalLibFile.getAbsolutePath())) {
+            try (NativeAudioEngine engine = new NativeAudioEngine(finalLibFile.getAbsolutePath()))
+            {
                 // Initialize with standard parameters (44.1kHz, Stereo, 4096 frames buffer)
                 engine.init(44100, 2, 4096);
-                
+
                 // Push some silence to ensure the ring buffer doesn't crash
                 short[] silence = new short[1024];
                 engine.push(silence);
-                
+
                 // Close is called automatically by try-with-resources
             }
         });
     }
 
-    @Test
-    void testEngineThrowsOnInvalidLibraryPath() {
-        assertThrows(UnsatisfiedLinkError.class, () -> {
-            new NativeAudioEngine("/path/to/non/existent/lib.dylib");
-        });
+    @Test void testEngineThrowsOnInvalidLibraryPath()
+    {
+        assertThrows(UnsatisfiedLinkError.class,
+            () -> { new NativeAudioEngine("/path/to/non/existent/lib.dylib"); });
     }
 }
