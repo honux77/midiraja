@@ -20,6 +20,16 @@ class Midra < Formula
   def install
     # The tarball should contain the standalone 'midra' binary
     bin.install "midra"
+
+    # Generate and install autocompletion scripts
+    system "#{bin}/midra", "generate-completion"
+    bash_completion.install "midra_completion" => "midra"
+    
+    # Optional: If you want to rename it for zsh specifically, you can do:
+    # zsh_completion.install "midra_completion" => "_midra"
+    # But Homebrew can usually handle the bash script for both if it's sourced properly,
+    # or PicoCLI's script is compatible. Let's provide it for zsh too.
+    zsh_completion.install "midra_completion" => "_midra"
   end
 
   test do
