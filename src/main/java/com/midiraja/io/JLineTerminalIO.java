@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the LICENSE file in the root
- * directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE
+ * file in the root directory of this source tree.
  */
 
 package com.midiraja.io;
@@ -15,140 +15,127 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.NonBlockingReader;
 
-public class JLineTerminalIO implements TerminalIO
-{
-    @org.jspecify.annotations.Nullable private Terminal terminal;
-    @org.jspecify.annotations.Nullable private NonBlockingReader reader;
+public class JLineTerminalIO implements TerminalIO {
+  @org.jspecify.annotations.Nullable private Terminal terminal;
+  @org.jspecify.annotations.Nullable private NonBlockingReader reader;
 
-    @Override public boolean isInteractive()
-    {
-        if (terminal == null)
-            return false;
-        String type = terminal.getType();
-        return !Terminal.TYPE_DUMB.equals(type) && !Terminal.TYPE_DUMB_COLOR.equals(type);
+  @Override
+  public boolean isInteractive() {
+    if (terminal == null)
+      return false;
+    String type = terminal.getType();
+    return !Terminal.TYPE_DUMB.equals(type) &&
+        !Terminal.TYPE_DUMB_COLOR.equals(type);
+  }
+
+  @Override
+  public void init() throws IOException {
+    // Create terminal in raw mode
+    terminal = TerminalBuilder.builder().system(true).build();
+    terminal.enterRawMode();
+    Attributes attr = terminal.getAttributes();
+    attr.setLocalFlag(Attributes.LocalFlag.ECHO, false);
+    terminal.setAttributes(attr);
+    reader = terminal.reader();
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (terminal != null) {
+      try {
+        terminal.close();
+      } catch (IOException _) {
+        // Ignore errors during terminal cleanup to prevent masking main
+        // exceptions
+      }
     }
+  }
 
-    @Override public void init() throws IOException
-    {
-        // Create terminal in raw mode
-        terminal = TerminalBuilder.builder().system(true).build();
-        terminal.enterRawMode();
-        Attributes attr = terminal.getAttributes();
-        attr.setLocalFlag(Attributes.LocalFlag.ECHO, false);
-        terminal.setAttributes(attr);
-        reader = terminal.reader();
-    }
+  @Override
+  public TerminalKey readKey() throws IOException {
+    if (reader == null)
+      return TerminalKey.NONE;
 
-    @Override public void close() throws IOException
-    {
-        if (terminal != null)
-        {
-            try
-            {
-                terminal.close();
-            }
-            catch (IOException _)
-            {
-                // Ignore errors during terminal cleanup to prevent masking main exceptions
-            }
-        }
-    }
+    // Non-blocking read (returns -2 if no input is available)
+    int ch = reader.read(10); // small timeout to avoid tight loop
+    if (ch <= 0)
+      return TerminalKey.NONE;
 
-    @Override public TerminalKey readKey() throws IOException
-    {
-        if (reader == null)
-            return TerminalKey.NONE;
+    return switch (ch) {
+      case ' ' -> TerminalKey.PAUSE;
+      case 'q', 'Q' -> TerminalKey.QUIT;
 
-        // Non-blocking read (returns -2 if no input is available)
-        int ch = reader.read(10); // small timeout to avoid tight loop
-        if (ch <= 0)
-            return TerminalKey.NONE;
+      // Track Navigation (Main: Arrows, Aux: n/p)
+      case 'n', 'N' -> TerminalKey.NEXT_TRACK;
+      case 'p', 'P' -> TerminalKey.PREV_TRACK;
 
-        return switch (ch)
-        {
-            case ' ' -> TerminalKey.PAUSE;
-            case 'q', 'Q' -> TerminalKey.QUIT;
+      // Volume (Main: +/-, Aux: u/d)
+      case '+', '=', 'u', 'U' -> TerminalKey.VOLUME_UP;
+      case '-', '_', 'd', 'D' -> TerminalKey.VOLUME_DOWN;
 
-            // Track Navigation (Main: Arrows, Aux: n/p)
-            case 'n', 'N' -> TerminalKey.NEXT_TRACK;
-            case 'p', 'P' -> TerminalKey.PREV_TRACK;
+      // Speed (Main: [ / ])
 
-            // Volume (Main: +/-, Aux: u/d)
-            case '+', '=', 'u', 'U' -> TerminalKey.VOLUME_UP;
-            case '-', '_', 'd', 'D' -> TerminalKey.VOLUME_DOWN;
+      // Seek (Main: Left/Right Arrows, Aux: f/b)
+      case 'f', 'F' -> TerminalKey.SEEK_FORWARD;
+      case '\'' -> TerminalKey.TRANSPOSE_UP;
+      case '/' -> TerminalKey.TRANSPOSE_DOWN;
+      case 'b', 'B' -> TerminalKey.SEEK_BACKWARD;
 
-            // Speed (Main: [ / ])
+      // Transpose (Main: < / >)
+      case '.', '>' -> TerminalKey.SPEED_UP;
+      case ',', '<' -> TerminalKey.SPEED_DOWN;
 
-            // Seek (Main: Left/Right Arrows, Aux: f/b)
-            case 'f', 'F' -> TerminalKey.SEEK_FORWARD;
-            case '\'' -> TerminalKey.TRANSPOSE_UP;
-            case '/' -> TerminalKey.TRANSPOSE_DOWN;
-            case 'b', 'B' -> TerminalKey.SEEK_BACKWARD;
-
-            // Transpose (Main: < / >)
-            case '.', '>' -> TerminalKey.SPEED_UP;
-            case ',', '<' -> TerminalKey.SPEED_DOWN;
-
-            // Handle ESC and Arrow Keys (typically ESC [ A, B, C, D)
-            case 27 ->
-            {
-                int next1 = reader.read(10);
-                if (next1 == '[')
-                {
-                    int next2 = reader.read(10);
-                    yield switch (next2)
-                    {
-                        case 'A' -> TerminalKey.PREV_TRACK;
-                        case 'B' -> TerminalKey.NEXT_TRACK;
-                        case 'C' -> TerminalKey.SEEK_FORWARD;
-                        case 'D' -> TerminalKey.SEEK_BACKWARD;
-                        default -> TerminalKey.NONE;
-                    };
-                }
-                else if (next1 <= 0)
-                {
-                    // Pure ESC key press
-                    yield TerminalKey.QUIT;
-                }
-                yield TerminalKey.NONE;
-            }
+      // Handle ESC and Arrow Keys (typically ESC [ A, B, C, D)
+      case 27 -> {
+        int next1 = reader.read(10);
+        if (next1 == '[') {
+          int next2 = reader.read(10);
+          yield switch (next2) {
+            case 'A' -> TerminalKey.PREV_TRACK;
+            case 'B' -> TerminalKey.NEXT_TRACK;
+            case 'C' -> TerminalKey.SEEK_FORWARD;
+            case 'D' -> TerminalKey.SEEK_BACKWARD;
             default -> TerminalKey.NONE;
-        };
-    }
-
-    @Override public void print(String str)
-    {
-        if (terminal != null)
-        {
-            terminal.writer().print(str);
-            terminal.writer().flush();
+          };
+        } else if (next1 <= 0) {
+          // Pure ESC key press
+          yield TerminalKey.QUIT;
         }
-        else
-        {
-            System.out.print(str);
-        }
-    }
+        yield TerminalKey.NONE;
+      }
+      default -> TerminalKey.NONE;
+    };
+  }
 
-    @Override public void println(String str)
-    {
-        if (terminal != null)
-        {
-            terminal.writer().println(str);
-            terminal.writer().flush();
-        }
-        else
-        {
-            System.out.println(str);
-        }
+  @Override
+  public void print(String str) {
+    if (terminal != null) {
+      terminal.writer().print(str);
+      terminal.writer().flush();
+    } else {
+      out.print(str);
     }
+  }
 
-    @Override public int getWidth()
-    {
-        return terminal != null && terminal.getWidth() > 0 ? terminal.getWidth() : 80;
+  @Override
+  public void println(String str) {
+    if (terminal != null) {
+      terminal.writer().println(str);
+      terminal.writer().flush();
+    } else {
+      out.println(str);
     }
+  }
 
-    @Override public int getHeight()
-    {
-        return terminal != null && terminal.getHeight() > 0 ? terminal.getHeight() : 24;
-    }
+  @Override
+  public int getWidth() {
+    return terminal != null && terminal.getWidth() > 0 ? terminal.getWidth()
+                                                       : 80;
+  }
+
+  @Override
+  public int getHeight() {
+    return terminal != null && terminal.getHeight() > 0 ? terminal.getHeight()
+                                                        : 24;
+  }
 }
