@@ -49,6 +49,10 @@ jobs:
       - name: Build Native Image
         run: ./gradlew nativeCompile
 
+      - name: Build Leyden JVM Distribution (Unix only)
+        if: runner.os != 'Windows'
+        run: bash ./scripts/build-leyden-dist.sh
+
       - name: Rename Artifact
         run: |
           if [ "$RUNNER_OS" == "Windows" ]; then
@@ -114,3 +118,4 @@ jobs:
             ${{ matrix.asset_name }}
             *.deb
             *.rpm
+            dist/midra-jvm-*.tar.gz
