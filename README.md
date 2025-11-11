@@ -17,6 +17,13 @@ Whether you want to quickly preview a `.mid` file, practice an instrument by cha
 
 ## 🚀 Installation (macOS & Linux)
 
+### 📦 Which version should I use?
+Midiraja is distributed in three distinct flavors to guarantee it runs everywhere:
+
+1. **`midra` (Standard Native)**: The default. Built with GraalVM Native Image. It's a single, standalone binary with instant startup time. Use this unless you encounter OS compatibility issues (like a "missing glibc" error on older Linux distributions).
+2. **`midrac` (Compatible Bundle)**: A highly compatible distribution that bundles a minimal Java Runtime (JRE) optimized with Project Leyden (AppCDS) for near-native startup speeds. It is slightly larger but mathematically guaranteed to run on almost any Linux/macOS environment, regardless of OS age.
+3. **`midrax` (Cross-Platform Fat JAR)**: The ultimate "write once, run anywhere" version. It requires you to have **Java 25+** already installed on your system.
+
 ### 🍺 Option 1: macOS via Homebrew (Recommended for Mac)
 ```bash
 brew tap YOUR_GITHUB_USERNAME/tap

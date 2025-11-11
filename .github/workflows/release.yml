@@ -136,4 +136,30 @@ jobs:
       - name: Upload JVM Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/midra-jvm-*.tar.gz
+          files: dist/midrac-*.tar.gz
+
+  build-midrax-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up GraalVM Community Edition
+        uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: '25'
+          distribution: 'graalvm-community'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+      - name: Make gradlew executable
+        run: chmod +x ./gradlew
+      - name: Build Distribution Zip
+        run: ./gradlew distZip
+      - name: Rename Zip
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          if [ -z "$VERSION" ]; then VERSION="0.1.0"; fi
+          mv build/distributions/midiraja-*.zip midrax-v${VERSION}.zip
+      - name: Upload midrax Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: midrax-v*.zip

@@ -22,7 +22,7 @@ DIST_DIR="build/leyden-dist"
 JRE_DIR="${DIST_DIR}/jre"
 APP_DIR="${DIST_DIR}/app"
 BIN_DIR="${DIST_DIR}/bin"
-ARCHIVE_NAME="midra-jvm-${OS}-${ARCH}-v${VERSION}.tar.gz"
+ARCHIVE_NAME="midrac-${OS}-${ARCH}-v${VERSION}.tar.gz"
 
 echo "🧹 Cleaning previous distributions..."
 rm -rf "${DIST_DIR}"
@@ -69,7 +69,7 @@ CLASS_PATH="${APP_DIR}/*"
 echo "✅ AppCDS Archive generated at ${JSA_FILE} ($(du -h "${JSA_FILE}" | cut -f1))"
 
 echo "📝 Creating Launcher Script..."
-cat << 'EOF' > "${BIN_DIR}/midrax"
+cat << 'EOF' > "${BIN_DIR}/midrac"
 #!/bin/bash
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 ROOT_DIR="$(dirname "$DIR")"
@@ -89,7 +89,7 @@ exec "$JRE/bin/java" -Xlog:cds=off -XX:SharedArchiveFile="$APP/midra.jsa" -Xshar
      -cp "$APP/*" com.midiraja.MidirajaCommand "$@"
 EOF
 
-chmod +x "${BIN_DIR}/midrax"
+chmod +x "${BIN_DIR}/midrac"
 
 echo "📦 Packaging final distribution..."
 cd build
@@ -98,4 +98,4 @@ mv "leyden-dist.tar.gz" "../dist/${ARCHIVE_NAME}"
 cd ..
 
 echo "🎉 Done! Leyden Distribution created at: dist/${ARCHIVE_NAME}"
-echo "Test it by running: ./${BIN_DIR}/midrax --help"
+echo "Test it by running: ./${BIN_DIR}/midrac --help"
