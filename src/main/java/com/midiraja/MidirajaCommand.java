@@ -19,7 +19,7 @@ import com.midiraja.cli.MuntCommand;
 import com.midiraja.cli.OplCommand;
 import com.midiraja.cli.OpnCommand;
 import com.midiraja.cli.PlaybackRunner;
-import com.midiraja.cli.TimidityCommand;
+import com.midiraja.cli.GusCommand;
 import com.midiraja.io.TerminalIO;
 import com.midiraja.midi.MidiOutProvider;
 import com.midiraja.midi.MidiPort;
@@ -50,7 +50,7 @@ import picocli.CommandLine.Parameters;
             MuntCommand.class,
             FluidCommand.class,
             JavaSynthCommand.class,
-            TimidityCommand.class,
+            GusCommand.class,
             ListPortsCommand.class,
             CommandLine.HelpCommand.class,
             picocli.AutoComplete.GenerateCompletion.class,
