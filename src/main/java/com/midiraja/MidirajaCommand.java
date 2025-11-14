@@ -19,6 +19,7 @@ import com.midiraja.cli.MuntCommand;
 import com.midiraja.cli.OplCommand;
 import com.midiraja.cli.OpnCommand;
 import com.midiraja.cli.PlaybackRunner;
+import com.midiraja.cli.TimidityCommand;
 import com.midiraja.io.TerminalIO;
 import com.midiraja.midi.MidiOutProvider;
 import com.midiraja.midi.MidiPort;
@@ -49,6 +50,7 @@ import picocli.CommandLine.Parameters;
             MuntCommand.class,
             FluidCommand.class,
             JavaSynthCommand.class,
+            TimidityCommand.class,
             ListPortsCommand.class,
             CommandLine.HelpCommand.class,
             picocli.AutoComplete.GenerateCompletion.class,
@@ -62,8 +64,8 @@ import picocli.CommandLine.Parameters;
               "Run 'midra <command> --help' for synth-specific options.", "",
               "Playlist Features:",
               "  Supports .m3u and .txt files containing paths to .mid files.",
-              "  You can embed CLI options inside M3U files using the " +
-              "#MIDRA: prefix.",
+              "  You can embed CLI options inside M3U files using the "
+                  + "#MIDRA: prefix.",
               "  Example: #MIDRA: --shuffle --loop"})
 public class MidirajaCommand implements Callable<Integer> {
   public static volatile boolean SHUTTING_DOWN = false;
@@ -182,8 +184,8 @@ public class MidirajaCommand implements Callable<Integer> {
   public Integer call() throws Exception {
     // Warn and handle deprecated legacy options
     if (legacyListPorts) {
-      stdErr.println("Warning: --list-ports / -l is deprecated. Use 'midra " +
-                     "ports' instead.");
+      stdErr.println("Warning: --list-ports / -l is deprecated. Use 'midra "
+                     + "ports' instead.");
       var nativeProvider = MidiProviderFactory.createProvider();
       stdOut.println("Available MIDI Output Devices:");
       for (var p : nativeProvider.getOutputPorts()) {
@@ -199,16 +201,16 @@ public class MidirajaCommand implements Callable<Integer> {
       // Test mode: provider already injected
       resolvedProvider = provider;
     } else if (legacyMunt.isPresent()) {
-      err.println("Warning: --munt is deprecated. Use 'midra munt <rom-dir> " +
-                  "<files...>' instead.");
+      err.println("Warning: --munt is deprecated. Use 'midra munt <rom-dir> "
+                  + "<files...>' instead.");
       String audioLib = AudioLibResolver.resolve();
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMMuntNativeBridge();
       resolvedProvider = new com.midiraja.midi.MuntSynthProvider(bridge, audio);
       soundbankArg = legacyMunt;
     } else if (legacyOpl.isPresent()) {
-      err.println("Warning: --opl is deprecated. Use 'midra opl [-b BANK] " +
-                  "<files...>' instead.");
+      err.println("Warning: --opl is deprecated. Use 'midra opl [-b BANK] "
+                  + "<files...>' instead.");
       String audioLib = AudioLibResolver.resolve();
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
@@ -219,8 +221,8 @@ public class MidirajaCommand implements Callable<Integer> {
           val.isEmpty() ? "bank:0"
                         : (val.matches("\\d+") ? "bank:" + val : val));
     } else if (legacyOpn.isPresent()) {
-      err.println("Warning: --opn is deprecated. Use 'midra opn [-b PATH] " +
-                  "<files...>' instead.");
+      err.println("Warning: --opn is deprecated. Use 'midra opn [-b PATH] "
+                  + "<files...>' instead.");
       String audioLib = AudioLibResolver.resolve();
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMOpnMidiNativeBridge();
@@ -235,8 +237,8 @@ public class MidirajaCommand implements Callable<Integer> {
           legacyFluidDriver.orElse(null));
       soundbankArg = legacyFluid;
     } else if (legacySynth) {
-      stdErr.println("Warning: --synth is deprecated. Use 'midra java " +
-                     "<files...>' instead.");
+      stdErr.println("Warning: --synth is deprecated. Use 'midra java "
+                     + "<files...>' instead.");
       resolvedProvider = new com.midiraja.midi.JavaSynthProvider();
     } else {
       resolvedProvider = MidiProviderFactory.createProvider();
