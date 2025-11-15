@@ -42,12 +42,21 @@ public class GusSynthProvider implements SoftSynthProvider {
   }
 
   @Override
-  public void openPort(int portIndex) throws Exception {
-    if (bank != null) {
-      Path cfgPath = bank.getRootDir().resolve("gus.cfg");
-      if (Files.exists(cfgPath)) {
-        bank.loadConfig(Files.readString(cfgPath, StandardCharsets.US_ASCII));
-      }
+  public void openPort(int portIndex) throws Exception
+  {
+      if (bank != null)
+      {
+          Path cfgPath = bank.getRootDir().resolve("gus.cfg");
+          if (!Files.exists(cfgPath))
+          {
+              // Fallback to legacy TiMidity++ config name for maximum retro compatibility
+              cfgPath = bank.getRootDir().resolve("timidity.cfg");
+          }
+
+          if (Files.exists(cfgPath))
+          {
+              bank.loadConfig(Files.readString(cfgPath, StandardCharsets.US_ASCII));
+          }
 
       // Auto-load bank 0, program 0 (Piano) as a default fallback if possible
       bank.getPatchPath(0, 0).ifPresent(path -> {

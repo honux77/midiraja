@@ -30,8 +30,7 @@ public class GusCommand implements Callable<Integer> {
 
   @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
-  @Option(names = {"-p", "--patch-dir"},
-          description = "Directory containing GUS .pat files and timidity.cfg")
+  @Option(names = {"-p", "--patch-dir"}, description = "Directory containing GUS .pat files and gus.cfg (or timidity.cfg)")
   private Optional<File> patchDir = Optional.empty();
 
   @Parameters(paramLabel = "<file>",
