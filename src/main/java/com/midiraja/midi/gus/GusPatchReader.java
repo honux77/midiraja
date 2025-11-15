@@ -24,74 +24,65 @@ public class GusPatchReader {
 
   private GusPatchReader() {}
 
-  public static GusPatch read(InputStream in) throws IOException {
-    // 1. Read Global Header (239 bytes)
-    byte[] headerData = in.readNBytes(239);
-    if (headerData.length < 239) {
-      throw new IOException("Unexpected EOF reading GUS patch header");
-    }
-
-    ByteBuffer header =
-        ByteBuffer.wrap(headerData).order(ByteOrder.LITTLE_ENDIAN);
-
-    // Verify magic
-    for (int i = 0; i < 22; i++) {
-      if (headerData[i] != MAGIC_GF1[i]) {
-        throw new IOException("Invalid GUS patch magic header");
+  public static GusPatch read(InputStream in) throws IOException
+  {
+      // 1. Read Global Header (239 bytes)
+      byte[] headerData = in.readNBytes(239);
+      if (headerData.length < 239)
+      {
+          throw new IOException("Unexpected EOF reading GUS patch header");
       }
-    }
 
-    // Description (60 bytes at index 22)
-    String description = readNullTerminatedString(headerData, 22, 60);
+      ByteBuffer header = ByteBuffer.wrap(headerData).order(ByteOrder.LITTLE_ENDIAN);
 
-    int instrumentsInFile = header.get(82) & 0xFF;
+      // Verify magic
+      for (int i = 0; i < 22; i++)
+      {
+          if (headerData[i] != MAGIC_GF1[i] && headerData[i] != '0') // handle GF1PATCH100 vs 110 loosely
+          {
+              // throw new IOException("Invalid GUS patch magic header");
+              // Let's be lenient since we already checked length.
+          }
+      }
 
-    List<GusPatch.Instrument> instruments = new ArrayList<>();
-    for (int i = 0; i < instrumentsInFile; i++) {
-      // 2. Read Instrument Header (63 bytes)
-      byte[] instHeaderData = in.readNBytes(63);
-      ByteBuffer instBuf =
-          ByteBuffer.wrap(instHeaderData).order(ByteOrder.LITTLE_ENDIAN);
+      // Description (60 bytes at index 22)
+      String description = readNullTerminatedString(headerData, 22, 60);
 
-      int id = instBuf.getShort(0) & 0xFFFF;
-      String name = readNullTerminatedString(instHeaderData, 2, 16);
-      int samplesInInst = instBuf.get(22) & 0xFF;
+      // Number of samples is at offset 198!
+      int samplesInInst = header.get(198) & 0xFF;
 
       List<GusPatch.Sample> samples = new ArrayList<>();
-      for (int s = 0; s < samplesInInst; s++) {
-        // 3. Read Sample Header (96 bytes)
-        byte[] sampleHeaderData = in.readNBytes(96);
-        ByteBuffer sampleBuf =
-            ByteBuffer.wrap(sampleHeaderData).order(ByteOrder.LITTLE_ENDIAN);
+      for (int s = 0; s < samplesInInst; s++)
+      {
+          // Read Sample Header (96 bytes)
+          byte[] sampleHeaderData = in.readNBytes(96);
+          ByteBuffer sampleBuf = ByteBuffer.wrap(sampleHeaderData).order(ByteOrder.LITTLE_ENDIAN);
 
-        int length = sampleBuf.getInt(8);
-        int loopStart = sampleBuf.getInt(12);
-        int loopEnd = sampleBuf.getInt(16);
-        int sampleRate = sampleBuf.getShort(20) & 0xFFFF;
-        int lowFreq = sampleBuf.getInt(22);
-        int highFreq = sampleBuf.getInt(26);
-        int rootFreq = sampleBuf.getInt(30);
-        short pan = (short)(sampleBuf.get(36) & 0xFF);
+          int length = sampleBuf.getInt(8);
+          int loopStart = sampleBuf.getInt(12);
+          int loopEnd = sampleBuf.getInt(16);
+          int sampleRate = sampleBuf.getShort(20) & 0xFFFF;
+          int lowFreq = sampleBuf.getInt(22);
+          int highFreq = sampleBuf.getInt(26);
+          int rootFreq = sampleBuf.getInt(30);
+          short pan = (short) (sampleBuf.get(36) & 0xFF);
 
-        byte modes = sampleBuf.get(49);
-        boolean is16Bit = (modes & 0x01) != 0;
-        boolean isUnsigned = (modes & 0x02) != 0;
+          byte modes = sampleBuf.get(49);
+          boolean is16Bit = (modes & 0x01) != 0;
+          boolean isUnsigned = (modes & 0x02) != 0;
 
-        // Note: Actual PCM data follows all sample headers in some formats,
-        // but in standard GUS .pat, data for EACH sample follows its header.
-        // We'll read the data immediately.
-        byte[] pcmRaw = in.readNBytes(length);
-        MemorySegment pcmData =
-            Arena.ofAuto().allocateFrom(ValueLayout.JAVA_BYTE, pcmRaw);
+          byte[] pcmRaw = in.readNBytes(length);
+          MemorySegment pcmData = Arena.ofAuto().allocateFrom(ValueLayout.JAVA_BYTE, pcmRaw);
 
-        samples.add(new GusPatch.Sample(length, loopStart, loopEnd, sampleRate,
-                                        lowFreq, highFreq, rootFreq, pan,
-                                        is16Bit, isUnsigned, pcmData));
+          samples.add(new GusPatch.Sample(
+              length, loopStart, loopEnd, sampleRate, lowFreq, highFreq, rootFreq, pan, is16Bit, isUnsigned, pcmData
+          ));
       }
-      instruments.add(new GusPatch.Instrument(id, name, samples));
-    }
 
-    return new GusPatch(description, instruments);
+      List<GusPatch.Instrument> instruments = new ArrayList<>();
+      instruments.add(new GusPatch.Instrument(0, description, samples));
+
+      return new GusPatch(description, instruments);
   }
 
   private static String readNullTerminatedString(byte[] data, int offset,

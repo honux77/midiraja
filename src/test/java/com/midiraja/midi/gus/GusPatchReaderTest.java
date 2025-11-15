@@ -36,37 +36,19 @@ class GusPatchReaderTest
     @Test
     void testValidFullParsing() throws IOException
     {
-        // Construct a mock GUS .pat file in memory
-        // Header: 239 bytes
-        // Instrument: 1 (at index 82)
-        //   - Instrument Header: 22 bytes used (total size varies, but let's assume standard)
-        // Sample: 1
-        
         ByteBuffer buf = ByteBuffer.allocate(2048).order(ByteOrder.LITTLE_ENDIAN);
-        
+
         // 1. Global Header (239 bytes)
         buf.put("GF1PATCH110\0ID#000002\0".getBytes(StandardCharsets.US_ASCII)); // 22 bytes
         buf.position(22);
         buf.put("Test Instrument Description".getBytes(StandardCharsets.US_ASCII));
-        buf.position(82);
-        buf.put((byte) 1); // Instruments count
-        buf.put((byte) 1); // Voices
-        buf.put((byte) 1); // Channels
-        buf.putShort((short) 0); // Waveforms
-        buf.putShort((short) 100); // Master Volume
-        buf.putInt(4 + 96 + 10); // Data Size (Dummy)
+
+        // Samples count is at offset 198
+        buf.position(198);
+        buf.put((byte) 1); // 1 sample
         buf.position(239);
 
-        // 2. Instrument Header (usually starts after 239 bytes)
-        buf.putShort((short) 0); // ID
-        byte[] instName = new byte[16];
-        System.arraycopy("AcousticPiano".getBytes(StandardCharsets.US_ASCII), 0, instName, 0, 13);
-        buf.put(instName);
-        buf.putInt(100); // Inst size
-        buf.put((byte) 1); // Layers
-        buf.position(239 + 63); // End of inst header
-
-        // 3. Sample Header (96 bytes per sample)
+        // 2. Sample Header (96 bytes per sample)
         buf.put("SMPL1".getBytes(StandardCharsets.US_ASCII)); // Name (7 bytes)
         buf.position(buf.position() + 2); // padding
         buf.put((byte) 0); // fractions
@@ -80,11 +62,10 @@ class GusPatchReaderTest
         buf.putShort((short) 0); // Tune
         buf.put((byte) 64); // Pan (center)
         buf.position(buf.position() + 12); // Envelopes
-        buf.position(buf.position() + 6); // Tremolo/Vibrato
-        buf.put((byte) 0); // Modes (8-bit, no loop)
-        buf.position(239 + 63 + 96);
+        buf.put((byte) 0); // modes at offset 49 (96 byte header, so 239 + 49 = 288)
+        buf.position(239 + 96);
 
-        // 4. PCM Data (10 bytes)
+        // 3. PCM Data (10 bytes)
         buf.put(new byte[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
 
         try (var in = new ByteArrayInputStream(buf.array(), 0, buf.position()))
@@ -93,16 +74,16 @@ class GusPatchReaderTest
             assertNotNull(patch);
             assertEquals("Test Instrument Description", patch.description());
             assertEquals(1, patch.instruments().size());
-            
+
             var inst = patch.instruments().get(0);
-            assertEquals("AcousticPiano", inst.name());
+            assertEquals("Test Instrument Description", inst.name());
             assertEquals(1, inst.samples().size());
-            
+
             var sample = inst.samples().get(0);
             assertEquals(10, sample.length());
             assertEquals(44100, sample.sampleRate());
             assertEquals(440, sample.rootFrequency());
             assertEquals(10, sample.pcmData().byteSize());
+            assertFalse(sample.is16Bit());
         }
-    }
-}
+    }}
