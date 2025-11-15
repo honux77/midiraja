@@ -58,21 +58,33 @@ public class GusPatchReader {
           byte[] sampleHeaderData = in.readNBytes(96);
           ByteBuffer sampleBuf = ByteBuffer.wrap(sampleHeaderData).order(ByteOrder.LITTLE_ENDIAN);
 
-          int length = sampleBuf.getInt(8);
-          int loopStart = sampleBuf.getInt(12);
-          int loopEnd = sampleBuf.getInt(16);
-          int sampleRate = sampleBuf.getShort(20) & 0xFFFF;
-          int lowFreq = sampleBuf.getInt(22);
-          int highFreq = sampleBuf.getInt(26);
-          int rootFreq = sampleBuf.getInt(30);
-          short pan = (short) (sampleBuf.get(36) & 0xFF);
-
           byte modes = sampleBuf.get(49);
           boolean is16Bit = (modes & 0x01) != 0;
           boolean isUnsigned = (modes & 0x02) != 0;
 
-          byte[] pcmRaw = in.readNBytes(length);
-          MemorySegment pcmData = Arena.ofAuto().allocateFrom(ValueLayout.JAVA_BYTE, pcmRaw);
+          int length = sampleBuf.getInt(8);
+          int loopStart = sampleBuf.getInt(12);
+          int loopEnd = sampleBuf.getInt(16);
+
+          // In GUS patches, lengths and loop points are in BYTES.
+          // We convert them to SAMPLES for the engine to use easily.
+          if (is16Bit)
+          {
+              length /= 2;
+              loopStart /= 2;
+              loopEnd /= 2;
+          }
+
+            int sampleRate = sampleBuf.getShort(20) & 0xFFFF;
+            int lowFreq = sampleBuf.getInt(22);
+            int highFreq = sampleBuf.getInt(26);
+            int rootFreq = sampleBuf.getInt(30);
+            short pan = (short) (sampleBuf.get(36) & 0xFF);
+
+            // Read the raw PCM bytes using the ORIGINAL byte length
+            int byteLength = is16Bit ? length * 2 : length;
+            byte[] pcmRaw = in.readNBytes(byteLength);
+            MemorySegment pcmData = Arena.ofAuto().allocateFrom(ValueLayout.JAVA_BYTE, pcmRaw);
 
           samples.add(new GusPatch.Sample(
               length, loopStart, loopEnd, sampleRate, lowFreq, highFreq, rootFreq, pan, is16Bit, isUnsigned, pcmData

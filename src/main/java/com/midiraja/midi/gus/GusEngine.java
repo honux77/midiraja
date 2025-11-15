@@ -36,7 +36,8 @@ public class GusEngine {
       patchMap.put(program, patch);
   }
 
-  public void noteOn(int channel, int note, int velocity)  {
+  public void noteOn(int channel, int note, int velocity)
+  {
       int program = channelPrograms.getOrDefault(channel, 0);
       GusPatch patch = patchMap.get(program);
       if (patch == null || patch.instruments().isEmpty())
@@ -44,23 +45,48 @@ public class GusEngine {
           return;
       }
 
-      // Simplification: use the first instrument and first sample
-      GusPatch.Sample sample = patch.instruments().get(0).samples().get(0);
+      GusPatch.Instrument inst = patch.instruments().get(0);
+      if (inst.samples().isEmpty()) return;
 
-    // Calculate frequency of the requested MIDI note
-    // MIDI note 69 is A4 (440 Hz)
-    double targetFreq = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+      // Calculate frequency of the requested MIDI note
+      // MIDI note 69 is A4 (440 Hz). We multiply by 1000 for millihertz to match GUS specs
+      double targetFreq = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+      double targetMilliHz = targetFreq * 1000.0;
 
-    // Root frequency in GUS is often stored in millihertz or similar, but test
-    // gives 440000 for 440Hz
-    double rootFreq = sample.rootFrequency() / 1000.0;
+      // 1. Find a sample where target is within lowFreq and highFreq
+      GusPatch.Sample bestSample = null;
+      for (GusPatch.Sample s : inst.samples())
+      {
+          if (targetMilliHz >= s.lowFrequency() && targetMilliHz <= s.highFrequency())
+          {
+              bestSample = s;
+              break;
+          }
+      }
 
-    double ratio = targetFreq / rootFreq;
+      // 2. If no exact match, find the sample with the closest root frequency
+      if (bestSample == null)
+      {
+          double minDiff = Double.MAX_VALUE;
+          for (GusPatch.Sample s : inst.samples())
+          {
+              double diff = Math.abs(s.rootFrequency() - targetMilliHz);
+              if (diff < minDiff)
+              {
+                  minDiff = diff;
+                  bestSample = s;
+              }
+          }
+      }
 
-    Voice voice = new Voice(patch, sample, note, velocity, ratio);
-    activeVoices.add(voice);
+      if (bestSample == null) return;
+
+      double rootFreq = bestSample.rootFrequency() / 1000.0;
+      double ratio = targetFreq / rootFreq;
+
+      Voice voice = new Voice(patch, bestSample, note, velocity, ratio);
+      activeVoices.add(voice);
   }
-
   public void render(float[] left, float[] right, int frames) {
     for (Voice v : activeVoices) {
       if (v.isActive()) {
