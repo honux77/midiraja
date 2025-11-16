@@ -61,10 +61,11 @@ public class GusPatchReader {
           }
           ByteBuffer sampleBuf = ByteBuffer.wrap(sampleHeaderData).order(ByteOrder.LITTLE_ENDIAN);
 
-          byte modes = sampleBuf.get(49);
+          // In GUS patches, envelopes and LFOs take up 18 bytes after pan (36).
+          // Modes byte is at offset 55.
+          byte modes = sampleBuf.get(55);
           boolean is16Bit = (modes & 0x01) != 0;
           boolean isUnsigned = (modes & 0x02) != 0;
-
           int lengthInBytes = sampleBuf.getInt(8);
           int loopStartInBytes = sampleBuf.getInt(12);
           int loopEndInBytes = sampleBuf.getInt(16);

@@ -61,8 +61,8 @@ class GusPatchReaderTest
         buf.putInt(440); // Root freq
         buf.putShort((short) 0); // Tune
         buf.put((byte) 64); // Pan (center)
-        buf.position(buf.position() + 12); // Envelopes
-        buf.put((byte) 0); // modes at offset 49 (96 byte header, so 239 + 49 = 288)
+        buf.position(buf.position() + 18); // Envelopes (12) + LFOs (6) = 18 bytes
+        buf.put((byte) 0); // modes at offset 55
         buf.position(239 + 96);
 
         // 3. PCM Data (10 bytes)
