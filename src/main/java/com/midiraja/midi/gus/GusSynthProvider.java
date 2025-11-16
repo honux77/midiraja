@@ -30,10 +30,40 @@ public class GusSynthProvider implements SoftSynthProvider {
   private volatile boolean running = false;
   private volatile boolean renderPaused = false;
 
-  public GusSynthProvider(NativeAudioEngine audio, @Nullable String patchDir) {
-    this.audio = audio;
-    this.engine = new GusEngine(44100);
-    this.bank = patchDir != null ? new GusBank(Path.of(patchDir)) : null;
+  public GusSynthProvider(NativeAudioEngine audio, @Nullable String patchDir)
+  {
+      this.audio = audio;
+      this.engine = new GusEngine(44100);
+
+      Path resolvedPath = resolvePatchDir(patchDir);
+      this.bank = resolvedPath != null ? new GusBank(resolvedPath) : null;
+  }
+
+  private @Nullable Path resolvePatchDir(@Nullable String userPath)
+  {
+      if (userPath != null) {
+          return Path.of(userPath);
+      }
+
+      // List of fallback directories to search for gus.cfg or timidity.cfg
+      String homeDir = System.getProperty("user.home");
+      String[] fallbackPaths = {
+          ".", // Current working directory
+          homeDir + "/.config/midiraja/gus", // User config
+          homeDir + "/.midiraja/gus", // Legacy user config
+          "/opt/homebrew/share/midiraja/gus", // Homebrew (Apple Silicon)
+          "/usr/local/share/midiraja/gus", // Homebrew (Intel Mac)
+          "/usr/share/midiraja/gus" // Linux FHS
+      };
+
+      for (String pathStr : fallbackPaths) {
+          Path p = Path.of(pathStr);
+          if (Files.isDirectory(p) && (Files.exists(p.resolve("gus.cfg")) || Files.exists(p.resolve("timidity.cfg")))) {
+              return p;
+          }
+      }
+
+      return null;
   }
 
   @Override
@@ -253,6 +283,7 @@ public class GusSynthProvider implements SoftSynthProvider {
             }, () -> failedPatches.add(engineProgramId));
         }
     }
+  @Override
   public void panic() {
     engine.getActiveVoices().clear();
     if (audio != null)
