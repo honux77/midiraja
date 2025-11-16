@@ -39,9 +39,14 @@ public class GusEngine
       patchMap.put(program, patch);
   }
 
+  public boolean hasPatch(int program)
+  {
+      return patchMap.containsKey(program);
+  }
   public void noteOn(int channel, int note, int velocity)
   {
-      int program = channelPrograms.getOrDefault(channel, 0);
+        int program = (channel == 9) ? note + 128 : channelPrograms.getOrDefault(channel, 0);
+
       GusPatch patch = patchMap.get(program);
       if (patch == null || patch.instruments().isEmpty())
       {

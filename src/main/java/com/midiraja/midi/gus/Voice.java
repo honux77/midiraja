@@ -19,19 +19,19 @@ public class Voice {
   // Envelope state
   private boolean releasing = false;
   private double currentVolume = 1.0;
-  private final double releaseDecayRate =
-      0.05; // Dummy decay per frame for phase 1
+  // Decay by a small amount per frame to create a ~0.1s release tail at 44.1kHz
+  private final double releaseDecayRate = 0.0005;
 
-  public Voice(GusPatch patch, GusPatch.Sample sample, int note, int velocity,
-               double playbackRatio) {
-    this.patch = patch;
-    this.sample = sample;
-    this.note = note;
-    this.velocity = velocity;
-    this.playbackRatio = playbackRatio;
-    this.currentVolume = velocity / 127.0; // Initial velocity scaling
+  public Voice(GusPatch patch, GusPatch.Sample sample, int note, int velocity, double playbackRatio)
+  {
+      this.patch = patch;
+      this.sample = sample;
+      this.note = note;
+      this.velocity = velocity;
+      this.playbackRatio = playbackRatio;
+      // Scale down individual voice volume to prevent master bus clipping
+      this.currentVolume = (velocity / 127.0) * 0.15;
   }
-
   public void render(float[] left, float[] right, int frames,
                      int outputSampleRate) {
     if (!active)

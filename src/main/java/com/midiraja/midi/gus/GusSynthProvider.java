@@ -23,6 +23,8 @@ public class GusSynthProvider implements SoftSynthProvider {
   private final NativeAudioEngine audio;
   private final GusEngine engine;
   private final @Nullable GusBank bank;
+    private final java.util.Set<Integer> failedPatches = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
 
   private @Nullable Thread renderThread;
   private volatile boolean running = false;
@@ -230,45 +232,27 @@ public class GusSynthProvider implements SoftSynthProvider {
     }
   }
 
-  private void loadPatchOnDemand(int bankNum, int program) {
-    if (bank != null) {
-      bank.getPatchPath(bankNum, program)
-          .ifPresentOrElse(
-              path
-              -> {
+    private void loadPatchOnDemand(int bankNum, int program) {
+        int engineProgramId = (bankNum == 128) ? program + 128 : program;
+        if (engine.hasPatch(engineProgramId) || failedPatches.contains(engineProgramId)) return;
+        if (bank != null) {
+            bank.getPatchPath(bankNum, program).ifPresentOrElse(path -> {
                 try {
-                  // TiMidity allows dropping the .pat extension in cfg files
-                  String filename =
-                      path.toLowerCase(java.util.Locale.ROOT).endsWith(".pat")
-                          ? path
-                          : path + ".pat";
-                  File patFile = bank.getRootDir().resolve(filename).toFile();
-                  if (patFile.exists()) {
-                    try (FileInputStream in = new FileInputStream(patFile)) {
-                      engine.loadPatch(program, GusPatchReader.read(in));
-                      // System.err.println("[DEBUG] Dynamically loaded patch
-                      // for bank " + bankNum + " program " + program + ": " +
-                      // patFile.getAbsolutePath());
+                    String filename = path.toLowerCase(java.util.Locale.ROOT).endsWith(".pat") ? path : path + ".pat";
+                    File patFile = bank.getRootDir().resolve(filename).toFile();
+                    if (patFile.exists()) {
+                        try (java.io.FileInputStream in = new java.io.FileInputStream(patFile)) {
+                            engine.loadPatch(engineProgramId, GusPatchReader.read(in));
+                        }
+                    } else {
+                        failedPatches.add(engineProgramId);
                     }
-                  } else {
-                    System.err.println(
-                        "\r\n[DEBUG] WARNING: Patch file not found for bank " +
-                        bankNum + " program " + program + " -> " +
-                        patFile.getAbsolutePath());
-                  }
                 } catch (Exception e) {
-                  System.err.println("\r\n[DEBUG] ERROR loading patch " + path +
-                                     ": " + e.getMessage());
+                    failedPatches.add(engineProgramId);
                 }
-              },
-              ()
-                  -> System.err.println(
-                      "\r\n[DEBUG] No patch mapped in config for bank " +
-                      bankNum + " program " + program));
+            }, () -> failedPatches.add(engineProgramId));
+        }
     }
-  }
-
-  @Override
   public void panic() {
     engine.getActiveVoices().clear();
     if (audio != null)
