@@ -6,6 +6,7 @@
 |-------------|---------|-------|----------------|
 | FluidSynth | `fluid` | General MIDI (SF2) | SoundFont (.sf2) |
 | MT-32 / Munt | `munt` | Roland MT-32 (DOS-era game music) | 2 ROM files |
+| GUS / Java | `gus` | Gravis Ultrasound (1990s Tracker/MIDI) | `.pat` Patch sets (gus.cfg) |
 | OPL / libADLMIDI | `opl` | AdLib / Sound Blaster FM (OPL2/OPL3) | Built-in (optional .wopl bank) |
 | OPN2 / libOPNMIDI | `opn` | Sega Genesis / PC-98 FM (OPN2/OPNA) | Built-in (optional .wopn bank) |
 
@@ -108,6 +109,37 @@ midra munt ~/mt32-roms song.mid
 
 # MT-32 playlist
 midra munt ~/mt32-roms --loop monkey_island/*.mid
+```
+
+---
+
+## Gravis Ultrasound / Pure Java GUS Synthesizer
+
+The Advanced Gravis Ultrasound (1992) revolutionized PC audio by using hardware **wavetable synthesis** instead of FM synthesis. It loaded individual instrument samples (`.pat` files) into the sound card's onboard RAM. This made it a legendary platform for 1990s tracker music (MOD/S3M/XM) and high-quality MIDI playback in early DOS games. The `.pat` format became incredibly popular in the Linux/open-source scene, serving as the original patch format for TiMidity++ before SoundFonts dominated. 
+
+`midra gus` features a **100% pure Java, zero-dependency software synthesizer** built from scratch specifically for Midiraja. It accurately parses multi-sampled 16-bit and 8-bit `.pat` files, handles dynamic Key Split mapping, looping, and release envelopes, and mixes them natively in real-time. 
+
+### Patch Sets
+
+You need a collection of Gravis Ultrasound `.pat` files and a configuration file (like `gus.cfg` or `timidity.cfg`) to map MIDI Program Numbers to the specific patch files. 
+
+Some highly recommended, historically accurate patch sets:
+- **Eawpats (Eric A. Welsh Patches)** — The gold standard for General MIDI playback with GUS patches. Widely used and beautifully balanced.
+- **Freepats** — A completely free and open-source patch set.
+- **Original Gravis Patches** — The original 1992 files bundled with the sound card.
+
+### Installation
+
+No installation required! The GUS DSP engine is built directly into `midra`. Just download a patch set (like `eawpats`) and point the player to it.
+
+### Usage
+
+```bash
+# Point to a directory containing gus.cfg or timidity.cfg and .pat files
+midra gus -p ~/Downloads/eawpats/ song.mid
+
+# The synthesizer seamlessly handles drum kits, pitch shifting, and multi-samples!
+midra gus -p ~/.timidity/ final_fantasy.mid
 ```
 
 ---
