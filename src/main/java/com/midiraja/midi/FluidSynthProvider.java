@@ -44,6 +44,7 @@ public class FluidSynthProvider implements SoftSynthProvider {
   private MemorySegment settings = MemorySegment.NULL;
   private MemorySegment synth = MemorySegment.NULL;
   private MemorySegment adriver = MemorySegment.NULL;
+  private String soundbankName = "None";
 
   public FluidSynthProvider(@Nullable String explicitDriver) throws Exception {
     this.arena = Arena.ofShared();
@@ -235,7 +236,7 @@ public class FluidSynthProvider implements SoftSynthProvider {
 
   @Override
   public List<MidiPort> getOutputPorts() {
-    return List.of(new MidiPort(0, "FluidSynth (Embedded)"));
+    return List.of(new MidiPort(0, "FluidSynth (" + soundbankName + ")"));
   }
 
   @Override

@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the LICENSE
- * file in the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
  */
 
 package com.midiraja.midi.gus;
@@ -12,305 +12,291 @@ import com.midiraja.midi.NativeAudioEngine;
 import com.midiraja.midi.SoftSynthProvider;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("ThreadPriorityCheck")
-public class GusSynthProvider implements SoftSynthProvider {
-  private final NativeAudioEngine audio;
-  private final GusEngine engine;
-  private final @Nullable GusBank bank;
-  private final java.util.Set<Integer> failedPatches =
-      java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+public class GusSynthProvider implements SoftSynthProvider
+{
+    private final NativeAudioEngine audio;
+    private final GusEngine engine;
+    private final @Nullable GusBank bank;
+    private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
+    
+    private @Nullable Thread renderThread;
+    private volatile boolean running = false;
+    private volatile boolean renderPaused = false;
 
-  private @Nullable Thread renderThread;
-  private volatile boolean running = false;
-  private volatile boolean renderPaused = false;
-
-  public GusSynthProvider(NativeAudioEngine audio, @Nullable String patchDir) {
-    this.audio = audio;
-    this.engine = new GusEngine(44100);
-
-    Path resolvedPath = resolvePatchDir(patchDir);
-    this.bank = resolvedPath != null ? new GusBank(resolvedPath) : null;
-  }
-
-  private @Nullable Path resolvePatchDir(@Nullable String userPath) {
-    if (userPath != null) {
-      return Path.of(userPath);
+    public GusSynthProvider(NativeAudioEngine audio, @Nullable String patchDir)
+    {
+        this.audio = audio;
+        this.engine = new GusEngine(44100);
+        this.bank = resolveBank(patchDir);
     }
 
-    String homeDir = System.getProperty("user.home");
-    String[] baseDirs = {".",
-                         homeDir + "/.midiraja",
-                         homeDir + "/.config/midiraja",
-                         homeDir + "/.local/share/midiraja",
-                         "/opt/homebrew/share/midra",
-                         "/opt/homebrew/share/midiraja",
-                         "/usr/local/share/midra",
-                         "/usr/local/share/midiraja",
-                         "/usr/share/midra",
-                         "/usr/share/midiraja"};
-
-    String[] patchSetNames = {"eawpats", "dgguspat", "freepats", "gus", ""};
-
-    for (String baseDir : baseDirs) {
-      for (String patchName : patchSetNames) {
-        Path p = patchName.isEmpty() ? Path.of(baseDir)
-                                     : Path.of(baseDir, patchName);
-        if (java.nio.file.Files.isDirectory(p) &&
-            (java.nio.file.Files.exists(p.resolve("gus.cfg")) ||
-             java.nio.file.Files.exists(p.resolve("timidity.cfg")))) {
-          return p;
-        }
-      }
-    }
-    return null;
-  }
-  @Override
-  public List<MidiPort> getOutputPorts() {
-    return List.of(new MidiPort(0, "Midiraja Pure Java Gravis Ultrasound"));
-  }
-
-  @Override
-  public void openPort(int portIndex) throws Exception {
-    System.err.println("[DEBUG] GusSynthProvider.openPort() called!");
-    if (bank != null) {
-      Path cfgPath = bank.getRootDir().resolve("gus.cfg");
-      if (!Files.exists(cfgPath)) {
-        // Fallback to legacy TiMidity++ config name for maximum retro
-        // compatibility
-        cfgPath = bank.getRootDir().resolve("timidity.cfg");
-      }
-
-      System.err.println("[DEBUG] Looking for config at: " +
-                         cfgPath.toAbsolutePath());
-
-      if (Files.exists(cfgPath)) {
-        System.err.println("[DEBUG] Config found! Loading...");
-        bank.loadConfig(Files.readString(cfgPath, StandardCharsets.US_ASCII));
-      } else {
-        System.err.println("[DEBUG] No config file found!");
-      }
-
-      // Auto-load bank 0, program 0 (Piano) as a default fallback if possible
-      bank.getPatchPath(0, 0).ifPresent(path -> {
-        try {
-          File patFile = bank.getRootDir().resolve(path).toFile();
-          if (patFile.exists()) {
-            try (FileInputStream in = new FileInputStream(patFile)) {
-              engine.loadPatch(0, GusPatchReader.read(in));
-              System.err.println("[DEBUG] Default Piano patch loaded from: " +
-                                 patFile.getAbsolutePath());
-            }
-          }
-        } catch (Exception ignored) {
-          // Ignore failure to load default patch
-        }
-      });
-    }
-
-    if (audio != null) {
-      audio.init(44100, 2, 4096);
-      startRenderThread();
-      System.err.println(
-          "[DEBUG] NativeAudioEngine initialized and render thread started.");
-    }
-  }
-
-  @Override
-  public void loadSoundbank(String path) throws Exception {
-    // Path can be a .cfg file or a directory
-    File f = new File(path);
-    if (f.isFile() && bank != null) {
-      bank.loadConfig(Files.readString(f.toPath(), StandardCharsets.US_ASCII));
-    }
-  }
-
-  private void startRenderThread() {
-    running = true;
-    renderThread = new Thread(() -> {
-      final int framesToRender = 512;
-      short[] pcmBuffer = new short[framesToRender * 2]; // Stereo
-      float[] left = new float[framesToRender];
-      float[] right = new float[framesToRender];
-
-      while (running) {
-        if (renderPaused) {
-          try {
-            Thread.sleep(1);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            break;
-          }
-          continue;
+    private @Nullable GusBank resolveBank(@Nullable String userPath)
+    {
+        // 1. If user provided a path, use it.
+        if (userPath != null)
+        {
+            return new GusBank(Path.of(userPath));
         }
 
-        for (int i = 0; i < framesToRender; i++) {
-          left[i] = 0;
-          right[i] = 0;
-        }
+        // 2. Search standard system paths
+        String homeDir = System.getProperty("user.home");
+        String[] baseDirs = {
+            ".",
+            homeDir + "/.midiraja",
+            homeDir + "/.config/midiraja",
+            homeDir + "/.local/share/midiraja",
+            "/opt/homebrew/share/midra",
+            "/opt/homebrew/share/midiraja",
+            "/usr/local/share/midra",
+            "/usr/local/share/midiraja",
+            "/usr/share/midra",
+            "/usr/share/midiraja"
+        };
+        String[] patchSetNames = {"eawpats", "dgguspat", "freepats", "gus", ""};
 
-        engine.render(left, right, framesToRender);
-
-        for (int i = 0; i < framesToRender; i++) {
-          float l = Math.max(-1.0f, Math.min(1.0f, left[i]));
-          float r = Math.max(-1.0f, Math.min(1.0f, right[i]));
-          pcmBuffer[i * 2] = (short)(l * 32767);
-          pcmBuffer[i * 2 + 1] = (short)(r * 32767);
-        }
-
-        if (audio != null) {
-          audio.push(pcmBuffer);
-        }
-      }
-    });
-    renderThread.setPriority(Thread.MAX_PRIORITY);
-    renderThread.setDaemon(true);
-    renderThread.start();
-  }
-
-  @SuppressWarnings("EmptyCatch")
-  @Override
-  public void prepareForNewTrack(javax.sound.midi.Sequence sequence) {
-    if (bank != null) {
-      boolean[] loadedPrograms = new boolean[128];
-      boolean[] loadedDrums = new boolean[128];
-
-      for (javax.sound.midi.Track track : sequence.getTracks()) {
-        for (int i = 0; i < track.size(); i++) {
-          javax.sound.midi.MidiMessage msg = track.get(i).getMessage();
-          byte[] data = msg.getMessage();
-          if (data == null || data.length < 1)
-            continue;
-
-          int status = data[0] & 0xFF;
-          int cmd = status & 0xF0;
-          int ch = status & 0x0F;
-
-          if (cmd == 0xC0 && data.length >= 2) // Program Change
-          {
-            if (ch != 9) // Not drum channel
+        for (String baseDir : baseDirs)
+        {
+            for (String patchName : patchSetNames)
             {
-              int program = data[1] & 0xFF;
-              if (!loadedPrograms[program]) {
-                loadedPrograms[program] = true;
-                loadPatchOnDemand(0, program);
-              }
+                Path p = patchName.isEmpty() ? Path.of(baseDir) : Path.of(baseDir, patchName);
+                if (Files.isDirectory(p) && (Files.exists(p.resolve("gus.cfg")) || Files.exists(p.resolve("timidity.cfg"))))
+                {
+                    return new GusBank(p);
+                }
             }
-          } else if (cmd == 0x90 && data.length >= 3) // Note On
-          {
-            if (ch == 9) // Drum channel
+        }
+
+        // 3. Last fallback: Check JAR resources (embedded freepats)
+        // We look for 'gus/freepats/timidity.cfg' inside the classpath
+        InputStream embeddedCfg = getClass().getResourceAsStream("/gus/freepats/timidity.cfg");
+        if (embeddedCfg != null)
+        {
+            try { embeddedCfg.close(); } catch (IOException e) { /* ignored */ }
+            return new GusBank(getClass().getClassLoader(), "gus/freepats");
+        }
+
+        return null;
+    }
+
+    @Override
+    public List<MidiPort> getOutputPorts()
+    {
+        String name = bank != null ? "GUS (" + bank.getPatchSetName() + ")" : "GUS (No patches found)";
+        return List.of(new MidiPort(0, "Midiraja Pure Java " + name));
+    }
+
+    @Override
+    public void openPort(int portIndex) throws Exception
+    {
+        if (bank != null)
+        {
+            if (bank.getRootDir() != null)
             {
-              int note = data[1] & 0xFF;
-              if (!loadedDrums[note]) {
-                loadedDrums[note] = true;
-                loadPatchOnDemand(128, note);
-              }
+                Path cfgPath = bank.getRootDir().resolve("gus.cfg");
+                if (!Files.exists(cfgPath))
+                {
+                    cfgPath = bank.getRootDir().resolve("timidity.cfg");
+                }
+                if (Files.exists(cfgPath))
+                {
+                    bank.loadConfig(Files.readString(cfgPath, StandardCharsets.US_ASCII));
+                }
             }
-          }
-        }
-      }
-    }
-
-    if (audio == null)
-      return;
-    renderPaused = true;
-    try {
-      Thread.sleep(20);
-    } catch (InterruptedException ignored) {
-      // Expected
-    }
-    audio.flush();
-    engine.getActiveVoices().clear();
-  }
-
-  @Override
-  public void onPlaybackStarted() {
-    renderPaused = false;
-  }
-
-  @Override
-  public void sendMessage(byte[] data) {
-    if (data == null || data.length < 1)
-      return;
-
-    int status = data[0] & 0xFF;
-    int cmd = status & 0xF0;
-    int ch = status & 0x0F;
-
-    if (cmd == 0x90 && data.length >= 3) {
-      int note = data[1] & 0xFF;
-      int velocity = data[2] & 0xFF;
-
-      if (velocity > 0) {
-        engine.noteOn(ch, note, velocity);
-      } else {
-        engine.noteOff(ch, note);
-      }
-    } else if (cmd == 0x80 && data.length >= 3) {
-      int note = data[1] & 0xFF;
-      engine.noteOff(ch, note);
-    } else if (cmd == 0xC0 && data.length >= 2) {
-      // Program Change!
-      int program = data[1] & 0xFF;
-      int bankNum = (ch == 9) ? 128 : 0; // Channel 10 is drums
-      engine.setProgram(ch, program);
-      loadPatchOnDemand(bankNum, program);
-    }
-  }
-
-  private void loadPatchOnDemand(int bankNum, int program) {
-    int engineProgramId = (bankNum == 128) ? program + 128 : program;
-    if (engine.hasPatch(engineProgramId) ||
-        failedPatches.contains(engineProgramId))
-      return;
-    if (bank != null) {
-      bank.getPatchPath(bankNum, program).ifPresentOrElse(path -> {
-        try {
-          String filename =
-              path.toLowerCase(java.util.Locale.ROOT).endsWith(".pat")
-                  ? path
-                  : path + ".pat";
-          File patFile = bank.getRootDir().resolve(filename).toFile();
-          if (patFile.exists()) {
-            try (java.io.FileInputStream in =
-                     new java.io.FileInputStream(patFile)) {
-              engine.loadPatch(engineProgramId, GusPatchReader.read(in));
+            else
+            {
+                // Resources mode
+                try (InputStream in = getClass().getResourceAsStream("/gus/freepats/timidity.cfg"))
+                {
+                    if (in != null) bank.loadConfig(in);
+                }
             }
-          } else {
-            failedPatches.add(engineProgramId);
-          }
-        } catch (Exception e) {
-          failedPatches.add(engineProgramId);
+            
+            // Auto-load bank 0, program 0 (Piano) as fallback
+            preloadPatch(0, 0);
         }
-      }, () -> failedPatches.add(engineProgramId));
+        
+        if (audio != null)
+        {
+            audio.init(44100, 2, 4096);
+            startRenderThread();
+        }
     }
-  }
-  @Override
-  public void panic() {
-    engine.getActiveVoices().clear();
-    if (audio != null)
-      audio.flush();
-  }
 
-  @SuppressWarnings("EmptyCatch")
-  @Override
-  public void closePort() {
-    running = false;
-    if (renderThread != null) {
-      renderThread.interrupt();
-      try {
-        renderThread.join(500);
-      } catch (InterruptedException ignored) {
-        // Expected during shutdown
-      }
+    private void preloadPatch(int bankNum, int program)
+    {
+        int engineId = (bankNum == 128) ? program + 128 : program;
+        if (bank == null || engine.hasPatch(engineId)) return;
+        
+        bank.getPatchMapping(bankNum, program).ifPresent(path -> {
+            try (InputStream in = bank.openPatchStream(path).orElse(null))
+            {
+                if (in != null)
+                {
+                    engine.loadPatch(engineId, GusPatchReader.read(in));
+                }
+            }
+            catch (Exception e) { /* ignored */ }
+        });
     }
-    if (audio != null)
-      audio.close();
-    engine.getActiveVoices().clear();
-  }
+
+    @Override
+    public void loadSoundbank(String path) throws Exception
+    {
+        if (bank != null)
+        {
+            File f = new File(path);
+            if (f.isFile())
+            {
+                try (InputStream in = new FileInputStream(f)) { bank.loadConfig(in); }
+            }
+        }
+    }
+
+    private void startRenderThread()
+    {
+        running = true;
+        renderThread = new Thread(() -> {
+            final int framesToRender = 512;
+            short[] pcmBuffer = new short[framesToRender * 2];
+            float[] left = new float[framesToRender];
+            float[] right = new float[framesToRender];
+
+            while (running)
+            {
+                if (renderPaused)
+                {
+                    try { Thread.sleep(1); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    continue;
+                }
+
+                for (int i = 0; i < framesToRender; i++) { left[i] = 0; right[i] = 0; }
+                engine.render(left, right, framesToRender);
+
+                for (int i = 0; i < framesToRender; i++)
+                {
+                    float l = Math.max(-1.0f, Math.min(1.0f, left[i]));
+                    float r = Math.max(-1.0f, Math.min(1.0f, right[i]));
+                    pcmBuffer[i * 2] = (short) (l * 32767);
+                    pcmBuffer[i * 2 + 1] = (short) (r * 32767);
+                }
+
+                if (audio != null) audio.push(pcmBuffer);
+            }
+        });
+        renderThread.setPriority(Thread.MAX_PRIORITY);
+        renderThread.setDaemon(true);
+        renderThread.start();
+    }
+    
+    @SuppressWarnings("EmptyCatch")
+    @Override
+    public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    {
+        if (bank != null)
+        {
+            boolean[] loadedPrograms = new boolean[128];
+            boolean[] loadedDrums = new boolean[128];
+            for (javax.sound.midi.Track track : sequence.getTracks())
+            {
+                for (int i = 0; i < track.size(); i++)
+                {
+                    byte[] data = track.get(i).getMessage().getMessage();
+                    if (data == null || data.length < 1) continue;
+                    int status = data[0] & 0xFF;
+                    if ((status & 0xF0) == 0xC0 && data.length >= 2)
+                    {
+                        int ch = status & 0x0F;
+                        int prog = data[1] & 0xFF;
+                        if (ch != 9 && !loadedPrograms[prog]) { loadedPrograms[prog] = true; loadPatchOnDemand(0, prog); }
+                    }
+                    else if ((status & 0xF0) == 0x90 && data.length >= 3 && (status & 0x0F) == 9)
+                    {
+                        int note = data[1] & 0xFF;
+                        if (!loadedDrums[note]) { loadedDrums[note] = true; loadPatchOnDemand(128, note); }
+                    }
+                }
+            }
+        }
+
+        if (audio == null) return;
+        renderPaused = true;
+        try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+        audio.flush();
+        engine.getActiveVoices().clear();
+    }
+
+    @Override
+    public void onPlaybackStarted() { renderPaused = false; }
+
+    @Override
+    public void sendMessage(byte[] data)
+    {
+        if (data == null || data.length < 1) return;
+        int status = data[0] & 0xFF;
+        int cmd = status & 0xF0;
+        int ch = status & 0x0F;
+
+        if (cmd == 0x90 && data.length >= 3)
+        {
+            int note = data[1] & 0xFF;
+            int velocity = data[2] & 0xFF;
+            if (velocity > 0) engine.noteOn(ch, note, velocity);
+            else engine.noteOff(ch, note);
+        }
+        else if (cmd == 0x80 && data.length >= 3) engine.noteOff(ch, data[1] & 0xFF);
+        else if (cmd == 0xC0 && data.length >= 2)
+        {
+            int prog = data[1] & 0xFF;
+            int bankNum = (ch == 9) ? 128 : 0;
+            engine.setProgram(ch, prog);
+            loadPatchOnDemand(bankNum, prog);
+        }
+    }
+
+    private void loadPatchOnDemand(int bankNum, int program)
+    {
+        int engineId = (bankNum == 128) ? program + 128 : program;
+        if (engine.hasPatch(engineId) || failedPatches.contains(engineId)) return;
+        
+        if (bank != null)
+        {
+            bank.getPatchMapping(bankNum, program).ifPresentOrElse(path -> {
+                try (InputStream in = bank.openPatchStream(path).orElse(null))
+                {
+                    if (in != null) engine.loadPatch(engineId, GusPatchReader.read(in));
+                    else failedPatches.add(engineId);
+                }
+                catch (Exception e) { failedPatches.add(engineId); }
+            }, () -> failedPatches.add(engineId));
+        }
+    }
+
+    @Override
+    public void panic() { engine.getActiveVoices().clear(); if (audio != null) audio.flush(); }
+
+    @SuppressWarnings("EmptyCatch")
+    @Override
+    public void closePort()
+    {
+        running = false;
+        if (renderThread != null)
+        {
+            renderThread.interrupt();
+            try { renderThread.join(500); } catch (InterruptedException ignored) {}
+        }
+        if (audio != null) audio.close();
+        engine.getActiveVoices().clear();
+    }
 }

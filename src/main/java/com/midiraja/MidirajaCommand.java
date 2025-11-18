@@ -20,6 +20,8 @@ import com.midiraja.cli.OplCommand;
 import com.midiraja.cli.OpnCommand;
 import com.midiraja.cli.PlaybackRunner;
 import com.midiraja.cli.GusCommand;
+import com.midiraja.cli.BeepCommand;
+
 import com.midiraja.io.TerminalIO;
 import com.midiraja.midi.MidiOutProvider;
 import com.midiraja.midi.MidiPort;
@@ -51,6 +53,7 @@ import picocli.CommandLine.Parameters;
             FluidCommand.class,
             JavaSynthCommand.class,
             GusCommand.class,
+            BeepCommand.class,
             ListPortsCommand.class,
             CommandLine.HelpCommand.class,
             picocli.AutoComplete.GenerateCompletion.class,
@@ -60,6 +63,8 @@ import picocli.CommandLine.Parameters;
               "  opn    OPN2 FM       (Sega Genesis / PC-98)",
               "  munt   MT-32         (Roland MT-32/CM-32L)",
               "  fluid  FluidSynth    (SoundFont .sf2)",
+              "  gus    GUS DSP       (Gravis Ultrasound .pat)",
+              "  beep   1-Bit Speaker (Apple II / PC Speaker)",
               "  java   Java built-in synthesizer (experimental)", "",
               "Run 'midra <command> --help' for synth-specific options.", "",
               "Playlist Features:",

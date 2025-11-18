@@ -33,11 +33,11 @@ class GusBankTest {
     bank.loadConfig(cfgContent);
 
     // Check mapping
-    assertEquals("acpiano.pat", bank.getPatchPath(0, 0).orElseThrow());
-    assertEquals("britepno.pat", bank.getPatchPath(0, 1).orElseThrow());
-    assertEquals("synth-bass.pat", bank.getPatchPath(1, 0).orElseThrow());
+    assertEquals("acpiano.pat", bank.getPatchMapping(0, 0).orElseThrow());
+    assertEquals("britepno.pat", bank.getPatchMapping(0, 1).orElseThrow());
+    assertEquals("synth-bass.pat", bank.getPatchMapping(1, 0).orElseThrow());
 
     // Check non-existent
-    assertTrue(bank.getPatchPath(0, 99).isEmpty());
+    assertTrue(bank.getPatchMapping(0, 99).isEmpty());
   }
 }
