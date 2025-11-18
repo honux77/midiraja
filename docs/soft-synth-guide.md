@@ -125,7 +125,7 @@ You need a collection of Gravis Ultrasound `.pat` files and a configuration file
 
 Some highly recommended, historically accurate patch sets:
 - **Eawpats (Eric A. Welsh Patches)** — The gold standard for General MIDI playback with GUS patches. Widely used and beautifully balanced.
-- **Freepats** — A completely free and open-source patch set.
+- **Freepats** — A completely free and open-source patch set. Midiraja uses the definitive 2006-02-19 release, as it is the most complete final collection of instruments ever produced in the legacy GUS .pat format before the project transitioned to modern SoundFonts.
 - **Original Gravis Patches** — The original 1992 files bundled with the sound card.
 
 ### Installation
