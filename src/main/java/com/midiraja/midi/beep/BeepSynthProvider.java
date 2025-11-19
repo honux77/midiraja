@@ -44,7 +44,8 @@ public class BeepSynthProvider implements SoftSynthProvider
     // Arpeggio state
     private int arpeggioIndex = 0;
     private int framesSinceSwitch = 0;
-    private final int framesPerSwitch = sampleRate / 60; // 60 Hz switch rate
+    private final int framesPerSwitch = sampleRate / 30; // 30 Hz switch rate (approx 33ms per note)
+    private double globalPhase = 0.0;
 
     // Pitches for MIDI note numbers
     private static final double[] PITCHES = new double[128];
@@ -147,21 +148,32 @@ public class BeepSynthProvider implements SoftSynthProvider
 
     private void renderArpeggio(List<ActiveNote> notes, short[] buffer, int frames)
     {
+        // For classic arpeggio, restrict to maximum 4 notes (most recently played)
+        List<ActiveNote> arpeggioNotes;
+        if (notes.size() > 4) {
+            arpeggioNotes = notes.subList(notes.size() - 4, notes.size());
+        } else {
+            arpeggioNotes = notes;
+        }
+
         for (int i = 0; i < frames; i++) {
-            if (arpeggioIndex >= notes.size()) {
+            if (arpeggioIndex >= arpeggioNotes.size()) {
                 arpeggioIndex = 0;
             }
             
-            ActiveNote currentNote = notes.get(arpeggioIndex);
+            ActiveNote currentNote = arpeggioNotes.get(arpeggioIndex);
             
-            currentNote.phase += currentNote.frequency / sampleRate;
-            if (currentNote.phase >= 1.0) currentNote.phase -= 1.0;
+            // Use a continuous global phase to prevent popping/clicking on note switch
+            globalPhase += currentNote.frequency / sampleRate;
+            if (globalPhase >= 1.0) globalPhase -= 1.0;
             
-            double square = currentNote.phase < 0.5 ? 1.0 : -1.0;
+            double square = globalPhase < 0.5 ? 1.0 : -1.0;
             
             // Raw 1-bit output
             buffer[i] = (short) (square * 8000);
-            currentNote.activeFrames++;
+            
+            // Age all notes
+            for (ActiveNote n : notes) n.activeFrames++;
 
             framesSinceSwitch++;
             if (framesSinceSwitch >= framesPerSwitch) {
@@ -170,7 +182,6 @@ public class BeepSynthProvider implements SoftSynthProvider
             }
         }
     }
-
     @Override
     public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
     {
