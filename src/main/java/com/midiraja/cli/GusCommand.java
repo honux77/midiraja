@@ -33,8 +33,8 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"-p", "--patch-dir"}, description = "Directory containing GUS .pat files and gus.cfg (or timidity.cfg)")
   private Optional<File> patchDir = Optional.empty();
 
-  @Option(names = {"--1bit"}, description = "Crush output to a 1-bit PC Speaker style PWM signal (RealSound effect).")
-  private boolean oneBitMode = false;
+  @Option(names = {"--bits"}, description = "Crush output to a specific bit depth (e.g. 1, 2, 4, 8) for a retro lo-fi effect. Defaults to 16 (original).", defaultValue = "16")
+  private int bits;
 
   @Parameters(paramLabel = "<file>",
               description = "MIDI files or M3U playlists to play")
@@ -50,7 +50,7 @@ public class GusCommand implements Callable<Integer> {
     NativeAudioEngine audio = new NativeAudioEngine(audioLib);
     String dirPath = patchDir.map(File::getAbsolutePath).orElse(null);
 
-    var provider = new GusSynthProvider(audio, dirPath, oneBitMode);
+    var provider = new GusSynthProvider(audio, dirPath, bits);
 
     var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                     p.isInTestMode());

@@ -73,11 +73,6 @@ public class BeepSynthProvider implements SoftSynthProvider
             return square;
         }
         
-        void reset() {
-            arpeggioIndex = 0;
-            framesSinceSwitch = 0;
-            globalPhase = 0.0;
-        }
     }
     
     private final VirtualSpeaker[] speakers = new VirtualSpeaker[NUM_SPEAKERS];
