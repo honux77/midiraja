@@ -41,11 +41,47 @@ public class BeepSynthProvider implements SoftSynthProvider
     // 1-bit Delta-Sigma state
     private double errorAccumulator = 0.0;
 
-    // Arpeggio state
-    private int arpeggioIndex = 0;
-    private int framesSinceSwitch = 0;
-    private final int framesPerSwitch = sampleRate / 30; // 30 Hz switch rate (approx 33ms per note)
-    private double globalPhase = 0.0;
+    // Multi-Speaker Arpeggiator (The "6-Core Apple II" model)
+    private static final int NUM_SPEAKERS = 6;
+    private static final int MAX_NOTES_PER_SPEAKER = 3;
+    
+    private class VirtualSpeaker {
+        int arpeggioIndex = 0;
+        int framesSinceSwitch = 0;
+        double globalPhase = 0.0;
+        
+        // Output -1.0, 0.0 (if silent), or 1.0
+        double render(List<ActiveNote> assignedNotes, int framesPerSwitch) {
+            if (assignedNotes.isEmpty()) return 0.0;
+            
+            if (arpeggioIndex >= assignedNotes.size()) {
+                arpeggioIndex = 0;
+            }
+            
+            ActiveNote currentNote = assignedNotes.get(arpeggioIndex);
+            
+            globalPhase += currentNote.frequency / sampleRate;
+            if (globalPhase >= 1.0) globalPhase -= 1.0;
+            
+            double square = globalPhase < 0.5 ? 1.0 : -1.0;
+            
+            framesSinceSwitch++;
+            if (framesSinceSwitch >= framesPerSwitch) {
+                framesSinceSwitch = 0;
+                arpeggioIndex++;
+            }
+            return square;
+        }
+        
+        void reset() {
+            arpeggioIndex = 0;
+            framesSinceSwitch = 0;
+            globalPhase = 0.0;
+        }
+    }
+    
+    private final VirtualSpeaker[] speakers = new VirtualSpeaker[NUM_SPEAKERS];
+    private final int framesPerSwitch = sampleRate / 30; // 30 Hz switch rate
 
     // Pitches for MIDI note numbers
     private static final double[] PITCHES = new double[128];
@@ -59,6 +95,9 @@ public class BeepSynthProvider implements SoftSynthProvider
     {
         this.audio = audio;
         this.mode = mode.toLowerCase(java.util.Locale.ROOT);
+        for (int i = 0; i < NUM_SPEAKERS; i++) {
+            speakers[i] = new VirtualSpeaker();
+        }
     }
 
     @Override
@@ -148,39 +187,43 @@ public class BeepSynthProvider implements SoftSynthProvider
 
     private void renderArpeggio(List<ActiveNote> notes, short[] buffer, int frames)
     {
-        // For classic arpeggio, restrict to maximum 4 notes (most recently played)
-        List<ActiveNote> arpeggioNotes;
-        if (notes.size() > 4) {
-            arpeggioNotes = notes.subList(notes.size() - 4, notes.size());
-        } else {
-            arpeggioNotes = notes;
+        // 1. Distribute active notes across the 6 virtual speakers
+        List<List<ActiveNote>> speakerAssignments = new ArrayList<>(NUM_SPEAKERS);
+        for (int i = 0; i < NUM_SPEAKERS; i++) {
+            speakerAssignments.add(new ArrayList<>());
+        }
+        
+        // Simple round-robin distribution up to the max notes per speaker (3)
+        // This means Speaker 0 gets notes 0, 6, 12. Speaker 1 gets notes 1, 7, 13, etc.
+        // Total capacity = 6 * 3 = 18 notes.
+        int noteIdx = 0;
+        for (ActiveNote note : notes) {
+            int targetSpeaker = noteIdx % NUM_SPEAKERS;
+            if (speakerAssignments.get(targetSpeaker).size() < MAX_NOTES_PER_SPEAKER) {
+                speakerAssignments.get(targetSpeaker).add(note);
+            }
+            noteIdx++;
         }
 
+        // 2. Render each frame by analog summing the 1-bit outputs of the 6 speakers
         for (int i = 0; i < frames; i++) {
-            if (arpeggioIndex >= arpeggioNotes.size()) {
-                arpeggioIndex = 0;
+            double analogSum = 0.0;
+            
+            for (int s = 0; s < NUM_SPEAKERS; s++) {
+                analogSum += speakers[s].render(speakerAssignments.get(s), framesPerSwitch);
             }
             
-            ActiveNote currentNote = arpeggioNotes.get(arpeggioIndex);
+            // Normalize the analog sum from [-6.0, 6.0] down to [-1.0, 1.0]
+            double mixed = analogSum / NUM_SPEAKERS;
             
-            // Use a continuous global phase to prevent popping/clicking on note switch
-            globalPhase += currentNote.frequency / sampleRate;
-            if (globalPhase >= 1.0) globalPhase -= 1.0;
+            // Output the analog mix
+            buffer[i] = (short) (mixed * 8000);
             
-            double square = globalPhase < 0.5 ? 1.0 : -1.0;
-            
-            // Raw 1-bit output
-            buffer[i] = (short) (square * 8000);
-            
-            // Age all notes
-            for (ActiveNote n : notes) n.activeFrames++;
-
-            framesSinceSwitch++;
-            if (framesSinceSwitch >= framesPerSwitch) {
-                framesSinceSwitch = 0;
-                arpeggioIndex++;
-            }
+            // Age all notes (only once per frame)
         }
+        
+        // Age all notes strictly (we skip the inner loop above for performance, so just add frames here)
+        for (ActiveNote n : notes) n.activeFrames += frames;
     }
     @Override
     public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
@@ -231,7 +274,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         activeNotes.add(an);
         
         // Limit total active notes to 8 to prevent complete chaos
-        if (activeNotes.size() > 8) {
+        if (activeNotes.size() > 18) {
             activeNotes.remove(0);
         }
     }
