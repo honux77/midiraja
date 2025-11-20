@@ -187,6 +187,8 @@ public class GusSynthProvider implements SoftSynthProvider
             
             double errorAccumulatorLeft = 0.0;
             double errorAccumulatorRight = 0.0;
+            final double qSteps = Math.pow(2, bitDepth) - 1;
+
 
             while (running)
             {
@@ -217,9 +219,9 @@ public class GusSynthProvider implements SoftSynthProvider
                         pcmBuffer[i * 2 + 1] = (short) (outR * 8000);
                     } else if (bitDepth < 16) {
                         // N-Bit Direct Quantization (Bitcrusher)
-                        double steps = Math.pow(2, bitDepth) - 1;
-                        double qL = Math.round((l + 1.0) / 2.0 * steps) / steps * 2.0 - 1.0;
-                        double qR = Math.round((r + 1.0) / 2.0 * steps) / steps * 2.0 - 1.0;
+                        
+                        double qL = Math.round((l + 1.0) / 2.0 * qSteps) / qSteps * 2.0 - 1.0;
+                        double qR = Math.round((r + 1.0) / 2.0 * qSteps) / qSteps * 2.0 - 1.0;
                         
                         pcmBuffer[i * 2] = (short) (qL * 32767);
                         pcmBuffer[i * 2 + 1] = (short) (qR * 32767);
