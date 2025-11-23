@@ -150,6 +150,9 @@ public class GusSynthProvider implements SoftSynthProvider
             double dac1L = 0, dac1R = 0, dac2L = 0, dac2R = 0;
             final double dacAlpha = 0.45;
             
+            // Quantization Noise Shaper states
+            double qErrL = 0, qErrR = 0;
+            
             final double lpAlpha = 0.20; // Warm treble cut (Cuts PWM carrier completely)
             final double hpAlpha = 0.98; // Gentle bass cut (Removes deep sub-bass)
             final double qSteps = Math.pow(2, bitDepth - 1) - 1;
@@ -170,11 +173,23 @@ public class GusSynthProvider implements SoftSynthProvider
                     double l = Math.max(-1.0, Math.min(1.0, left[i]));
                     double r = Math.max(-1.0, Math.min(1.0, right[i]));
 
-                    // Stage 1: Quantization (Zero-centered Bitcrusher)
+                    // Stage 1: Quantization (Zero-centered Bitcrusher with Noise Shaping)
                     if (bitDepth < 16)
                     {
-                        l = Math.round(l * qSteps) / qSteps;
-                        r = Math.round(r * qSteps) / qSteps;
+                        // Add accumulated quantization error (Leaky Integrator to prevent idle tones)
+                        double targetL = l + (qErrL * 0.95);
+                        double targetR = r + (qErrR * 0.95);
+                        
+                        // Quantize
+                        double qL = Math.round(targetL * qSteps) / qSteps;
+                        double qR = Math.round(targetR * qSteps) / qSteps;
+                        
+                        // Feedback error
+                        qErrL = targetL - qL;
+                        qErrR = targetR - qR;
+                        
+                        l = qL;
+                        r = qR;
                         
                         // Stage 1.5: Inter-stage DAC Reconstruction Filter
                         // We must smooth the harsh staircases before they hit the PWM carrier,
@@ -187,9 +202,10 @@ public class GusSynthProvider implements SoftSynthProvider
                         
                         // Force flush to absolute zero to prevent floating-point asymptotes
                         // from keeping the Noise Gate open forever.
-                        if (Math.abs(dac2L) < 1e-5 && Math.abs(dac2R) < 1e-5) {
+                        if (l == 0.0 && r == 0.0 && Math.abs(dac2L) < 1e-5 && Math.abs(dac2R) < 1e-5) {
                             dac1L = 0; dac2L = 0;
                             dac1R = 0; dac2R = 0;
+                            qErrL = 0; qErrR = 0;
                         }
                         
                         l = dac2L;
