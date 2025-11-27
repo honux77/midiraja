@@ -41,42 +41,51 @@ public class BeepSynthProvider implements SoftSynthProvider
     // 1-bit Delta-Sigma state
     private double errorAccumulator = 0.0;
 
-    // Multi-Speaker Arpeggiator (The "6-Core Apple II" model)
-    private static final int NUM_SPEAKERS = 6;
-    private static final int MAX_NOTES_PER_SPEAKER = 3;
+    // 8-Core "Electric Duet" Apple II cluster
+    // Each virtual Apple II uses XOR Ring Modulation to play 2 notes simultaneously on a 1-bit pin.
+    private static final int NUM_SPEAKERS = 8;
+    private static final int MAX_NOTES_PER_SPEAKER = 2;
     
-    private class VirtualSpeaker {
-        int arpeggioIndex = 0;
-        int framesSinceSwitch = 0;
-        double globalPhase = 0.0;
+    private class ElectricDuetSpeaker {
+        double phase1 = 0.0;
+        double phase2 = 0.0;
         
-        // Output -1.0, 0.0 (if silent), or 1.0
-        double render(List<ActiveNote> assignedNotes, int framesPerSwitch) {
+        // Duty cycle creates the unique "Timbre" of Electric Duet
+        // A slight offset from 0.5 (perfect square) adds harmonic richness
+        double duty1 = 0.3;
+        double duty2 = 0.7;
+        
+        // Output purely -1.0, 0.0 (silent), or 1.0
+        double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
             
-            if (arpeggioIndex >= assignedNotes.size()) {
-                arpeggioIndex = 0;
+            // Voice 1
+            ActiveNote n1 = assignedNotes.get(0);
+            phase1 += n1.frequency / sampleRate;
+            if (phase1 >= 1.0) phase1 -= 1.0;
+            boolean sq1 = phase1 < duty1;
+            
+            if (assignedNotes.size() > 1) {
+                // Voice 2
+                ActiveNote n2 = assignedNotes.get(1);
+                phase2 += n2.frequency / sampleRate;
+                if (phase2 >= 1.0) phase2 -= 1.0;
+                boolean sq2 = phase2 < duty2;
+                
+                // The Paul Lutus Magic: XOR mixing of two duty-cycle square waves.
+                // This perfectly multiplexes 2 pitches into a single 1-bit channel
+                // while creating the signature "Ring Modulated" fuzzy timbre.
+                boolean output = sq1 ^ sq2; 
+                return output ? 1.0 : -1.0;
+            } else {
+                return sq1 ? 1.0 : -1.0;
             }
-            
-            ActiveNote currentNote = assignedNotes.get(arpeggioIndex);
-            
-            globalPhase += currentNote.frequency / sampleRate;
-            if (globalPhase >= 1.0) globalPhase -= 1.0;
-            
-            double square = globalPhase < 0.5 ? 1.0 : -1.0;
-            
-            framesSinceSwitch++;
-            if (framesSinceSwitch >= framesPerSwitch) {
-                framesSinceSwitch = 0;
-                arpeggioIndex++;
-            }
-            return square;
         }
         
     }
     
-    private final VirtualSpeaker[] speakers = new VirtualSpeaker[NUM_SPEAKERS];
-    private final int framesPerSwitch = sampleRate / 30; // 30 Hz switch rate
+    private final ElectricDuetSpeaker[] speakers = new ElectricDuetSpeaker[NUM_SPEAKERS];
+    
 
     // Pitches for MIDI note numbers
     private static final double[] PITCHES = new double[128];
@@ -91,14 +100,14 @@ public class BeepSynthProvider implements SoftSynthProvider
         this.audio = audio;
         this.mode = mode.toLowerCase(java.util.Locale.ROOT);
         for (int i = 0; i < NUM_SPEAKERS; i++) {
-            speakers[i] = new VirtualSpeaker();
+            speakers[i] = new ElectricDuetSpeaker();
         }
     }
 
     @Override
     public List<MidiPort> getOutputPorts()
     {
-        return List.of(new MidiPort(0, "Midiraja 1-Bit " + (mode.equals("pwm") ? "PWM" : "Arpeggiator")));
+        return List.of(new MidiPort(0, "Midiraja 1-Bit " + (mode.equals("pwm") ? "PWM" : "Electric Duet")));
     }
 
     @Override
@@ -140,7 +149,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                 } else if (mode.equals("pwm")) {
                     renderPwm(currentNotes, pcmBuffer, framesToRender);
                 } else {
-                    renderArpeggio(currentNotes, pcmBuffer, framesToRender);
+                    renderDuet(currentNotes, pcmBuffer, framesToRender);
                 }
 
                 audio.push(pcmBuffer);
@@ -180,17 +189,14 @@ public class BeepSynthProvider implements SoftSynthProvider
         }
     }
 
-    private void renderArpeggio(List<ActiveNote> notes, short[] buffer, int frames)
+    private void renderDuet(List<ActiveNote> notes, short[] buffer, int frames)
     {
-        // 1. Distribute active notes across the 6 virtual speakers
         List<List<ActiveNote>> speakerAssignments = new ArrayList<>(NUM_SPEAKERS);
         for (int i = 0; i < NUM_SPEAKERS; i++) {
             speakerAssignments.add(new ArrayList<>());
         }
         
-        // Simple round-robin distribution up to the max notes per speaker (3)
-        // This means Speaker 0 gets notes 0, 6, 12. Speaker 1 gets notes 1, 7, 13, etc.
-        // Total capacity = 6 * 3 = 18 notes.
+        // Distribute notes across the 8 Apple IIs (Max 2 notes per machine)
         int noteIdx = 0;
         for (ActiveNote note : notes) {
             int targetSpeaker = noteIdx % NUM_SPEAKERS;
@@ -200,24 +206,19 @@ public class BeepSynthProvider implements SoftSynthProvider
             noteIdx++;
         }
 
-        // 2. Render each frame by analog summing the 1-bit outputs of the 6 speakers
         for (int i = 0; i < frames; i++) {
             double analogSum = 0.0;
             
             for (int s = 0; s < NUM_SPEAKERS; s++) {
-                analogSum += speakers[s].render(speakerAssignments.get(s), framesPerSwitch);
+                analogSum += speakers[s].render(speakerAssignments.get(s));
             }
             
-            // Normalize the analog sum from [-6.0, 6.0] down to [-1.0, 1.0]
+            // Normalize the analog sum of 8 speakers [-8.0, 8.0]
             double mixed = analogSum / NUM_SPEAKERS;
             
-            // Output the analog mix
-            buffer[i] = (short) (mixed * 8000);
-            
-            // Age all notes (only once per frame)
+            buffer[i] = (short) (mixed * 8000); // Master volume scaled safely
         }
         
-        // Age all notes strictly (we skip the inner loop above for performance, so just add frames here)
         for (ActiveNote n : notes) n.activeFrames += frames;
     }
     @Override
