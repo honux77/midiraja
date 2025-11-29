@@ -130,21 +130,23 @@ public class BeepSynthProvider implements SoftSynthProvider
             ActiveNote currentNote = assignedNotes.get(arpeggioIndex);
             
             // 1. 2-OP FM Synthesis
-            // Modulator: Frequency is exactly 2x the carrier (classic FM bell/brass ratio)
-            double modFreq = currentNote.frequency * 2.0;
+            // Dynamic Envelope for the Modulator to create a "Pluck" or "Bell" sound
+            // The sound starts harsh and metallic, then decays into a soft sine wave.
+            double decay = Math.max(0.0, 1.0 - (currentNote.activeFrames / (sampleRate * 0.5))); // 0.5s decay
+            
+            // Modulator: Frequency is 3.5x the carrier (Inharmonic ratio for metallic bell sound)
+            double modFreq = currentNote.frequency * 3.5;
             modPhase += modFreq / sampleRate;
             if (modPhase >= 1.0) modPhase -= 1.0;
             double modulator = Math.sin(modPhase * 2.0 * Math.PI);
             
-            // Carrier: Frequency modulated by the Modulator. Index = 1.5
-            double modulationIndex = 1.5;
+            // Carrier: Modulated by the Modulator. Index sweeps from 6.0 down to 0.5!
+            double modulationIndex = 0.5 + (5.5 * decay); 
             double instFreq = currentNote.frequency + (modulator * modulationIndex * currentNote.frequency);
             
             carrierPhase += instFreq / sampleRate;
-            if (carrierPhase >= 1.0) carrierPhase -= 1.0;
-            if (carrierPhase < 0.0) carrierPhase += 1.0; // FM can cause negative frequencies
             
-            // The pure analog Sine Wave [-1.0 to 1.0]
+            // The pure analog FM Sine Wave [-1.0 to 1.0]
             double analogFm = Math.sin(carrierPhase * 2.0 * Math.PI);
             
             // 2. DAC522 Style True PWM Conversion
@@ -262,7 +264,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         int noteIdx = 0;
         for (ActiveNote note : notes) {
             int targetSpeaker = noteIdx % NUM_SPEAKERS;
-            if (speakerAssignments.get(targetSpeaker).size() < 3) {
+            if (speakerAssignments.get(targetSpeaker).size() < 2) {
                 speakerAssignments.get(targetSpeaker).add(note);
             }
             noteIdx++;
