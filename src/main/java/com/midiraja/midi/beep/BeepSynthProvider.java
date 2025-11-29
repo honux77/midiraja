@@ -35,6 +35,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         double frequency;
         double phase = 0.0;
         long activeFrames = 0; // For envelope/decay tracking
+        boolean isDrum = false;
     }
     private final List<ActiveNote> activeNotes = new CopyOnWriteArrayList<>();
 
@@ -129,25 +130,73 @@ public class BeepSynthProvider implements SoftSynthProvider
             
             ActiveNote currentNote = assignedNotes.get(arpeggioIndex);
             
-            // 1. 2-OP FM Synthesis
-            // Dynamic Envelope for the Modulator to create a "Pluck" or "Bell" sound
-            // The sound starts harsh and metallic, then decays into a soft sine wave.
-            double decay = Math.max(0.0, 1.0 - (currentNote.activeFrames / (sampleRate * 0.5))); // 0.5s decay
+            double analogFm = 0.0;
             
-            // Modulator: Frequency is 3.5x the carrier (Inharmonic ratio for metallic bell sound)
-            double modFreq = currentNote.frequency * 3.5;
-            modPhase += modFreq / sampleRate;
-            if (modPhase >= 1.0) modPhase -= 1.0;
-            double modulator = Math.sin(modPhase * 2.0 * Math.PI);
-            
-            // Carrier: Modulated by the Modulator. Index sweeps from 6.0 down to 0.5!
-            double modulationIndex = 0.5 + (5.5 * decay); 
-            double instFreq = currentNote.frequency + (modulator * modulationIndex * currentNote.frequency);
-            
-            carrierPhase += instFreq / sampleRate;
-            
-            // The pure analog FM Sine Wave [-1.0 to 1.0]
-            double analogFm = Math.sin(carrierPhase * 2.0 * Math.PI);
+            if (currentNote.isDrum) {
+                // --- OPL-Style Drum Synthesis ---
+                int noteNum = currentNote.note;
+                
+                if (noteNum == 35 || noteNum == 36) {
+                    // Kick Drum: Fast pitch drop (Pitch envelope)
+                    double time = currentNote.activeFrames / (double) sampleRate;
+                    if (time < 0.2) {
+                        double pitchDrop = 150.0 * Math.exp(-time * 30.0); // 150Hz drops quickly to 0
+                        double kickFreq = 50.0 + pitchDrop;
+                        carrierPhase += kickFreq / sampleRate;
+                        analogFm = Math.sin(carrierPhase * 2.0 * Math.PI);
+                    }
+                } 
+                else if (noteNum == 38 || noteNum == 40) {
+                    // Snare Drum: Burst of noise + a slight tone
+                    double time = currentNote.activeFrames / (double) sampleRate;
+                    if (time < 0.15) {
+                        double noiseEnv = Math.exp(-time * 20.0);
+                        double toneEnv = Math.exp(-time * 10.0);
+                        carrierPhase += 200.0 / sampleRate;
+                        double tone = Math.sin(carrierPhase * 2.0 * Math.PI) * toneEnv * 0.3;
+                        double noise = (Math.random() * 2.0 - 1.0) * noiseEnv * 0.7;
+                        analogFm = tone + noise;
+                    }
+                }
+                else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum == 49 || noteNum == 51 || noteNum == 53) {
+                    // Hi-Hat / Cymbal: Very short, high-frequency metallic noise
+                    double time = currentNote.activeFrames / (double) sampleRate;
+                    double duration = (noteNum >= 49) ? 0.3 : 0.05; // Cymbals last longer
+                    if (time < duration) {
+                        double env = Math.exp(-time * (1.0 / duration) * 5.0);
+                        // FM metallic noise (high index FM with random phase)
+                        analogFm = (Math.random() > 0.5 ? 1.0 : -1.0) * env;
+                    }
+                }
+                else {
+                    // Toms and other percussions: Pitch sweep down
+                    double time = currentNote.activeFrames / (double) sampleRate;
+                    if (time < 0.25) {
+                        double pitchDrop = 300.0 * Math.exp(-time * 15.0);
+                        double tomFreq = 80.0 + pitchDrop;
+                        carrierPhase += tomFreq / sampleRate;
+                        analogFm = Math.sin(carrierPhase * 2.0 * Math.PI);
+                    }
+                }
+            } else {
+                // --- 2-OP FM Synthesis (Melody/Chords) ---
+                double decay = Math.max(0.0, 1.0 - (currentNote.activeFrames / (sampleRate * 0.5))); // 0.5s decay
+                
+                // Modulator: Frequency is 3.5x the carrier (Inharmonic ratio for metallic bell sound)
+                double modFreq = currentNote.frequency * 3.5;
+                modPhase += modFreq / sampleRate;
+                if (modPhase >= 1.0) modPhase -= 1.0;
+                double modulator = Math.sin(modPhase * 2.0 * Math.PI);
+                
+                // Carrier: Modulated by the Modulator. Index sweeps from 6.0 down to 0.5!
+                double modulationIndex = 0.5 + (5.5 * decay); 
+                double instFreq = currentNote.frequency + (modulator * modulationIndex * currentNote.frequency);
+                
+                carrierPhase += instFreq / sampleRate;
+                
+                // The pure analog FM Sine Wave [-1.0 to 1.0]
+                analogFm = Math.sin(carrierPhase * 2.0 * Math.PI);
+            }
             
             // 2. DAC522 Style True PWM Conversion
             // Compare the analog wave against a high-frequency sawtooth carrier
