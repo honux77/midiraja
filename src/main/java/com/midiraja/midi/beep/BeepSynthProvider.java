@@ -7,6 +7,7 @@
 
 package com.midiraja.midi.beep;
 
+import com.midiraja.dsp.PwmAcousticSimulator;
 import com.midiraja.midi.MidiPort;
 import com.midiraja.midi.NativeAudioEngine;
 import com.midiraja.midi.SoftSynthProvider;
@@ -45,6 +46,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     // 8-Core "Electric Sixteentet" Apple II cluster
     // Each virtual Apple II uses XOR Ring Modulation to play 2 notes simultaneously on a 1-bit pin.
     private static final int NUM_SPEAKERS = 8;
+    private final PwmAcousticSimulator dspSimulator = new PwmAcousticSimulator(44100);
     private static final int MAX_NOTES_PER_SPEAKER = 2;
     
     private class SixteentetSpeaker {
@@ -114,9 +116,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         double modPhase = 0.0;
 
         
-        // The DAC522 PWM Carrier (e.g. 22.05kHz)
-        double pwmCarrierPhase = -1.0;
-        final double pwmCarrierStep = (22050.0 / sampleRate) * 2.0;
+
 
         // Output -1.0, 0.0, or 1.0 (True PWM Pulse Train)
         double render(List<ActiveNote> assignedNotes, int framesPerSwitch) {
@@ -199,13 +199,6 @@ public class BeepSynthProvider implements SoftSynthProvider
                 analogFm = Math.sin(carrierPhase * 2.0 * Math.PI);
             }
             
-            // 2. DAC522 Style True PWM Conversion
-            // Compare the analog wave against a high-frequency sawtooth carrier
-            pwmCarrierPhase += pwmCarrierStep;
-            if (pwmCarrierPhase > 1.0) pwmCarrierPhase -= 2.0;
-            
-            double pwmOutput = analogFm > pwmCarrierPhase ? 1.0 : -1.0;
-            
             // 3. Arpeggiator Advance
             framesSinceSwitch++;
             if (framesSinceSwitch >= framesPerSwitch) {
@@ -213,7 +206,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                 arpeggioIndex++;
             }
             
-            return pwmOutput;
+            return analogFm;
         }
     }
     private final FmArpeggiatorSpeaker[] fmSpeakers = new FmArpeggiatorSpeaker[NUM_SPEAKERS];
@@ -334,16 +327,30 @@ public class BeepSynthProvider implements SoftSynthProvider
             }
         }
 
+        float[] analogL = new float[frames];
+        float[] analogR = new float[frames];
+
         for (int i = 0; i < frames; i++) {
             double analogSum = 0.0;
             for (int s = 0; s < NUM_SPEAKERS; s++) {
                 analogSum += fmSpeakers[s].render(speakerAssignments.get(s), framesPerSwitch);
             }
-            double mixed = analogSum / NUM_SPEAKERS;
-            buffer[i] = (short) (mixed * 8000); 
+            
+            // Normalize the 8-speaker analog mix to [-1.0, 1.0]
+            float mixed = (float) (analogSum / NUM_SPEAKERS);
+            analogL[i] = mixed;
+            analogR[i] = mixed;
             
             // Age all notes precisely at 44.1kHz resolution
             for (ActiveNote n : notes) n.activeFrames++;
+        }
+
+        // Apply professional 32x Oversampled PWM & Acoustic Filter
+        dspSimulator.process(analogL, analogR, frames);
+
+        // Convert back to 16-bit PCM
+        for (int i = 0; i < frames; i++) {
+            buffer[i] = (short) (analogL[i] * 32767);
         }
     }
     private void renderPwm(List<ActiveNote> notes, short[] buffer, int frames)
