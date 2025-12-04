@@ -24,6 +24,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final NativeAudioEngine audio;
     private final String mode;
     private final int sampleRate = 44100;
+    private final int oversample;
     
     private @Nullable Thread renderThread;
     private volatile boolean running = false;
@@ -181,6 +182,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     public BeepSynthProvider(NativeAudioEngine audio, String mode, int oversample) {
         this.audio = audio;
         this.mode = mode.toLowerCase(java.util.Locale.ROOT);
+        this.oversample = oversample;
         for (int i = 0; i < NUM_SPEAKERS; i++) {
             speakers[i] = new SixteentetSpeaker();
             fmSpeakers[i] = new FmArpeggiatorSpeaker();
@@ -278,15 +280,22 @@ public class BeepSynthProvider implements SoftSynthProvider
             // we use a mathematically pure Error Accumulator. This perfectly preserves 
             // the analog volume/timbre without generating harsh high-frequency sizzle.
             
+            // --- OVERSAMPLED 1-BIT DELTA-SIGMA MODULATION ---
+            // We run the error accumulator N times per sample. 
+            // High oversampling (32x) pushes switching noise into ultrasonic frequencies.
+            // Low oversampling (1x) leaves the noise in the audible range for retro authenticity.
             double target = safeMix;
-            double outputBit = (target + errorAccumulator) > 0.0 ? 1.0 : -1.0;
-            errorAccumulator += (target - outputBit);
+            double sumOutput = 0.0;
+            for (int o = 0; o < oversample; o++) {
+                double outputBit = (target + errorAccumulator) > 0.0 ? 1.0 : -1.0;
+                errorAccumulator += (target - outputBit);
+                sumOutput += outputBit;
+            }
+            double finalOutput = sumOutput / oversample;
             
             // 2-Pole Acoustic Filtering (Steep Low-Pass)
-            // This perfectly preserves the bright FM bells while aggressively 
-            // killing the 15kHz+ high-frequency "mosquito" idle tones of the Delta-Sigma.
             double filterCutoff = 0.25; 
-            lpfState += filterCutoff * (outputBit - lpfState);
+            lpfState += filterCutoff * (finalOutput - lpfState);
             lpfState2 += filterCutoff * (lpfState - lpfState2);
             
             // Output to 16-bit PCM buffer
