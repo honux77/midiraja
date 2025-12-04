@@ -42,7 +42,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final List<ActiveNote> activeNotes = new CopyOnWriteArrayList<>();
 
     private double errorAccumulator = 0.0;
-    private double lpfState = 0.0; // Acoustic filter state
+    private double lpfState = 0.0; private double lpfState2 = 0.0; // Acoustic filter state
     private static final int NUM_SPEAKERS = 8;
     private static final int MAX_NOTES_PER_SPEAKER = 2;
     
@@ -282,12 +282,15 @@ public class BeepSynthProvider implements SoftSynthProvider
             double outputBit = (target + errorAccumulator) > 0.0 ? 1.0 : -1.0;
             errorAccumulator += (target - outputBit);
             
-            // Soft paper-speaker acoustic filtering (Simple 1-pole Low Pass)
-            // This rolls off the extreme high-end switching noise, making it sound warm.
-            lpfState += 0.3 * (outputBit - lpfState);
+            // 2-Pole Acoustic Filtering (Steep Low-Pass)
+            // This perfectly preserves the bright FM bells while aggressively 
+            // killing the 15kHz+ high-frequency "mosquito" idle tones of the Delta-Sigma.
+            double filterCutoff = 0.25; 
+            lpfState += filterCutoff * (outputBit - lpfState);
+            lpfState2 += filterCutoff * (lpfState - lpfState2);
             
             // Output to 16-bit PCM buffer
-            buffer[i] = (short) (lpfState * 8000);
+            buffer[i] = (short) (lpfState2 * 9000);
         }
     }
 
