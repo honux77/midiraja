@@ -42,6 +42,26 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final List<ActiveNote> activeNotes = new ArrayList<>(64); // Pre-allocate capacity to avoid resizing
 
     private double errorAccumulator = 0.0;
+
+    // --- FAST SINE WAVE LOOKUP TABLE (To fix CPU Bottleneck & Tempo Desync) ---
+    private static final int SINE_LUT_SIZE = 4096;
+    private static final double[] SINE_LUT = new double[SINE_LUT_SIZE];
+    static {
+        for (int i = 0; i < SINE_LUT_SIZE; i++) {
+            SINE_LUT[i] = Math.sin((i / (double) SINE_LUT_SIZE) * 2.0 * Math.PI);
+        }
+    }
+    
+    // Lightning-fast sine approximation using pre-computed table
+    // phase must be in range [0.0, 1.0)
+    private static double fastSin(double phase) {
+        int index = (int) (phase * SINE_LUT_SIZE);
+        // Safety bound check
+        if (index < 0) index = 0;
+        if (index >= SINE_LUT_SIZE) index = SINE_LUT_SIZE - 1;
+        return SINE_LUT[index];
+    }
+
     private double lpfState = 0.0; private double lpfState2 = 0.0; // Acoustic filter state
     private static final int NUM_SPEAKERS = 8;
     private static final int MAX_NOTES_PER_SPEAKER = 2;
@@ -57,9 +77,9 @@ public class BeepSynthProvider implements SoftSynthProvider
             if (assignedNotes.isEmpty()) return 0.0;
             
             ActiveNote n1 = assignedNotes.get(0);
-            double lfo1 = Math.sin(n1.activeFrames * 2.0 * Math.PI * 6.0 / sampleRate);
+            double lfo1 = fastSin((n1.activeFrames * 6.0 / sampleRate) % 1.0);
             double modFreq1 = n1.frequency * (1.0 + lfo1 * 0.015);
-            double sweep1 = Math.sin(n1.activeFrames * 2.0 * Math.PI * 1.5 / sampleRate);
+            double sweep1 = fastSin((n1.activeFrames * 1.5 / sampleRate) % 1.0);
             double duty1 = 0.5 + (sweep1 * 0.4);
             
             phase1 += modFreq1 / sampleRate;
@@ -68,9 +88,9 @@ public class BeepSynthProvider implements SoftSynthProvider
             
             if (assignedNotes.size() > 1) {
                 ActiveNote n2 = assignedNotes.get(1);
-                double lfo2 = Math.sin((n2.activeFrames * 2.0 * Math.PI * 6.2 / sampleRate) + 1.0);
+                double lfo2 = fastSin(((n2.activeFrames * 6.2 / sampleRate) + (1.0 / (2.0 * Math.PI))) % 1.0);
                 double modFreq2 = n2.frequency * (1.0 + lfo2 * 0.015);
-                double sweep2 = Math.cos(n2.activeFrames * 2.0 * Math.PI * 1.1 / sampleRate); 
+                double sweep2 = fastSin(((n2.activeFrames * 1.1 / sampleRate) + 0.25) % 1.0); 
                 double duty2 = 0.5 + (sweep2 * 0.35);
                 
                 phase2 += modFreq2 / sampleRate;
@@ -111,13 +131,13 @@ public class BeepSynthProvider implements SoftSynthProvider
                         if (time < 0.2) {
                             double pitchDrop = 150.0 * Math.exp(-time * 30.0);
                             note.phase += (50.0 + pitchDrop) / sampleRate;
-                            out = Math.sin(note.phase * 2.0 * Math.PI);
+                            out = fastSin(note.phase);
                         }
                     } else if (noteNum == 38 || noteNum == 40) { // Snare
                         if (time < 0.15) {
                             double noiseEnv = Math.exp(-time * 20.0);
                             note.phase += 200.0 / sampleRate;
-                            double tone = Math.sin(note.phase * 2.0 * Math.PI) * Math.exp(-time * 10.0) * 0.4;
+                            double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
                             double noise = (Math.random() * 2.0 - 1.0) * noiseEnv * 1.5;
                             out = Math.max(-1.0, Math.min(1.0, tone + noise));
                         }
@@ -131,7 +151,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                         if (time < 0.25) {
                             double pitchDrop = 300.0 * Math.exp(-time * 15.0);
                             note.phase += (80.0 + pitchDrop) / sampleRate;
-                            out = Math.sin(note.phase * 2.0 * Math.PI);
+                            out = fastSin(note.phase);
                         }
                     }
                 } else {
@@ -141,14 +161,14 @@ public class BeepSynthProvider implements SoftSynthProvider
                     
                     note.modPhase += modFreq / sampleRate;
                     if (note.modPhase >= 1.0) note.modPhase -= 1.0;
-                    double modulator = Math.sin(note.modPhase * 2.0 * Math.PI);
+                    double modulator = fastSin(note.modPhase);
                     
                     double modIndex = 0.1 + (1.1 * decay); 
                     double instFreq = note.frequency + (modulator * modIndex * note.frequency);
                     
                     note.phase += instFreq / sampleRate;
                     if (note.phase >= 1.0) note.phase -= 1.0;
-                    out = Math.sin(note.phase * 2.0 * Math.PI);
+                    out = fastSin(note.phase);
                 }
                 
                 // Only output the sound of the currently selected arpeggiator slot
