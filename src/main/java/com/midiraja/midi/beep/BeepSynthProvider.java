@@ -63,6 +63,16 @@ public class BeepSynthProvider implements SoftSynthProvider
     }
 
     private double lpfState = 0.0; private double lpfState2 = 0.0; // Acoustic filter state
+
+    // --- FAST RANDOM NUMBER GENERATOR (To prevent fastRandom() thread locking) ---
+    private static int rngSeed = 12345;
+    private static double fastRandom() {
+        rngSeed ^= (rngSeed << 13);
+        rngSeed ^= (rngSeed >>> 17);
+        rngSeed ^= (rngSeed << 5);
+        return ((rngSeed & 0x7FFFFFFF) / (double) Integer.MAX_VALUE);
+    }
+
     private static final int NUM_SPEAKERS = 8;
     private static final int MAX_NOTES_PER_SPEAKER = 2;
     
@@ -138,14 +148,14 @@ public class BeepSynthProvider implements SoftSynthProvider
                             double noiseEnv = Math.exp(-time * 20.0);
                             note.phase += 200.0 / sampleRate;
                             double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
-                            double noise = (Math.random() * 2.0 - 1.0) * noiseEnv * 1.5;
+                            double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
                             out = Math.max(-1.0, Math.min(1.0, tone + noise));
                         }
                     } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49) { // Hi-Hat / Cymbal
                         double duration = (noteNum >= 49) ? 0.3 : 0.05;
                         if (time < duration) {
                             double env = Math.exp(-time * (1.0 / duration) * 5.0);
-                            out = (Math.random() > 0.5 ? 1.5 : -1.5) * env;
+                            out = (fastRandom() > 0.5 ? 1.5 : -1.5) * env;
                         }
                     } else { // Toms
                         if (time < 0.25) {
