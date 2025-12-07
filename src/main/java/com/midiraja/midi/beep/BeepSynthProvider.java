@@ -31,15 +31,30 @@ public class BeepSynthProvider implements SoftSynthProvider
 
     // Universal DAC522 / PC Speaker output filter
     private static class ActiveNote {
+        volatile boolean active = false; // Wait-free state flag
         int channel;
         int note;
         double frequency;
-        double phase = 0.0;     // Used as Carrier Phase
-        double modPhase = 0.0;  // Used as Modulator Phase
-        long activeFrames = 0; // For envelope/decay tracking
+        double phase = 0.0;
+        double modPhase = 0.0;
+        long activeFrames = 0;
         boolean isDrum = false;
+        
+        void reset() {
+            phase = 0.0;
+            modPhase = 0.0;
+            activeFrames = 0;
+        }
     }
-    private final List<ActiveNote> activeNotes = new ArrayList<>(64); // Pre-allocate capacity to avoid resizing
+    
+    // Fixed pre-allocated slot array for Wait-Free concurrency (Max 128 simultaneous notes)
+    private static final int MAX_POLYPHONY = 128;
+    private final ActiveNote[] activeNotes = new ActiveNote[MAX_POLYPHONY];
+    {
+        for (int i = 0; i < MAX_POLYPHONY; i++) {
+            activeNotes[i] = new ActiveNote();
+        }
+    }
 
     private double errorAccumulator = 0.0;
 
@@ -247,14 +262,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     @Override
     public void loadSoundbank(String path) throws Exception {}
 
-    @Override
-    public void sendMessage(byte[] data) throws Exception {
-        if (data.length > 0) {
-            int cmd = data[0] & 0xF0;
-            int ch = data[0] & 0x0F;
-            handleMessage(ch, cmd, data);
-        }
-    }
+
 
     private void startRenderThread() {
         running = true;
@@ -268,14 +276,18 @@ public class BeepSynthProvider implements SoftSynthProvider
                 }
                 List<ActiveNote> currentNotes = new ArrayList<>(32);
                 
-                // Extremely fast, synchronized snapshot of notes to prevent sequencer blockage
-                synchronized (activeNotes) {
-                    // Aggressive Garbage Collection done IN PLACE
-                    activeNotes.removeIf(n -> (n.isDrum && n.activeFrames > sampleRate * 0.2) || 
-                                              (!n.isDrum && n.activeFrames > sampleRate * 3.0));
-                                              
-                    // Copy references for thread-safe rendering
-                    currentNotes.addAll(activeNotes);
+                // Zero-lock, O(N) garbage-free array scan
+                for (int i = 0; i < MAX_POLYPHONY; i++) {
+                    ActiveNote n = activeNotes[i];
+                    if (n.active) {
+                        // Aggressive timeout check
+                        if ((n.isDrum && n.activeFrames > sampleRate * 0.2) || 
+                            (!n.isDrum && n.activeFrames > sampleRate * 3.0)) {
+                            n.active = false;
+                        } else {
+                            currentNotes.add(n);
+                        }
+                    }
                 }
 
                 if (currentNotes.isEmpty()) {
@@ -403,28 +415,63 @@ public class BeepSynthProvider implements SoftSynthProvider
         if (audio == null) return;
         renderPaused = true;
         audio.flush();
-        synchronized(activeNotes) { activeNotes.clear(); }
+        for (int i = 0; i < MAX_POLYPHONY; i++) activeNotes[i].active = false;
         errorAccumulator = 0.0;
     }
 
     @Override public void onPlaybackStarted() { renderPaused = false; }
 
-    private void handleMessage(int ch, int cmd, byte[] data) {
-        if (cmd == 0x90 && data.length >= 3) {
-            int note = data[1] & 0xFF;
-            int velocity = data[2] & 0xFF;
-            if (velocity > 0) {
-                ActiveNote an = new ActiveNote();
-                an.channel = ch; an.note = note;
-                an.frequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-                an.isDrum = (ch == 9);
-                activeNotes.add(an);
-            } else {
-                activeNotes.removeIf(n -> n.channel == ch && n.note == note);
+    @Override
+    public void sendMessage(byte[] data) throws Exception {
+        if (data.length > 0) {
+            int cmd = data[0] & 0xF0;
+            int ch = data[0] & 0x0F;
+            
+            if (cmd == 0x90 && data.length >= 3) {
+                int note = data[1] & 0xFF;
+                int velocity = data[2] & 0xFF;
+                
+                if (velocity > 0) {
+                    // Note On: Kill existing duplicate first
+                    for (int i = 0; i < MAX_POLYPHONY; i++) {
+                        ActiveNote n = activeNotes[i];
+                        if (n.active && n.channel == ch && n.note == note) n.active = false;
+                    }
+                    // Find empty slot
+                    for (int i = 0; i < MAX_POLYPHONY; i++) {
+                        ActiveNote n = activeNotes[i];
+                        if (!n.active) {
+                            n.reset();
+                            n.channel = ch; 
+                            n.note = note;
+                            n.frequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+                            n.isDrum = (ch == 9);
+                            n.active = true; // Activate!
+                            break;
+                        }
+                    }
+                } else {
+                    // Note Off (Velocity 0)
+                    for (int i = 0; i < MAX_POLYPHONY; i++) {
+                        ActiveNote n = activeNotes[i];
+                        if (n.active && n.channel == ch && n.note == note) n.active = false;
+                    }
+                }
+            } else if (cmd == 0x80 && data.length >= 2) {
+                int note = data[1] & 0xFF;
+                for (int i = 0; i < MAX_POLYPHONY; i++) {
+                    ActiveNote n = activeNotes[i];
+                    if (n.active && n.channel == ch && n.note == note) n.active = false;
+                }
+            } else if (cmd == 0xB0 && data.length >= 3) {
+                int cc = data[1] & 0xFF;
+                if (cc == 123 || cc == 120) { 
+                    for (int i = 0; i < MAX_POLYPHONY; i++) {
+                        ActiveNote n = activeNotes[i];
+                        if (n.active && n.channel == ch) n.active = false;
+                    }
+                }
             }
-        } else if (cmd == 0x80) {
-            int note = data[1] & 0xFF;
-            activeNotes.removeIf(n -> n.channel == ch && n.note == note);
         }
     }
 }
