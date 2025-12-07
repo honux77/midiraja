@@ -133,17 +133,11 @@ public class BeepSynthProvider implements SoftSynthProvider
     // 1-Bit FM Arpeggiator (DAC522 Reality Mode)
     // ---------------------------------------------------------
     private class FmArpeggiatorSpeaker {
-        int arpeggioIndex = 0;
-        int framesSinceSwitch = 0;
-
-        double render(List<ActiveNote> assignedNotes, int framesPerSwitch) {
+        double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
-            if (arpeggioIndex >= assignedNotes.size()) arpeggioIndex = 0;
             
-            // WE MUST ADVANCE THE PHASE OF ALL NOTES CONTINUOUSLY!
-            // If we only advance the phase of the currently sounding note, its effective 
-            // frequency is divided by the number of notes (because it freezes when not selected).
-            double analogFm = 0.0;
+            boolean mixedXor = false;
+            boolean firstNote = true;
             
             for (int i = 0; i < assignedNotes.size(); i++) {
                 ActiveNote note = assignedNotes.get(i);
@@ -196,26 +190,19 @@ public class BeepSynthProvider implements SoftSynthProvider
                     out = fastSin(note.phase);
                 }
                 
-                // Only output the sound of the currently selected arpeggiator slot
-                if (i == arpeggioIndex) {
-                    analogFm = out;
+                // Convert the pure FM sine wave into a 1-bit boolean state for XOR mixing
+                boolean bitState = out > 0.0;
+                
+                if (firstNote) {
+                    mixedXor = bitState;
+                    firstNote = false;
+                } else {
+                    mixedXor ^= bitState; // Perfect zero-latency multiplexing!
                 }
-            }
-
-            // If there's only 1 note, DO NOT trigger the arpeggiator switching logic.
-            // This prevents the 50Hz LFO/Tremolo artifacts on single pure notes.
-            if (assignedNotes.size() > 1) {
-                framesSinceSwitch++;
-                if (framesSinceSwitch >= framesPerSwitch) {
-                    framesSinceSwitch = 0;
-                    arpeggioIndex++;
-                }
-            } else {
-                arpeggioIndex = 0; // Lock to the first note
-                framesSinceSwitch = 0;
             }
             
-            return analogFm;
+            // Output the XOR multiplexed result as an analog float so the Master bus can process it
+            return mixedXor ? 1.0 : -1.0;
         }
     }
 
@@ -233,7 +220,6 @@ public class BeepSynthProvider implements SoftSynthProvider
             duetSpeakerAssignments.add(new ArrayList<>(4));
         }
     }
-    private final int framesPerSwitch = sampleRate / 35; // 35 Hz arpeggio (Music Maker style) (Classic PAL framerate for psychoacoustic blending)
 
     public BeepSynthProvider(NativeAudioEngine audio, String mode, int oversample) {
         this.audio = audio;
@@ -327,7 +313,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         for (int i = 0; i < frames; i++) {
             double analogSum = 0.0;
             for (int s = 0; s < NUM_SPEAKERS; s++) {
-                analogSum += fmSpeakers[s].render(fmSpeakerAssignments.get(s), framesPerSwitch);
+                analogSum += fmSpeakers[s].render(fmSpeakerAssignments.get(s));
             }
             // Aggressive Volume scaling to prevent clipping
             double safeMix = (analogSum / NUM_SPEAKERS) * 0.7;
