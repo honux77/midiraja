@@ -136,8 +136,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
             
-            boolean mixedXor = false;
-            boolean firstNote = true;
+            double pureAnalogSum = 0.0;
             
             for (int i = 0; i < assignedNotes.size(); i++) {
                 ActiveNote note = assignedNotes.get(i);
@@ -190,19 +189,14 @@ public class BeepSynthProvider implements SoftSynthProvider
                     out = fastSin(note.phase);
                 }
                 
-                // Convert the pure FM sine wave into a 1-bit boolean state for XOR mixing
-                boolean bitState = out > 0.0;
-                
-                if (firstNote) {
-                    mixedXor = bitState;
-                    firstNote = false;
-                } else {
-                    mixedXor ^= bitState; // Perfect zero-latency multiplexing!
-                }
+                // Pure Analog Mixing! 
+                // We no longer destroy the wave with XOR logic which causes massive intermodulation noise
+                // when chords get dense. We simply stack the analog waves naturally.
+                pureAnalogSum += out;
             }
             
-            // Output the XOR multiplexed result as an analog float so the Master bus can process it
-            return mixedXor ? 1.0 : -1.0;
+            // Average the waves within this speaker to prevent clipping
+            return pureAnalogSum / assignedNotes.size();
         }
     }
 
