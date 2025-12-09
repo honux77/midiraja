@@ -37,9 +37,14 @@ public class BeepCommand implements Callable<Integer>
 
     @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
-    @Option(names = {"-m", "--mode"}, defaultValue = "sixteentet",
-        description = "The 1-bit mixing mode: 'sixteentet' (default), 'fm', or 'pwm'.")
-    private String mode = "sixteentet";
+    @Option(names = {"--voices"}, defaultValue = "2", description = "Polyphony per virtual Apple II core (1-4). Default: 2")
+    private int voices = 2;
+
+    @Option(names = {"--fm-ratio"}, defaultValue = "1.0", description = "FM Modulator frequency ratio (e.g., 1.0 for clean, 3.5 for metallic). Default: 1.0")
+    private double fmRatio = 1.0;
+
+    @Option(names = {"--fm-index"}, defaultValue = "1.1", description = "FM Modulation intensity peak. Default: 1.1")
+    private double fmIndex = 1.1;
 
     @Option(names = {"-o", "--oversample"}, defaultValue = "32",
         description = "Internal DSP oversampling factor (1 to simulate original hardware aliasing, 32 for studio quality).")
@@ -60,7 +65,7 @@ public class BeepCommand implements Callable<Integer>
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
         
-        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, mode, oversample);
+        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, oversample);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                         p.isInTestMode());

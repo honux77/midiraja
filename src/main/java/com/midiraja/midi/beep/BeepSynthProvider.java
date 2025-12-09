@@ -21,9 +21,11 @@ import org.jspecify.annotations.Nullable;
 public class BeepSynthProvider implements SoftSynthProvider
 {
     private final NativeAudioEngine audio;
-    private final String mode;
-    private final int sampleRate = 44100;
+    private final int voicesPerCore;
+    private final double fmRatio;
+    private final double fmIndex;
     private final int oversample;
+    private final int sampleRate = 44100;
     
     private @Nullable Thread renderThread;
     private volatile boolean running = false;
@@ -49,12 +51,9 @@ public class BeepSynthProvider implements SoftSynthProvider
     private static final int MAX_POLYPHONY = 128;
     private final ActiveNote[] activeNotes = new ActiveNote[MAX_POLYPHONY];
     {
-        for (int i = 0; i < MAX_POLYPHONY; i++) {
-            activeNotes[i] = new ActiveNote();
-        }
+        for (int i = 0; i < MAX_POLYPHONY; i++) activeNotes[i] = new ActiveNote();
     }
 
-    // --- FAST SINE WAVE LOOKUP TABLE ---
     private static final int SINE_LUT_SIZE = 4096;
     private static final double[] SINE_LUT = new double[SINE_LUT_SIZE];
     static {
@@ -70,7 +69,6 @@ public class BeepSynthProvider implements SoftSynthProvider
         return SINE_LUT[index];
     }
 
-    // --- FAST RANDOM NUMBER GENERATOR ---
     private static int rngSeed = 12345;
     private static double fastRandom() {
         rngSeed ^= (rngSeed << 13);
@@ -83,72 +81,30 @@ public class BeepSynthProvider implements SoftSynthProvider
     private double lpfState2 = 0.0;
 
     private static final int NUM_SPEAKERS = 8;
-    private static final int MAX_NOTES_PER_SPEAKER = 2;
     
-    private class SixteentetSpeaker {
-        double phase1 = 0.0;
-        double phase2 = 0.0;
-        
-        double render(List<ActiveNote> assignedNotes) {
-            if (assignedNotes.isEmpty()) return 0.0;
-            ActiveNote n1 = assignedNotes.get(0);
-            double lfo1 = fastSin((n1.activeFrames * 6.0 / sampleRate) % 1.0);
-            double modFreq1 = n1.frequency * (1.0 + lfo1 * 0.015);
-            double sweep1 = fastSin((n1.activeFrames * 1.5 / sampleRate) % 1.0);
-            double duty1 = 0.5 + (sweep1 * 0.4);
-            phase1 += modFreq1 / sampleRate;
-            if (phase1 >= 1.0) phase1 -= 1.0;
-            boolean sq1 = phase1 < duty1;
-            
-            if (assignedNotes.size() > 1) {
-                ActiveNote n2 = assignedNotes.get(1);
-                double lfo2 = fastSin(((n2.activeFrames * 6.2 / sampleRate) + (1.0 / (2.0 * Math.PI))) % 1.0);
-                double modFreq2 = n2.frequency * (1.0 + lfo2 * 0.015);
-                double sweep2 = fastSin(((n2.activeFrames * 1.1 / sampleRate) + 0.25) % 1.0); 
-                double duty2 = 0.5 + (sweep2 * 0.35);
-                phase2 += modFreq2 / sampleRate;
-                if (phase2 >= 1.0) phase2 -= 1.0;
-                boolean sq2 = phase2 < duty2;
-                return (sq1 ^ sq2) ? 1.0 : -1.0;
-            } else {
-                return sq1 ? 1.0 : -1.0;
-            }
-        }
-    }
-
-    private class FmArpeggiatorSpeaker {
-        private int arpeggioIndex = 0;
-        private int framesSinceSwitch = 0;
-        private final int framesPerSwitch;
+    // ---------------------------------------------------------
+    // Ultimate Apple II Core (XOR Multiplexing FM)
+    // ---------------------------------------------------------
+    private class AppleIICore {
         private double pwmCarrierPhase = -1.0;
         private final double pwmCarrierStep;
         
-        FmArpeggiatorSpeaker(int sampleRate) {
-            this.framesPerSwitch = sampleRate / 50;
+        AppleIICore(int sampleRate) {
+            // DAC522 Hardware limit: 22.05kHz carrier
             this.pwmCarrierStep = (22050.0 / sampleRate) * 2.0;
         }
 
         double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
             
-            // 1. Arpeggiator Logic: Pick which note to play
-            if (assignedNotes.size() > 1) {
-                framesSinceSwitch++;
-                if (framesSinceSwitch >= framesPerSwitch) {
-                    framesSinceSwitch = 0;
-                    arpeggioIndex = (arpeggioIndex + 1) % assignedNotes.size();
-                }
-            } else {
-                arpeggioIndex = 0;
-            }
+            boolean mixedXor = false;
+            boolean firstNote = true;
             
-            double targetAnalogValue = 0.0;
-            
-            // 2. Continuous Phase Advancement for all notes in this core
             for (int i = 0; i < assignedNotes.size(); i++) {
                 ActiveNote note = assignedNotes.get(i);
                 double time = note.activeFrames / (double) sampleRate;
                 double out = 0.0;
+                
                 if (note.isDrum) {
                     int noteNum = note.note;
                     if (noteNum == 35 || noteNum == 36) {
@@ -182,25 +138,34 @@ public class BeepSynthProvider implements SoftSynthProvider
                         }
                     }
                 } else {
+                    // Pure 2-OP FM Synthesis
                     double decay = Math.max(0.0, 1.0 - (time / 0.5));
-                    double modFreq = note.frequency * 1.0;
+                    double modFreq = note.frequency * fmRatio;
                     note.modPhase += modFreq / sampleRate;
                     if (note.modPhase >= 1.0) note.modPhase -= 1.0;
                     double modulator = fastSin(note.modPhase);
-                    double modIndex = 0.1 + (1.1 * decay); 
-                    double instFreq = note.frequency + (modulator * modIndex * note.frequency);
+                    
+                    double envIndex = (fmIndex * 0.1) + (fmIndex * decay); 
+                    double instFreq = note.frequency + (modulator * envIndex * note.frequency);
+                    
                     note.phase += instFreq / sampleRate;
                     if (note.phase >= 1.0) note.phase -= 1.0;
                     out = fastSin(note.phase);
                 }
                 
-                // Select the note for PWM conversion
-                if (i == arpeggioIndex) targetAnalogValue = out;
+                // Zero-Latency XOR Multiplexing (Thresholding analog sine to boolean)
+                boolean bitState = out > 0.0;
+                if (firstNote) {
+                    mixedXor = bitState;
+                    firstNote = false;
+                } else {
+                    mixedXor ^= bitState; 
+                }
             }
             
-            // 3. DAC522 1-Bit PWM Simulation per Speaker
-            // Use the global oversample factor to simulate different levels of CPU precision.
-            // 1 = Original harsh aliasing, 32 = Modern clean emulation.
+            double targetAnalogValue = mixedXor ? 1.0 : -1.0;
+            
+            // Local DAC522 1-Bit PWM Generation (Simulating 1MHz CPU speed limits)
             double sumPwm = 0.0;
             for (int o = 0; o < oversample; o++) {
                 pwmCarrierPhase += pwmCarrierStep / oversample;
@@ -211,35 +176,29 @@ public class BeepSynthProvider implements SoftSynthProvider
         }
     }
 
-    private final SixteentetSpeaker[] speakers = new SixteentetSpeaker[NUM_SPEAKERS];
-    private final FmArpeggiatorSpeaker[] fmSpeakers = new FmArpeggiatorSpeaker[NUM_SPEAKERS];
-    private final List<List<ActiveNote>> fmSpeakerAssignments;
-    private final List<List<ActiveNote>> duetSpeakerAssignments;
+    private final AppleIICore[] cores = new AppleIICore[NUM_SPEAKERS];
+    private final List<List<ActiveNote>> coreAssignments;
     {
-        fmSpeakerAssignments = new ArrayList<>(NUM_SPEAKERS);
-        duetSpeakerAssignments = new ArrayList<>(NUM_SPEAKERS);
+        coreAssignments = new ArrayList<>(NUM_SPEAKERS);
         for (int i = 0; i < NUM_SPEAKERS; i++) {
-            fmSpeakerAssignments.add(new ArrayList<>(4));
-            duetSpeakerAssignments.add(new ArrayList<>(4));
+            coreAssignments.add(new ArrayList<>(8)); // Allocate enough capacity
         }
     }
 
-    public BeepSynthProvider(NativeAudioEngine audio, String mode, int oversample) {
+    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample) {
         this.audio = audio;
-        this.mode = mode.toLowerCase(java.util.Locale.ROOT);
+        this.voicesPerCore = Math.max(1, Math.min(4, voices));
+        this.fmRatio = fmRatio;
+        this.fmIndex = fmIndex;
         this.oversample = Math.max(1, oversample);
         for (int i = 0; i < NUM_SPEAKERS; i++) {
-            speakers[i] = new SixteentetSpeaker();
-            fmSpeakers[i] = new FmArpeggiatorSpeaker(sampleRate);
+            cores[i] = new AppleIICore(sampleRate);
         }
     }
 
     @Override
     public List<MidiPort> getOutputPorts() {
-        String name = "Electric Sixteentet";
-        if (mode.equals("pwm")) name = "PWM";
-        else if (mode.equals("fm")) name = "FM Arpeggiator (DAC522 Hardware Mix)";
-        return List.of(new MidiPort(0, "Midiraja 1-Bit " + name));
+        return List.of(new MidiPort(0, "Apple II 1-Bit FM Cluster"));
     }
 
     @Override
@@ -260,6 +219,8 @@ public class BeepSynthProvider implements SoftSynthProvider
                     try { Thread.sleep(1); } catch (InterruptedException e) { break; }
                     continue;
                 }
+                
+                // Wait-Free garbage collection and snapshot
                 List<ActiveNote> currentNotes = new ArrayList<>(32);
                 for (int i = 0; i < MAX_POLYPHONY; i++) {
                     ActiveNote n = activeNotes[i];
@@ -272,14 +233,11 @@ public class BeepSynthProvider implements SoftSynthProvider
                         }
                     }
                 }
+                
                 if (currentNotes.isEmpty()) {
                     for (int i = 0; i < framesToRender; i++) pcmBuffer[i] = 0;
-                } else if (mode.equals("pwm")) {
-                    renderPwm(currentNotes, pcmBuffer, framesToRender);
-                } else if (mode.equals("fm")) {
-                    renderFm(currentNotes, pcmBuffer, framesToRender);
                 } else {
-                    renderDuet(currentNotes, pcmBuffer, framesToRender);
+                    renderCluster(currentNotes, pcmBuffer, framesToRender);
                 }
                 audio.push(pcmBuffer);
             }
@@ -289,69 +247,40 @@ public class BeepSynthProvider implements SoftSynthProvider
         renderThread.start();
     }
 
-    private void renderFm(List<ActiveNote> notes, short[] buffer, int frames) {
-        for (int i = 0; i < NUM_SPEAKERS; i++) fmSpeakerAssignments.get(i).clear();
+    private void renderCluster(List<ActiveNote> notes, short[] buffer, int frames) {
+        for (int i = 0; i < NUM_SPEAKERS; i++) coreAssignments.get(i).clear();
+        
+        // Route notes to cores. Cores 6 & 7 are reserved for Rhythm/Drums.
         int melodyIdx = 0, drumIdx = 0;
         for (ActiveNote note : notes) {
             if (note.isDrum) {
                 int target = 6 + (drumIdx % 2);
-                if (fmSpeakerAssignments.get(target).size() < 3) fmSpeakerAssignments.get(target).add(note);
+                if (coreAssignments.get(target).size() < voicesPerCore) coreAssignments.get(target).add(note);
                 drumIdx++;
             } else {
                 int target = melodyIdx % 6;
-                if (fmSpeakerAssignments.get(target).size() < 3) fmSpeakerAssignments.get(target).add(note);
+                if (coreAssignments.get(target).size() < voicesPerCore) coreAssignments.get(target).add(note);
                 melodyIdx++;
             }
         }
+        
         for (int i = 0; i < frames; i++) {
+            // Hardware Gathering: Collect 1-bit outputs from 8 machines
             double sumOfAppleIIs = 0.0;
             for (int s = 0; s < NUM_SPEAKERS; s++) {
-                sumOfAppleIIs += fmSpeakers[s].render(fmSpeakerAssignments.get(s));
+                sumOfAppleIIs += cores[s].render(coreAssignments.get(s));
             }
             for (ActiveNote n : notes) n.activeFrames++;
+            
+            // Analog Mixing Console: Sum the voltages, add slight headroom
             double analogMix = (sumOfAppleIIs / NUM_SPEAKERS) * 0.8; 
+            
+            // Master Acoustic Filtering (2.25-inch paper cones)
             double filterCutoff = 0.25; 
             lpfState += filterCutoff * (analogMix - lpfState);
             lpfState2 += filterCutoff * (lpfState - lpfState2);
+            
             buffer[i] = (short) (lpfState2 * 15000);
-        }
-    }
-
-    private void renderPwm(List<ActiveNote> notes, short[] buffer, int frames) {
-        double errorAccum = 0.0;
-        double volumeScale = 1.0 / Math.max(1, notes.size());
-        for (int i = 0; i < frames; i++) {
-            double mixedSample = 0.0;
-            for (ActiveNote n : notes) {
-                n.phase += n.frequency / sampleRate;
-                if (n.phase >= 1.0) n.phase -= 1.0;
-                mixedSample += (n.phase < 0.5 ? 1.0 : -1.0);
-                n.activeFrames++;
-            }
-            double target = mixedSample * volumeScale;
-            double outputBit = (target + errorAccum) > 0.0 ? 1.0 : -1.0;
-            errorAccum += (target - outputBit);
-            buffer[i] = (short) (outputBit * 8000);
-        }
-    }
-
-    private void renderDuet(List<ActiveNote> notes, short[] buffer, int frames) {
-        for (int i = 0; i < NUM_SPEAKERS; i++) duetSpeakerAssignments.get(i).clear();
-        int noteIdx = 0;
-        for (ActiveNote note : notes) {
-            int targetSpeaker = noteIdx % NUM_SPEAKERS;
-            if (duetSpeakerAssignments.get(targetSpeaker).size() < MAX_NOTES_PER_SPEAKER) {
-                duetSpeakerAssignments.get(targetSpeaker).add(note);
-            }
-            noteIdx++;
-        }
-        for (int i = 0; i < frames; i++) {
-            double analogSum = 0.0;
-            for (int s = 0; s < NUM_SPEAKERS; s++) {
-                analogSum += speakers[s].render(duetSpeakerAssignments.get(s));
-            }
-            buffer[i] = (short) ((analogSum / NUM_SPEAKERS) * 8000);
-            for (ActiveNote n : notes) n.activeFrames++;
         }
     }
 
