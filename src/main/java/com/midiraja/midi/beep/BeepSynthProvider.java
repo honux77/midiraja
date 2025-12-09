@@ -133,6 +133,14 @@ public class BeepSynthProvider implements SoftSynthProvider
     // 1-Bit FM Arpeggiator (DAC522 Reality Mode)
     // ---------------------------------------------------------
     private class FmArpeggiatorSpeaker {
+        // DAC522 1-Bit PWM State per Apple II Core
+        double pwmCarrierPhase = -1.0;
+        final double pwmCarrierStep;
+        
+        FmArpeggiatorSpeaker(int sampleRate) {
+            this.pwmCarrierStep = (22050.0 / sampleRate) * 2.0;
+        }
+
         double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
             
@@ -189,14 +197,25 @@ public class BeepSynthProvider implements SoftSynthProvider
                     out = fastSin(note.phase);
                 }
                 
-                // Pure Analog Mixing! 
-                // We no longer destroy the wave with XOR logic which causes massive intermodulation noise
-                // when chords get dense. We simply stack the analog waves naturally.
                 pureAnalogSum += out;
             }
             
-            // Average the waves within this speaker to prevent clipping
-            return pureAnalogSum / assignedNotes.size();
+            // Average the FM mix within this single Apple II core [-1.0, 1.0]
+            double localAnalogMix = pureAnalogSum / assignedNotes.size();
+            
+            // APPLE II HARDWARE SIMULATION: DAC522 PWM
+            // This specific Apple II must output a strict 1-bit signal (-1.0 or 1.0)
+            // by comparing its internal analog mix against its own high-frequency sawtooth carrier.
+            double sumPwm = 0.0;
+            int localOversample = 8; // Prevent massive fold-over within the speaker
+            for (int o = 0; o < localOversample; o++) {
+                pwmCarrierPhase += pwmCarrierStep / localOversample;
+                if (pwmCarrierPhase > 1.0) pwmCarrierPhase -= 2.0;
+                sumPwm += (localAnalogMix > pwmCarrierPhase ? 1.0 : -1.0);
+            }
+            
+            // Return the anti-aliased 1-Bit output of THIS specific Apple II
+            return sumPwm / localOversample;
         }
     }
 
@@ -221,7 +240,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         this.oversample = oversample;
         for (int i = 0; i < NUM_SPEAKERS; i++) {
             speakers[i] = new SixteentetSpeaker();
-            fmSpeakers[i] = new FmArpeggiatorSpeaker();
+            fmSpeakers[i] = new FmArpeggiatorSpeaker(sampleRate);
         }
     }
 
@@ -305,43 +324,33 @@ public class BeepSynthProvider implements SoftSynthProvider
         }
 
         for (int i = 0; i < frames; i++) {
-            double analogSum = 0.0;
+            // 1. HARDWARE OUTPUT GATHERING
+            // We collect the 1-Bit PWM outputs from all 8 virtual Apple II units.
+            double sumOfAppleIIs = 0.0;
             for (int s = 0; s < NUM_SPEAKERS; s++) {
-                analogSum += fmSpeakers[s].render(fmSpeakerAssignments.get(s));
+                sumOfAppleIIs += fmSpeakers[s].render(fmSpeakerAssignments.get(s));
             }
-            // Aggressive Volume scaling to prevent clipping
-            double safeMix = (analogSum / NUM_SPEAKERS) * 0.7;
-            safeMix = Math.max(-0.95, Math.min(0.95, safeMix));
             
             // Age all notes perfectly smoothly
             for (ActiveNote n : notes) n.activeFrames++;
             
-            // --- TRUE 1-BIT CONVERSION (First-Order Delta-Sigma) ---
-            // Instead of comparing against an 18.6kHz sawtooth carrier (which causes 
-            // massive intermodulation distortion when paired with complex FM harmonics),
-            // we use a mathematically pure Error Accumulator. This perfectly preserves 
-            // the analog volume/timbre without generating harsh high-frequency sizzle.
+            // 2. ANALOG MIXING DESK
+            // We simply sum the voltages of the 8 pins. No further 1-bit quantization!
+            // This perfectly simulates 8 separate Apple IIs plugged into an analog mixer.
+            double analogMix = sumOfAppleIIs / NUM_SPEAKERS; 
             
-            // --- OVERSAMPLED 1-BIT DELTA-SIGMA MODULATION ---
-            // We run the error accumulator N times per sample. 
-            // High oversampling (32x) pushes switching noise into ultrasonic frequencies.
-            // Low oversampling (1x) leaves the noise in the audible range for retro authenticity.
-            double target = safeMix;
-            double sumOutput = 0.0;
-            for (int o = 0; o < oversample; o++) {
-                double outputBit = (target + errorAccumulator) > 0.0 ? 1.0 : -1.0;
-                errorAccumulator += (target - outputBit);
-                sumOutput += outputBit;
-            }
-            double finalOutput = sumOutput / oversample;
+            // Volume scaling
+            analogMix *= 0.8;
             
-            // 2-Pole Acoustic Filtering (Steep Low-Pass)
+            // 3. MASTER ACOUSTIC FILTERING (The Speakers)
+            // Apply the 2-pole Low-Pass filter to simulate the physical properties
+            // of the speaker cones, rolling off the harsh 22kHz PWM carriers.
             double filterCutoff = 0.25; 
-            lpfState += filterCutoff * (finalOutput - lpfState);
+            lpfState += filterCutoff * (analogMix - lpfState);
             lpfState2 += filterCutoff * (lpfState - lpfState2);
             
             // Output to 16-bit PCM buffer
-            buffer[i] = (short) (lpfState2 * 9000);
+            buffer[i] = (short) (lpfState2 * 15000);
         }
     }
 
