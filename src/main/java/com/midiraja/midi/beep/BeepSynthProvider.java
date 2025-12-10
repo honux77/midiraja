@@ -40,6 +40,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         double modPhase = 0.0;
         long activeFrames = 0;
         boolean isDrum = false;
+        double cachedSample = 0.0;
         
         void reset() {
             phase = 0.0;
@@ -97,9 +98,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
             
-            boolean mixedXor = false;
-            boolean firstNote = true;
-            
+            // 1. Calculate pure analog FM output for all notes (once per 44.1kHz frame)
             for (int i = 0; i < assignedNotes.size(); i++) {
                 ActiveNote note = assignedNotes.get(i);
                 double time = note.activeFrames / (double) sampleRate;
@@ -107,14 +106,14 @@ public class BeepSynthProvider implements SoftSynthProvider
                 
                 if (note.isDrum) {
                     int noteNum = note.note;
-                    if (noteNum == 35 || noteNum == 36) {
+                    if (noteNum == 35 || noteNum == 36) { // Kick
                         if (time < 0.2) {
                             double pitchDrop = 150.0 * Math.exp(-time * 30.0);
                             note.phase += (50.0 + pitchDrop) / sampleRate;
                             if (note.phase >= 1.0) note.phase -= 1.0;
                             out = fastSin(note.phase);
                         }
-                    } else if (noteNum == 38 || noteNum == 40) {
+                    } else if (noteNum == 38 || noteNum == 40) { // Snare
                         if (time < 0.15) {
                             double noiseEnv = Math.exp(-time * 20.0);
                             note.phase += 200.0 / sampleRate;
@@ -123,13 +122,13 @@ public class BeepSynthProvider implements SoftSynthProvider
                             double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
                             out = Math.max(-1.0, Math.min(1.0, tone + noise));
                         }
-                    } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49) {
+                    } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49) { // Hi-Hat / Cymbal
                         double duration = (noteNum >= 49) ? 0.3 : 0.05;
                         if (time < duration) {
                             double env = Math.exp(-time * (1.0 / duration) * 5.0);
                             out = (fastRandom() > 0.5 ? 1.5 : -1.5) * env;
                         }
-                    } else {
+                    } else { // Toms
                         if (time < 0.25) {
                             double pitchDrop = 300.0 * Math.exp(-time * 15.0);
                             note.phase += (80.0 + pitchDrop) / sampleRate;
@@ -138,7 +137,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                         }
                     }
                 } else {
-                    // Pure 2-OP FM Synthesis
+                    // Pure 2-OP FM Synthesis (Melody)
                     double decay = Math.max(0.0, 1.0 - (time / 0.5));
                     double modFreq = note.frequency * fmRatio;
                     note.modPhase += modFreq / sampleRate;
@@ -152,26 +151,37 @@ public class BeepSynthProvider implements SoftSynthProvider
                     if (note.phase >= 1.0) note.phase -= 1.0;
                     out = fastSin(note.phase);
                 }
-                
-                // Zero-Latency XOR Multiplexing (Thresholding analog sine to boolean)
-                boolean bitState = out > 0.0;
-                if (firstNote) {
-                    mixedXor = bitState;
-                    firstNote = false;
-                } else {
-                    mixedXor ^= bitState; 
-                }
+                note.cachedSample = out;
             }
             
-            double targetAnalogValue = mixedXor ? 1.0 : -1.0;
-            
-            // Local DAC522 1-Bit PWM Generation (Simulating 1MHz CPU speed limits)
+            // 2. The True Hardware Loop: PWM Conversion FIRST, then XOR Multiplexing
+            // This perfectly preserves the volume envelope of the FM signal inside the 1-bit duty cycle,
+            // avoiding the "white noise crush" that happens when you XOR pure square/delta waves.
             double sumPwm = 0.0;
             for (int o = 0; o < oversample; o++) {
                 pwmCarrierPhase += pwmCarrierStep / oversample;
                 if (pwmCarrierPhase > 1.0) pwmCarrierPhase -= 2.0;
-                sumPwm += (targetAnalogValue > pwmCarrierPhase ? 1.0 : -1.0);
+                
+                boolean mixedXor = false;
+                boolean firstNote = true;
+                
+                for (int i = 0; i < assignedNotes.size(); i++) {
+                    // TRUE HARDWARE FLOW: Convert Analog to PWM first!
+                    boolean pwmBit = assignedNotes.get(i).cachedSample > pwmCarrierPhase;
+                    
+                    // Then XOR the PWM streams together
+                    if (firstNote) {
+                        mixedXor = pwmBit;
+                        firstNote = false;
+                    } else {
+                        mixedXor ^= pwmBit;
+                    }
+                }
+                
+                // The final output of the physical Apple II pin (-1.0 or 1.0)
+                sumPwm += (mixedXor ? 1.0 : -1.0);
             }
+            
             return sumPwm / oversample;
         }
     }
