@@ -37,6 +37,9 @@ public class BeepCommand implements Callable<Integer>
 
     @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
+    @Option(names = {"--mux"}, defaultValue = "tdm", description = "Multiplexing algorithm: 'tdm' (modern, clean, high-polyphony) or 'xor' (historical 1981 Apple II logic, gritty, max 2 voices recommended).")
+    private String mux = "tdm";
+
     @Option(names = {"--voices"}, defaultValue = "2", description = "Polyphony per virtual Apple II unit (1-4). Default: 2")
     private int voices = 2;
 
@@ -46,9 +49,9 @@ public class BeepCommand implements Callable<Integer>
     @Option(names = {"--fm-index"}, defaultValue = "1.1", description = "FM Modulation intensity peak. Default: 1.1")
     private double fmIndex = 1.1;
 
-    @Option(names = {"-o", "--oversample"}, defaultValue = "32",
-        description = "Internal DSP oversampling factor (1 to simulate original hardware aliasing, 32 for studio quality).")
-    private int oversample = 32;
+    @Option(names = {"-q", "--quality"}, defaultValue = "1",
+        description = "Audio quality level from 1 to 6. (1 = Authentic Apple II hardware noise, 6 = Modern studio pristine).")
+    private int qualityLevel = 1;
 
     @Parameters(paramLabel = "FILE", description = "One or more MIDI files to play")
     private List<File> files = new ArrayList<>();
@@ -65,7 +68,13 @@ public class BeepCommand implements Callable<Integer>
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
         
-        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, oversample);
+        
+        // Map user's 1~6 quality level exponentially (1 -> 1x, 2 -> 2x, 3 -> 4x, ..., 6 -> 32x)
+        int clampedLevel = Math.max(1, Math.min(6, qualityLevel));
+        int actualOversample = 1 << (clampedLevel - 1);
+        
+        boolean useXor = "xor".equalsIgnoreCase(mux);
+        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, actualOversample, useXor);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                         p.isInTestMode());

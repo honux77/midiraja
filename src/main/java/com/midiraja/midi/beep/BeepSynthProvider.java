@@ -25,6 +25,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final double fmRatio;
     private final double fmIndex;
     private final int oversample;
+    private final boolean useXor;
     private final int sampleRate = 44100;
     
     private @Nullable Thread renderThread;
@@ -46,8 +47,13 @@ public class BeepSynthProvider implements SoftSynthProvider
             phase = 0.0;
             modPhase = 0.0;
             activeFrames = 0;
+            frequency = 0.0;
+            cachedSample = 0.0;
         }
     }
+    
+        // Per-channel Pitch Bend states (-8192 to 8191, where 0 is center)
+    private final int[] pitchBends = new int[16];
     
     private static final int MAX_POLYPHONY = 128;
     private final ActiveNote[] activeNotes = new ActiveNote[MAX_POLYPHONY];
@@ -80,6 +86,7 @@ public class BeepSynthProvider implements SoftSynthProvider
 
     private double lpfState = 0.0; 
     private double lpfState2 = 0.0;
+    
 
     private final int numUnits;
     
@@ -89,6 +96,12 @@ public class BeepSynthProvider implements SoftSynthProvider
     private class AppleIIUnit {
         private double pwmCarrierPhase = -1.0;
         private final double pwmCarrierStep;
+        
+        // Per-Unit DC Blocker (Isolation)
+        private double dcBlockerX = 0.0;
+        private double dcBlockerY = 0.0;
+        
+
         
         AppleIIUnit(int sampleRate) {
             // DAC522 Hardware limit: 22.05kHz carrier
@@ -110,14 +123,14 @@ public class BeepSynthProvider implements SoftSynthProvider
                         if (time < 0.2) {
                             double pitchDrop = 150.0 * Math.exp(-time * 30.0);
                             note.phase += (50.0 + pitchDrop) / sampleRate;
-                            if (note.phase >= 1.0) note.phase -= 1.0;
+                            note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
                             out = fastSin(note.phase);
                         }
                     } else if (noteNum == 38 || noteNum == 40) { // Snare
                         if (time < 0.15) {
                             double noiseEnv = Math.exp(-time * 20.0);
                             note.phase += 200.0 / sampleRate;
-                            if (note.phase >= 1.0) note.phase -= 1.0;
+                            note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
                             double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
                             double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
                             out = Math.max(-1.0, Math.min(1.0, tone + noise));
@@ -132,7 +145,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                         if (time < 0.25) {
                             double pitchDrop = 300.0 * Math.exp(-time * 15.0);
                             note.phase += (80.0 + pitchDrop) / sampleRate;
-                            if (note.phase >= 1.0) note.phase -= 1.0;
+                            note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
                             out = fastSin(note.phase);
                         }
                     }
@@ -148,53 +161,68 @@ public class BeepSynthProvider implements SoftSynthProvider
                     double instFreq = note.frequency + (modulator * envIndex * note.frequency);
                     
                     note.phase += instFreq / sampleRate;
-                    if (note.phase >= 1.0) note.phase -= 1.0;
+                    note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
                     out = fastSin(note.phase);
                 }
                 note.cachedSample = out;
             }
             
-            // 2. The True Hardware Loop: PWM Conversion FIRST, then XOR Multiplexing
-            // This perfectly preserves the volume envelope of the FM signal inside the 1-bit duty cycle,
-            // avoiding the "white noise crush" that happens when you XOR pure square/delta waves.
+            // 2. MULTIPLEXING ENGINE (TDM vs XOR)
             double sumPwm = 0.0;
+            int numNotes = assignedNotes.size();
+            
             for (int o = 0; o < oversample; o++) {
                 pwmCarrierPhase += pwmCarrierStep / oversample;
                 if (pwmCarrierPhase > 1.0) pwmCarrierPhase -= 2.0;
                 
-                boolean mixedXor = false;
-                boolean firstNote = true;
-                
-                for (int i = 0; i < assignedNotes.size(); i++) {
-                    // TRUE HARDWARE FLOW: Convert Analog to PWM first!
-                    boolean pwmBit = assignedNotes.get(i).cachedSample > pwmCarrierPhase;
-                    
-                    // Then XOR the PWM streams together
-                    if (firstNote) {
-                        mixedXor = pwmBit;
-                        firstNote = false;
-                    } else {
-                        mixedXor ^= pwmBit;
+                if (useXor) {
+                    // --- HISTORICAL MODE: 1981 XOR LOGIC ---
+                    // Simulates the original "Electric Duet" bit-banging multiplexer.
+                    // All PM signals are converted to PWM and mathematically crushed through an 
+                    // Exclusive-OR gate. This causes severe, authentic Ring Modulation (gritty chiptune buzz).
+                    // WARNING: If voices > 2, this will cause catastrophic phase cancellation (white noise).
+                    boolean mixedXor = false;
+                    for (int i = 0; i < numNotes; i++) {
+                        boolean pwmBit = assignedNotes.get(i).cachedSample > pwmCarrierPhase;
+                        if (i == 0) mixedXor = pwmBit;
+                        else mixedXor ^= pwmBit;
                     }
+                    sumPwm += (mixedXor ? 1.0 : -1.0);
+                } else {
+                    // --- MODERN MODE: TIME-DIVISION MULTIPLEXING (TDM) ---
+                    // An over-engineered solution impossible on a 1MHz 6502 CPU.
+                    // Instead of destroying waveforms via logic gates, it switches between notes
+                    // at over 1.4MHz, allowing perfect psychoacoustic blending with zero intermodulation.
+                    double targetSample = assignedNotes.get(o % numNotes).cachedSample;
+                    boolean pwmBit = targetSample > pwmCarrierPhase;
+                    sumPwm += (pwmBit ? 1.0 : -1.0);
                 }
-                
-                // The final output of the physical Apple II pin (-1.0 or 1.0)
-                sumPwm += (mixedXor ? 1.0 : -1.0);
             }
             
-            return sumPwm / oversample;
+            double rawPwm = sumPwm / oversample;
+            
+            // ISOLATION: Apply DC Blocking instantly at the pin level.
+            // This forces the XOR output to be perfectly symmetrical around 0.0,
+            // preventing this unit from pushing the entire analog mix into clipping.
+            double R = 0.995;
+            double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
+            dcBlockerX = rawPwm;
+            dcBlockerY = cleanSignal;
+            
+            return cleanSignal;
         }
     }
 
     private final AppleIIUnit[] units;
     private final List<List<ActiveNote>> unitAssignments;
 
-    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample) {
+    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, boolean useXor) {
         this.audio = audio;
         this.voicesPerCore = Math.max(1, Math.min(4, voices));
         this.fmRatio = fmRatio;
         this.fmIndex = fmIndex;
         this.oversample = Math.max(1, oversample);
+        this.useXor = useXor;
         
         // Dynamic Unit Scaling: Always guarantee at least 16 total polyphony (12 Melody + 4 Drum)
         // If voices = 1, we need 16 units. If voices = 2, we need 8 units. If voices = 4, we need 4 units.
@@ -263,45 +291,107 @@ public class BeepSynthProvider implements SoftSynthProvider
     private void renderCluster(List<ActiveNote> notes, short[] buffer, int frames) {
         for (int i = 0; i < numUnits; i++) unitAssignments.get(i).clear();
         
-        // Dynamic Routing based on available units
-        // Dedicate 25% of units to Rhythm/Drums (minimum 1), the rest to Melody.
         int drumUnits = Math.max(1, numUnits / 4);
         int melodyUnits = numUnits - drumUnits;
         
         int melodyIdx = 0, drumIdx = 0;
+        List<ActiveNote> survivingNotes = new ArrayList<>(notes.size());
+        
         for (ActiveNote note : notes) {
+            boolean assigned = false;
+            
             if (note.isDrum) {
-                int target = melodyUnits + (drumIdx % drumUnits);
-                if (unitAssignments.get(target).size() < voicesPerCore) {
-                    unitAssignments.get(target).add(note);
+                // Simple Round-Robin for Drums (they are short noise bursts anyway)
+                for (int attempt = 0; attempt < drumUnits; attempt++) {
+                    int target = melodyUnits + ((drumIdx + attempt) % drumUnits);
+                    if (unitAssignments.get(target).size() < voicesPerCore) {
+                        unitAssignments.get(target).add(note);
+                        drumIdx = target + 1 - melodyUnits;
+                        assigned = true;
+                        break;
+                    }
                 }
-                drumIdx++;
             } else {
-                int target = melodyIdx % melodyUnits;
-                if (unitAssignments.get(target).size() < voicesPerCore) {
-                    unitAssignments.get(target).add(note);
+                // --- FREQUENCY-WEIGHTED BASS ISOLATION ROUTING ---
+                // The ultimate psychoacoustic solution: Never allow two deep bass notes 
+                // (<150Hz) to share the same physical unit! Low-frequency multiplexing 
+                // causes catastrophic beat frequencies. We must pair Bass + Treble together.
+                
+                int bestTarget = -1;
+                double bestScore = -1.0;
+                boolean isBassNote = note.frequency < 150.0;
+                
+                for (int i = 0; i < melodyUnits; i++) {
+                    List<ActiveNote> currentOccupants = unitAssignments.get(i);
+                    
+                    // Skip if unit is already full
+                    if (currentOccupants.size() >= voicesPerCore) continue;
+                    
+                    // Analyze current occupants
+                    boolean hasBass = false;
+                    for (ActiveNote occupant : currentOccupants) {
+                        if (occupant.frequency < 150.0) hasBass = true;
+                    }
+                    
+                    // Score this unit (Higher is better)
+                    double score = 10.0; // Base score
+                    
+                    // 1. Prioritize empty units to maximize spread
+                    if (currentOccupants.isEmpty()) score += 5.0;
+                    
+                    // 2. The Bass Isolation Rule!
+                    if (isBassNote && hasBass) {
+                        // EXTREME PENALTY: Two bass notes in one room = Muddy explosion
+                        score -= 100.0; 
+                    } else if (!isBassNote && hasBass) {
+                        // PERFECT MATCH: Treble + Bass sharing a room = Excellent bandwidth separation
+                        score += 20.0;
+                    }
+                    
+                    // 3. Round-robin tie-breaker (to keep spread moving)
+                    if (i == melodyIdx) score += 1.0;
+                    
+                    if (score > bestScore) {
+                        bestScore = score;
+                        bestTarget = i;
+                    }
                 }
-                melodyIdx++;
+                
+                // Assign to the best calculated unit
+                if (bestTarget != -1) {
+                    unitAssignments.get(bestTarget).add(note);
+                    melodyIdx = (bestTarget + 1) % melodyUnits; // Advance RR pointer
+                    assigned = true;
+                }
+            }
+            
+            if (assigned) {
+                survivingNotes.add(note);
+            } else {
+                note.active = false; // Voice Stealing: Kill overflow ghost notes
             }
         }
         
         for (int i = 0; i < frames; i++) {
-            // Hardware Gathering: Collect 1-bit outputs from 8 machines
             double sumOfAppleIIs = 0.0;
             for (int s = 0; s < numUnits; s++) {
                 sumOfAppleIIs += units[s].render(unitAssignments.get(s));
             }
-            for (ActiveNote n : notes) n.activeFrames++;
+            
+            // Only age the notes that are ACTUALLY playing
+            for (ActiveNote n : survivingNotes) n.activeFrames++;
             
             // Analog Mixing Console: Sum the voltages, add slight headroom
             double analogMix = (sumOfAppleIIs / numUnits) * 0.8; 
             
-            // Master Acoustic Filtering (2.25-inch paper cones)
+            // 1. Master Acoustic Filtering (2.25-inch paper cones)
             double filterCutoff = 0.25; 
             lpfState += filterCutoff * (analogMix - lpfState);
             lpfState2 += filterCutoff * (lpfState - lpfState2);
             
-            buffer[i] = (short) (lpfState2 * 15000);
+            // 3. Hard Clip safety
+            double finalMix = Math.max(-1.0, Math.min(1.0, lpfState2));
+            buffer[i] = (short) (finalMix * 18000);
         }
     }
 
@@ -324,6 +414,25 @@ public class BeepSynthProvider implements SoftSynthProvider
         if (data.length > 0) {
             int cmd = data[0] & 0xF0;
             int ch = data[0] & 0x0F;
+            
+            // Handle Pitch Bend (0xE0)
+            if (cmd == 0xE0 && data.length >= 3) {
+                int lsb = data[1] & 0x7F;
+                int msb = data[2] & 0x7F;
+                int bend = (msb << 7) | lsb; // 0 to 16383
+                pitchBends[ch] = bend - 8192; // Center at 0
+                
+                // Instantly update frequencies of all playing notes on this channel
+                for (int i = 0; i < MAX_POLYPHONY; i++) {
+                    ActiveNote n = activeNotes[i];
+                    if (n.active && n.channel == ch) {
+                        // Standard MIDI pitch bend range is typically +/- 2 semitones
+                        double bendSemitones = (pitchBends[ch] / 8192.0) * 2.0;
+                        n.frequency = 440.0 * Math.pow(2.0, (n.note - 69 + bendSemitones) / 12.0);
+                    }
+                }
+            }
+            
             if (cmd == 0x90 && data.length >= 3) {
                 int note = data[1] & 0xFF;
                 int velocity = data[2] & 0xFF;
@@ -337,7 +446,8 @@ public class BeepSynthProvider implements SoftSynthProvider
                         if (!n.active) {
                             n.reset();
                             n.channel = ch; n.note = note;
-                            n.frequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+                                                        double bendSemitones = (pitchBends[ch] / 8192.0) * 2.0;
+                            n.frequency = 440.0 * Math.pow(2.0, (n.note - 69 + bendSemitones) / 12.0);
                             n.isDrum = (ch == 9);
                             n.active = true;
                             break;
@@ -357,8 +467,16 @@ public class BeepSynthProvider implements SoftSynthProvider
                 }
             } else if (cmd == 0xB0 && data.length >= 3) {
                 int cc = data[1] & 0xFF;
-                if (cc == 123 || cc == 120) { 
+                if (cc == 123 || cc == 120) { // All Notes Off / All Sound Off
                     for (int i = 0; i < MAX_POLYPHONY; i++) activeNotes[i].active = false;
+                } else if (cc == 121) { // Reset All Controllers
+                    pitchBends[ch] = 0;
+                    for (int i = 0; i < MAX_POLYPHONY; i++) {
+                        ActiveNote n = activeNotes[i];
+                        if (n.active && n.channel == ch) {
+                            n.frequency = 440.0 * Math.pow(2.0, (n.note - 69) / 12.0);
+                        }
+                    }
                 }
             }
         }
