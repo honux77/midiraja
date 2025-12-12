@@ -37,11 +37,12 @@ public class BeepCommand implements Callable<Integer>
 
     @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
-    @Option(names = {"--mux"}, defaultValue = "pwm", description = "Multiplexing algorithm:\n" +
-        "  'pwm' (Default, Analog Summing -> PWM, flawless modern sound)\n" +
+    @Option(names = {"--mux"}, defaultValue = "dsd", description = "Multiplexing algorithm:\n" +
+        "  'dsd' (Default, Delta-Sigma Modulation, highest modern fidelity)\n" +
+        "  'pwm' (Analog Summing -> PWM, clean with 22kHz retro carrier whine)\n" +
         "  'tdm' (Time-Division Multiplexing, micro-ticking)\n" +
         "  'xor' (Historical 1981 Apple II logic, gritty Ring Modulation)")
-    private String mux = "pwm";
+    private String mux = "dsd";
 
     @Option(names = {"--voices"}, defaultValue = "2", description = "Polyphony per virtual Apple II unit (1-4). Default: 2")
     private int voices = 2;
