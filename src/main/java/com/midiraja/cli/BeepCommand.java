@@ -37,8 +37,11 @@ public class BeepCommand implements Callable<Integer>
 
     @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
-    @Option(names = {"--mux"}, defaultValue = "tdm", description = "Multiplexing algorithm: 'tdm' (modern, clean, high-polyphony) or 'xor' (historical 1981 Apple II logic, gritty, max 2 voices recommended).")
-    private String mux = "tdm";
+    @Option(names = {"--mux"}, defaultValue = "pwm", description = "Multiplexing algorithm:\n" +
+        "  'pwm' (Default, Analog Summing -> PWM, flawless modern sound)\n" +
+        "  'tdm' (Time-Division Multiplexing, micro-ticking)\n" +
+        "  'xor' (Historical 1981 Apple II logic, gritty Ring Modulation)")
+    private String mux = "pwm";
 
     @Option(names = {"--voices"}, defaultValue = "2", description = "Polyphony per virtual Apple II unit (1-4). Default: 2")
     private int voices = 2;
@@ -73,8 +76,7 @@ public class BeepCommand implements Callable<Integer>
         int clampedLevel = Math.max(1, Math.min(6, qualityLevel));
         int actualOversample = 1 << (clampedLevel - 1);
         
-        boolean useXor = "xor".equalsIgnoreCase(mux);
-        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, actualOversample, useXor);
+        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, actualOversample, mux.toLowerCase(java.util.Locale.ROOT));
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                         p.isInTestMode());

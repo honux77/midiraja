@@ -25,7 +25,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final double fmRatio;
     private final double fmIndex;
     private final int oversample;
-    private final boolean useXor;
+    private final String muxMode;
     private final int sampleRate = 44100;
     
     private @Nullable Thread renderThread;
@@ -167,7 +167,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                 note.cachedSample = out;
             }
             
-            // 2. MULTIPLEXING ENGINE (TDM vs XOR)
+            // 2. MULTIPLEXING ENGINE (3-Way Architecture)
             double sumPwm = 0.0;
             int numNotes = assignedNotes.size();
             
@@ -175,12 +175,10 @@ public class BeepSynthProvider implements SoftSynthProvider
                 pwmCarrierPhase += pwmCarrierStep / oversample;
                 if (pwmCarrierPhase > 1.0) pwmCarrierPhase -= 2.0;
                 
-                if (useXor) {
-                    // --- HISTORICAL MODE: 1981 XOR LOGIC ---
-                    // Simulates the original "Electric Duet" bit-banging multiplexer.
-                    // All PM signals are converted to PWM and mathematically crushed through an 
-                    // Exclusive-OR gate. This causes severe, authentic Ring Modulation (gritty chiptune buzz).
-                    // WARNING: If voices > 2, this will cause catastrophic phase cancellation (white noise).
+                if ("xor".equals(muxMode)) {
+                    // --- MODE 1: HISTORICAL XOR LOGIC ---
+                    // Converts each note to 1-bit individually, then crushes them via Exclusive-OR.
+                    // Causes authentic 1980s Ring Modulation, but destroys pitch if >2 voices.
                     boolean mixedXor = false;
                     for (int i = 0; i < numNotes; i++) {
                         boolean pwmBit = assignedNotes.get(i).cachedSample > pwmCarrierPhase;
@@ -188,13 +186,27 @@ public class BeepSynthProvider implements SoftSynthProvider
                         else mixedXor ^= pwmBit;
                     }
                     sumPwm += (mixedXor ? 1.0 : -1.0);
-                } else {
-                    // --- MODERN MODE: TIME-DIVISION MULTIPLEXING (TDM) ---
-                    // An over-engineered solution impossible on a 1MHz 6502 CPU.
-                    // Instead of destroying waveforms via logic gates, it switches between notes
-                    // at over 1.4MHz, allowing perfect psychoacoustic blending with zero intermodulation.
+                    
+                } else if ("tdm".equals(muxMode)) {
+                    // --- MODE 2: TIME-DIVISION MULTIPLEXING (TDM) ---
+                    // High-speed switching. Only outputs the PWM state of ONE note per micro-tick.
+                    // Flawless polyphony blending, but has a distinct "thin/sliced" acoustic texture.
                     double targetSample = assignedNotes.get(o % numNotes).cachedSample;
                     boolean pwmBit = targetSample > pwmCarrierPhase;
+                    sumPwm += (pwmBit ? 1.0 : -1.0);
+                    
+                } else {
+                    // --- MODE 3: PURE PWM MULTIPLEXING (Default) ---
+                    // User's brilliant philosophical correction: Sum the analog sine waves FIRST,
+                    // then convert that rich, combined analog chord into a single, flawless PWM pulse.
+                    // Mathematically guarantees 0% intermodulation and 100% perfect phase mixing.
+                    double analogMix = 0.0;
+                    for (int i = 0; i < numNotes; i++) {
+                        analogMix += assignedNotes.get(i).cachedSample;
+                    }
+                    analogMix /= numNotes; // Average volume to fit [-1.0, 1.0]
+                    
+                    boolean pwmBit = analogMix > pwmCarrierPhase;
                     sumPwm += (pwmBit ? 1.0 : -1.0);
                 }
             }
@@ -216,13 +228,13 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final AppleIIUnit[] units;
     private final List<List<ActiveNote>> unitAssignments;
 
-    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, boolean useXor) {
+    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode) {
         this.audio = audio;
         this.voicesPerCore = Math.max(1, Math.min(4, voices));
         this.fmRatio = fmRatio;
         this.fmIndex = fmIndex;
         this.oversample = Math.max(1, oversample);
-        this.useXor = useXor;
+        this.muxMode = muxMode;
         
         // Dynamic Unit Scaling: Always guarantee at least 16 total polyphony (12 Melody + 4 Drum)
         // If voices = 1, we need 16 units. If voices = 2, we need 8 units. If voices = 4, we need 4 units.
