@@ -58,6 +58,15 @@ To prevent the JVM Garbage Collector from stuttering the audio thread during den
 
 ---
 
+### 2.5. Advanced DSP Pipeline
+To transform the harsh, mathematically pure 1-bit logic outputs into a warm, listenable audio stream without introducing severe digital artifacts, the engine employs several critical Digital Signal Processing (DSP) techniques:
+
+1.  **Exponential Oversampling ($1	imes \sim 32	imes$):** The core unit logic can run at up to 1.4MHz (32x the base 44.1kHz sample rate). This extreme temporal resolution pushes the noisy PWM carrier artifacts and XOR intermodulation sidebands far beyond the threshold of human hearing, yielding a studio-quality analog simulation.
+2.  **Anti-Blowup DC Blocking:** When multiple asymmetric PWM streams collide (especially in XOR mode), they generate massive DC offsets. If fed directly into an IIR filter, this energy causes "Integral Windup," permanently corrupting the internal filter state (NaN or Infinity) and causing persistent clipping. To prevent this, every virtual unit enforces a strict High-Pass Filter ($R=0.995$) equipped with a hard mathematical clamp, instantly draining any DC accumulation before it can leak into the master bus.
+3.  **Acoustic Paper Cone Simulation:** The raw 1-bit square pulses are incredibly harsh. A cascaded 2-pole Low-Pass Filter ($lpha=0.25$) is applied to the final analog sum. This gently rolls off the extreme high frequencies, physically simulating the sluggish transient response of an original 2.25-inch paper cone speaker found inside a 1980s computer chassis.
+
+---
+
 ## 3. Global Mixing Pipeline
 
 Once each virtual Apple II unit has generated its 1-bit signal, the master bus finalizes the sound:
