@@ -26,6 +26,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final double fmIndex;
     private final int oversample;
     private final String muxMode;
+    private final String synthMode;
     private final int sampleRate = 44100;
     
     private @Nullable Thread renderThread;
@@ -151,19 +152,64 @@ public class BeepSynthProvider implements SoftSynthProvider
                         }
                     }
                 } else {
-                    // Pure 2-OP FM Synthesis (Melody)
-                    double decay = Math.max(0.0, 1.0 - (time / 0.5));
-                    double modFreq = note.frequency * fmRatio;
-                    note.modPhase += modFreq / sampleRate;
-                    if (note.modPhase >= 1.0) note.modPhase -= 1.0;
-                    double modulator = fastSin(note.modPhase);
-                    
-                    double envIndex = (fmIndex * 0.1) + (fmIndex * decay); 
-                    double instFreq = note.frequency + (modulator * envIndex * note.frequency);
-                    
-                    note.phase += instFreq / sampleRate;
-                    note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
-                    out = fastSin(note.phase);
+                    if ("xor".equals(synthMode)) {
+                        // --- MODE 2: TIMBRAL XOR RING MODULATION ---
+                        // The user's brilliant historical constraint mode.
+                        // Instead of smooth Phase Modulation, it generates two raw 1-bit square waves
+                        // (Carrier and Modulator) and crushes them together using an XOR logic gate
+                        // to carve out gritty, buzz-saw timbres before multiplexing.
+                        
+                        // 1. Advance phases (same speed logic as PM)
+                        note.phase += note.frequency / sampleRate;
+                        note.phase = note.phase - Math.floor(note.phase);
+                        
+                        double modFreq = note.frequency * fmRatio;
+                        note.modPhase += modFreq / sampleRate;
+                        note.modPhase = note.modPhase - Math.floor(note.modPhase);
+                        
+                        // 2. Generate raw Square Waves (Duty cycle 50%)
+                        boolean carrierBit = note.phase > 0.5;
+                        boolean modBit = note.modPhase > 0.5;
+                        
+                        // 3. The Magic: Timbral XOR (Ring Modulation)
+                        // If fmIndex is very low, we bypass the XOR to allow pure square wave bass.
+                        // Otherwise, we perform the 1-bit crushing.
+                        boolean finalBit;
+                        if (fmIndex < 0.1) {
+                            finalBit = carrierBit;
+                        } else {
+                            finalBit = carrierBit ^ modBit;
+                        }
+                        
+                        // Convert back to analog domain [-1.0, 1.0] to pass into the Multiplexer
+                        out = finalBit ? 1.0 : -1.0;
+                        
+                    } else {
+                        // --- MODE 1: PHASE MODULATION (Default) ---
+                        // Smooth, Yamaha-like Phase Modulation using sine waves.
+                        double decay = Math.max(0.0, 1.0 - (time / 0.5));
+                        
+                        double keyScale = 1.0;
+                        if (note.frequency > 261.63) {
+                            keyScale = 261.63 / note.frequency; 
+                        }
+                        
+                        double scaledFmIndex = fmIndex * keyScale;
+                        double envIndex = (scaledFmIndex * 0.1) + (scaledFmIndex * decay); 
+                        
+                        double modFreq = note.frequency * fmRatio;
+                        note.modPhase += modFreq / sampleRate;
+                        note.modPhase = note.modPhase - Math.floor(note.modPhase);
+                        double modulator = fastSin(note.modPhase);
+                        
+                        note.phase += note.frequency / sampleRate;
+                        note.phase = note.phase - Math.floor(note.phase);
+                        
+                        double finalPhase = note.phase + (modulator * (envIndex / (2.0 * Math.PI)));
+                        finalPhase = finalPhase - Math.floor(finalPhase);
+                        
+                        out = fastSin(finalPhase);
+                    }
                 }
                 note.cachedSample = out;
             }
@@ -246,13 +292,14 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final AppleIIUnit[] units;
     private final List<List<ActiveNote>> unitAssignments;
 
-    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode) {
+    public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode, String synthMode) {
         this.audio = audio;
         this.voicesPerCore = Math.max(1, Math.min(4, voices));
         this.fmRatio = fmRatio;
         this.fmIndex = fmIndex;
         this.oversample = Math.max(1, oversample);
         this.muxMode = muxMode;
+        this.synthMode = synthMode;
         
         // Dynamic Unit Scaling: Always guarantee at least 16 total polyphony (12 Melody + 4 Drum)
         // If voices = 1, we need 16 units. If voices = 2, we need 8 units. If voices = 4, we need 4 units.

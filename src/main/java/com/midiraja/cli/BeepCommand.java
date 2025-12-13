@@ -37,6 +37,11 @@ public class BeepCommand implements Callable<Integer>
 
     @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
+    @Option(names = {"--synth"}, defaultValue = "pm", description = "Synthesis generation algorithm:\n" +
+        "  'pm'  (Default, Yamaha-like Phase Modulation using smooth sine waves)\n" +
+        "  'xor' (Historical Tim Follin-style Ring Modulation using intersecting square waves)")
+    private String synth = "pm";
+
     @Option(names = {"--mux"}, defaultValue = "dsd", description = "Multiplexing algorithm:\n" +
         "  'dsd' (Default, Delta-Sigma Modulation, highest modern fidelity)\n" +
         "  'pwm' (Analog Summing -> PWM, clean with 22kHz retro carrier whine)\n" +
@@ -77,7 +82,7 @@ public class BeepCommand implements Callable<Integer>
         int clampedLevel = Math.max(1, Math.min(6, qualityLevel));
         int actualOversample = 1 << (clampedLevel - 1);
         
-        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, actualOversample, mux.toLowerCase(java.util.Locale.ROOT));
+        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, actualOversample, mux.toLowerCase(java.util.Locale.ROOT), synth.toLowerCase(java.util.Locale.ROOT));
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                         p.isInTestMode());
