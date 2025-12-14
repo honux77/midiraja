@@ -184,8 +184,14 @@ public class BeepSynthProvider implements SoftSynthProvider
                             finalBit = carrierBit ^ modBit; // Gritty chiptune buzz!
                         }
                         
-                        // Convert back to analog domain [-1.0, 1.0] to pass into the Multiplexer
-                        out = finalBit ? 1.0 : -1.0;
+                        // 5. Apply Analog Decay Envelope
+                        // Even though it's a 1-bit XOR generation, we MUST apply an amplitude
+                        // envelope before passing it to the multiplexer, otherwise the note will
+                        // sustain at 100% volume forever until abruptly cut off, ruining the mix.
+                        double decay = Math.max(0.0, 1.0 - (time / 0.5)); // 0.5 second linear fade
+                        
+                        // Convert back to analog domain [-1.0, 1.0] and scale by volume envelope
+                        out = (finalBit ? 1.0 : -1.0) * decay;
                         
                     } else {
                         // --- MODE 1: PHASE MODULATION (Default) ---
