@@ -197,9 +197,10 @@ public class BeepSynthProvider implements SoftSynthProvider
                         
                     } else if ("square".equals(synthMode)) {
                         // --- MODE 3: CLASSIC SQUARE WAVE (LFO + Duty Sweep) ---
-                        // The original Apple II workhorse. Uses a single oscillator but keeps it 
-                        // "alive" by wobbling its pitch (Vibrato) and morphing its shape (PWM Sweep).
-                        double decay = Math.max(0.0, 1.0 - (time / 0.5));
+                        // Uses a single oscillator, kept alive by Vibrato and PWM Sweep.
+                        // Because narrow duty cycles carry less acoustic energy, we need a much
+                        // longer sustain/decay time (1.5s) compared to PM/XOR so the note doesn't sound choked.
+                        double decay = Math.max(0.0, 1.0 - (time / 1.5));
                         
                         // 1. LFO for Vibrato (6Hz) and Duty Sweep (1.5Hz)
                         note.lfoPhase += 1.0 / sampleRate; // 1 cycle per second base time
