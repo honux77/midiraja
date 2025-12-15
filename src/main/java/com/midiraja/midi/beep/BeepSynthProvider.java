@@ -40,6 +40,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         double frequency;
         double phase = 0.0;
         double modPhase = 0.0;
+        double lfoPhase = 0.0;
         long activeFrames = 0;
         boolean isDrum = false;
         double cachedSample = 0.0;
@@ -47,6 +48,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         void reset() {
             phase = 0.0;
             modPhase = 0.0;
+            lfoPhase = 0.0;
             activeFrames = 0;
             frequency = 0.0;
             cachedSample = 0.0;
@@ -192,6 +194,34 @@ public class BeepSynthProvider implements SoftSynthProvider
                         
                         // Convert back to analog domain [-1.0, 1.0] and scale by volume envelope
                         out = (finalBit ? 1.0 : -1.0) * decay;
+                        
+                    } else if ("square".equals(synthMode)) {
+                        // --- MODE 3: CLASSIC SQUARE WAVE (LFO + Duty Sweep) ---
+                        // The original Apple II workhorse. Uses a single oscillator but keeps it 
+                        // "alive" by wobbling its pitch (Vibrato) and morphing its shape (PWM Sweep).
+                        double decay = Math.max(0.0, 1.0 - (time / 0.5));
+                        
+                        // 1. LFO for Vibrato (6Hz) and Duty Sweep (1.5Hz)
+                        note.lfoPhase += 1.0 / sampleRate; // 1 cycle per second base time
+                        double vibratoLfo = fastSin(note.lfoPhase * 6.0 - Math.floor(note.lfoPhase * 6.0));
+                        double sweepLfo = fastSin(note.lfoPhase * 1.5 - Math.floor(note.lfoPhase * 1.5));
+                        
+                        // 2. Pitch Wobble (Vibrato)
+                        // Modulate the fundamental frequency by +/- 1.5%
+                        double wobbledFreq = note.frequency * (1.0 + (0.015 * vibratoLfo));
+                        
+                        note.phase += wobbledFreq / sampleRate;
+                        note.phase = note.phase - Math.floor(note.phase);
+                        
+                        // 3. Dynamic Duty Cycle Sweep (Wah-Wah effect)
+                        // Sweeps the pulse width between 10% and 90%
+                        double dutyCycle = 0.5 + (0.4 * sweepLfo);
+                        
+                        // 4. Generate the 1-bit Pulse
+                        boolean squareBit = note.phase > dutyCycle;
+                        
+                        // Convert to analog domain and apply decay
+                        out = (squareBit ? 1.0 : -1.0) * decay;
                         
                     } else {
                         // --- MODE 1: PHASE MODULATION (Default) ---
