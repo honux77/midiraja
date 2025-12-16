@@ -94,9 +94,9 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final int numUnits;
     
     // ---------------------------------------------------------
-    // Ultimate Apple II Unit (XOR Multiplexing FM)
+    // Ultimate 1-Bit Digital Unit (XOR Multiplexing FM)
     // ---------------------------------------------------------
-    private class AppleIIUnit {
+    private class DigitalUnit {
         private double pwmCarrierPhase = -1.0;
         private final double pwmCarrierStep;
         
@@ -107,7 +107,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         
 
         
-        AppleIIUnit(int sampleRate) {
+        DigitalUnit(int sampleRate) {
             // DAC522 Hardware limit: 22.05kHz carrier
             this.pwmCarrierStep = (22050.0 / sampleRate) * 2.0;
         }
@@ -361,7 +361,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         }
     }
 
-    private final AppleIIUnit[] units;
+    private final DigitalUnit[] units;
     private final List<List<ActiveNote>> unitAssignments;
 
     public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode, String synthMode) {
@@ -377,18 +377,18 @@ public class BeepSynthProvider implements SoftSynthProvider
         // If voices = 1, we need 16 units. If voices = 2, we need 8 units. If voices = 4, we need 4 units.
         this.numUnits = (int) Math.ceil(16.0 / this.voicesPerCore);
         
-        this.units = new AppleIIUnit[numUnits];
+        this.units = new DigitalUnit[numUnits];
         this.unitAssignments = new ArrayList<>(numUnits);
         
         for (int i = 0; i < numUnits; i++) {
-            this.units[i] = new AppleIIUnit(sampleRate);
+            this.units[i] = new DigitalUnit(sampleRate);
             this.unitAssignments.add(new ArrayList<>(8));
         }
     }
 
     @Override
     public List<MidiPort> getOutputPorts() {
-        return List.of(new MidiPort(0, String.format("[%d-Unit] Apple II 1-Bit FM Cluster", numUnits)));
+        return List.of(new MidiPort(0, String.format("[%d-Unit] 1-Bit Digital Cluster", numUnits)));
     }
 
     @Override

@@ -1,6 +1,6 @@
 # 1-Bit Audio Engineering (The 'Beep' Synth)
 
-This document outlines the architecture of the `midra beep` command, a pure mathematical software synthesizer designed to recreate the extreme limitations of 1980s 1-bit audio hardware. Internally dubbed the **'Apple II 1-Bit FM Cluster'**, this engine extends the software-based 1-bit polyphony techniques originally developed for the Apple II, fusing them with modern FM synthesis, high-speed Time-Division Multiplexing (TDM), and wait-free concurrency to create the ultimate 1-bit digital instrument.
+This document outlines the architecture of the `midra beep` command, a pure mathematical software synthesizer designed to recreate the extreme limitations of 1980s 1-bit audio hardware. Internally dubbed the **'1-Bit Digital Cluster'**, this engine extends the software-based 1-bit polyphony techniques originally developed for the Apple II, fusing them with modern digital synthesis, high-speed Time-Division Multiplexing (TDM), and wait-free concurrency to create the ultimate 1-bit digital instrument.
 
 ---
 
@@ -13,7 +13,7 @@ The internal speaker of early 8-bit computers was a primitive 1-bit device, phys
 
 Because of this extreme hardware poverty, the Apple II became the ultimate laboratory for software-driven audio innovation. In 1981, Paul Lutus released **"Electric Duet,"** utilizing interleaved execution and logical mixing to multiplex two distinct voices onto a single 1-bit speaker pin.
 
-The `midra beep` engine pushes this philosophy to its absolute mathematical limit, simulating a dynamic cluster of Apple II units capable of generating polyphonic, 2-Operator FM synthesis through pure 1-bit pins.
+The `midra beep` engine pushes this philosophy to its absolute mathematical limit, simulating a dynamic cluster of 1-bit units capable of generating polyphonic 2-Operator FM synthesis through pure 1-bit pins.
 
 ---
 
@@ -57,7 +57,7 @@ The most critical engineering challenge in 1-bit audio is mixing multiple polyph
 *   **Acoustic Result:** It pushes all quantization noise (the carrier whine) completely out of the human hearing range. It yields breathtaking, studio-grade Hi-Fi sound while technically remaining a pure 1-bit logic stream.
 
 ### 2.3. Psychoacoustic Routing: Bass Isolation
-Even with advanced multiplexing, routing multiple deep bass notes into the same physical Apple II unit caused muddy, low-frequency beat frequencies (beating). 
+Even with advanced multiplexing, routing multiple deep bass notes into the same physical unit caused muddy, low-frequency beat frequencies (beating). 
 
 To solve this, the engine implements a **Frequency-Weighted 'Bass Isolation' Allocator**:
 *   The router actively analyzes the frequency content of each virtual unit. 
@@ -103,7 +103,7 @@ By setting the engine to `--synth square --mux xor --voices 2 --quality 1`, the 
 
 ## 3. Global Mixing Pipeline
 
-Once each virtual Apple II unit has generated its 1-bit signal, the master bus finalizes the sound:
+Once each virtual unit has generated its 1-bit signal, the master bus finalizes the sound:
 
 1.  **Per-Unit DC Blocking:** Before leaving the unit, each 1-bit signal passes through a High-Pass Filter ($R=0.995$, with an anti-blowup clamp). This isolates asymmetric duty cycles caused by XOR logic, ensuring no unit can leak DC offset into the master mix.
 2.  **Analog Summing:** The clean, discrete voltages from all active units (dynamically scaled to guarantee at least 16 total polyphony) are added together mathematically, simulating an analog console.

@@ -25,12 +25,8 @@ import java.util.Optional;
  * Plays MIDI files using a 1-bit PC Speaker / Apple II style synthesizer.
  */
 @Command(name = "beep", mixinStandardHelpOptions = true,
-    description = "Play with a 1-bit PC Speaker / Apple II style synthesizer.",
-    footer = {"",
-        "Experience the extreme limitations of 1980s computer audio.",
-        "Modes:",
-        "  sixteentet : 8-Core synchronized Apple II cluster (16-note polyphony with Karateka-style modulation) (16-note polyphony with Ring Modulation). to simulate chords (Classic 8-bit style).",
-        "  pwm      : Uses 1-bit Pulse Width Modulation to forcefully mix multiple channels."})
+    description = "Play with a 1-bit digital logic synthesizer.",
+    footer = {"", "Experience the extreme limitations of 1980s computer audio via 1-bit logic gates."})
 public class BeepCommand implements Callable<Integer>
 {
     @ParentCommand private @org.jspecify.annotations.Nullable MidirajaCommand parent;
@@ -50,17 +46,17 @@ public class BeepCommand implements Callable<Integer>
         "  'xor' (Historical 1981 Apple II logic, gritty Ring Modulation)")
     private String mux = "dsd";
 
-    @Option(names = {"--voices"}, defaultValue = "2", description = "Polyphony per virtual Apple II unit (1-4). Default: 2")
+    @Option(names = {"--voices"}, defaultValue = "2", description = "Polyphony per virtual unit (1-4). Default: 2")
     private int voices = 2;
 
-    @Option(names = {"--fm-ratio"}, defaultValue = "1.0", description = "FM Modulator frequency ratio (e.g., 1.0 for clean, 3.5 for metallic). Default: 1.0")
+    @Option(names = {"--fm-ratio"}, defaultValue = "1.0", description = "Modulator frequency ratio (e.g., 1.0 for clean, 3.5 for metallic). Default: 1.0")
     private double fmRatio = 1.0;
 
-    @Option(names = {"--fm-index"}, defaultValue = "1.1", description = "FM Modulation intensity peak. Default: 1.1")
+    @Option(names = {"--fm-index"}, defaultValue = "1.1", description = "Modulation intensity peak. Default: 1.1")
     private double fmIndex = 1.1;
 
     @Option(names = {"-q", "--quality"}, defaultValue = "1",
-        description = "Audio quality level from 1 to 6. (1 = Authentic Apple II hardware noise, 6 = Modern studio pristine).")
+        description = "Audio quality level from 1 to 6. (1 = Authentic hardware noise, 6 = Modern studio pristine).")
     private int qualityLevel = 1;
 
     @Parameters(paramLabel = "FILE", description = "One or more MIDI files to play")
