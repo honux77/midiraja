@@ -331,15 +331,19 @@ public class BeepSynthProvider implements SoftSynthProvider
                     // --- MODE 4: DELTA-SIGMA MODULATION (DSD) - DEFAULT ---
                     // The ultimate modern 1-bit conclusion. Sums the analog waves perfectly,
                     // then converts to 1-bit using 1st-order Delta-Sigma.
-                    // This pushes quantization noise completely into the inaudible high frequencies,
-                    // producing a studio-quality analog sound devoid of any 22kHz carrier whine.
                     double analogMix = 0.0;
                     for (int i = 0; i < numNotes; i++) {
                         analogMix += assignedNotes.get(i).cachedSample;
                     }
                     analogMix /= numNotes;
                     
-                    sigmaDeltaError += analogMix;
+                    // DITHERING: 1st-order Sigma-Delta modulators suffer from "Idle Tones" (Limit Cycles)
+                    // when the input is near zero, causing distinct, annoying high-frequency whistling (~10kHz).
+                    // We inject a microscopic amount of random white noise (Dither) to break up these 
+                    // mathematical patterns and smear the tonal noise into a smooth, analog-like tape hiss.
+                    double dither = (fastRandom() * 2.0 - 1.0) * 0.05; // 5% noise injection
+                    
+                    sigmaDeltaError += (analogMix + dither);
                     double outBit = (sigmaDeltaError > 0.0) ? 1.0 : -1.0;
                     sigmaDeltaError -= outBit;
                     
