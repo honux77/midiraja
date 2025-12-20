@@ -371,14 +371,19 @@ public class BeepSynthProvider implements SoftSynthProvider
             double rawPwm = sumPwm / oversample;
             
             // ISOLATION: Apply DC Blocking instantly at the pin level.
-            // This forces the XOR output to be perfectly symmetrical around 0.0,
-            // preventing this unit from pushing the entire analog mix into clipping.
-            double R = 0.995;
-            double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
-            dcBlockerX = rawPwm;
-            dcBlockerY = cleanSignal;
-            
-            return cleanSignal;
+            // ONLY apply this if we are actually using the destructive XOR multiplexer.
+            // Applying an IIR High-Pass filter to a Delta-Sigma or single-voice Square Wave
+            // causes severe 'Filter Ringing' (a high-frequency squeaking/whistling artifact).
+            if ("xor".equals(muxMode) && voicesPerCore > 1) {
+                double R = 0.995;
+                double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
+                dcBlockerX = rawPwm;
+                dcBlockerY = cleanSignal;
+                return cleanSignal;
+            } else {
+                // Bypass DC Blocker for DSD, PWM, TDM, and monophonic XOR to ensure zero ringing.
+                return rawPwm;
+            }
         }
     }
 
