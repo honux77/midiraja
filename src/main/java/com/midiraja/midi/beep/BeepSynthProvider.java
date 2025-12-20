@@ -103,6 +103,7 @@ public class BeepSynthProvider implements SoftSynthProvider
         // Per-Unit DC Blocker (Isolation)
         private double dcBlockerX = 0.0;
         private double dcBlockerY = 0.0;
+        private double sigmaDeltaError = 0.0;
         private double sigmaDeltaError1 = 0.0;
         private double sigmaDeltaError2 = 0.0;
         
@@ -116,254 +117,150 @@ public class BeepSynthProvider implements SoftSynthProvider
         double render(List<ActiveNote> assignedNotes) {
             if (assignedNotes.isEmpty()) return 0.0;
             
-            // 1. Calculate pure analog FM output for all notes (once per 44.1kHz frame)
-            for (int i = 0; i < assignedNotes.size(); i++) {
-                ActiveNote note = assignedNotes.get(i);
-                double time = note.activeFrames / (double) sampleRate;
-                double out = 0.0;
-                
-                if (note.isDrum) {
-                    int noteNum = note.note;
-                    if (noteNum == 35 || noteNum == 36) { // Kick
-                        if (time < 0.2) {
-                            double pitchDrop = 150.0 * Math.exp(-time * 30.0);
-                            note.phase += (50.0 + pitchDrop) / sampleRate;
-                            note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
-                            out = fastSin(note.phase);
-                        }
-                    } else if (noteNum == 38 || noteNum == 40) { // Snare
-                        if (time < 0.15) {
-                            double noiseEnv = Math.exp(-time * 20.0);
-                            note.phase += 200.0 / sampleRate;
-                            note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
-                            double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
-                            double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
-                            out = Math.max(-1.0, Math.min(1.0, tone + noise));
-                        }
-                    } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49) { // Hi-Hat / Cymbal
-                        double duration = (noteNum >= 49) ? 0.3 : 0.05;
-                        if (time < duration) {
-                            double env = Math.exp(-time * (1.0 / duration) * 5.0);
-                            out = (fastRandom() > 0.5 ? 1.5 : -1.5) * env;
-                        }
-                    } else { // Toms
-                        if (time < 0.25) {
-                            double pitchDrop = 300.0 * Math.exp(-time * 15.0);
-                            note.phase += (80.0 + pitchDrop) / sampleRate;
-                            note.phase = note.phase - Math.floor(note.phase); // 100% safe modulo 1.0
-                            out = fastSin(note.phase);
-                        }
-                    }
-                } else {
-                    if ("xor".equals(synthMode)) {
-                        // --- MODE 2: TIMBRAL XOR RING MODULATION ---
-                        // Generates two raw 1-bit square waves and crushes them together via XOR.
-                        
-                        // 1. Advance Carrier Phase
-                        note.phase += note.frequency / sampleRate;
-                        note.phase = note.phase - Math.floor(note.phase);
-                        
-                        // 2. Advance Modulator Phase (with crucial Detuning!)
-                        // If the modulator frequency perfectly matches the carrier, they phase-lock 
-                        // into silence (1^1=0) or an extreme asymmetric duty cycle that the DC Blocker kills.
-                        // We forcefully detune the modulator to guarantee rich, drifting Ring Modulation.
-                        double actualRatio = fmRatio;
-                        if (actualRatio == 1.0) {
-                            actualRatio = 1.005; // 0.5% detune creates a thick "PWM Sweep" effect
-                        }
-                        double modFreq = note.frequency * actualRatio;
-                        note.modPhase += modFreq / sampleRate;
-                        note.modPhase = note.modPhase - Math.floor(note.modPhase);
-                        
-                        // 3. Generate raw Square Waves (Duty cycle 50%)
-                        boolean carrierBit = note.phase > 0.5;
-                        boolean modBit = note.modPhase > 0.5;
-                        
-                        // 4. The Magic: Timbral XOR
-                        boolean finalBit;
-                        if (fmIndex < 0.1) {
-                            finalBit = carrierBit; // Pure square wave if modulation is turned off
-                        } else {
-                            finalBit = carrierBit ^ modBit; // Gritty chiptune buzz!
-                        }
-                        
-                        // 5. Apply Analog Decay Envelope
-                        // Even though it's a 1-bit XOR generation, we MUST apply an amplitude
-                        // envelope before passing it to the multiplexer, otherwise the note will
-                        // sustain at 100% volume forever until abruptly cut off, ruining the mix.
-                        double decay = Math.max(0.0, 1.0 - (time / 0.5)); // 0.5 second linear fade
-                        
-                        // Convert back to analog domain [-1.0, 1.0] and scale by volume envelope
-                        out = (finalBit ? 1.0 : -1.0) * decay;
-                        
-                    } else if ("square".equals(synthMode)) {
-                        // --- MODE 3: CLASSIC SQUARE WAVE (LFO + Duty Sweep) ---
-                        // Uses a single oscillator, kept alive by Vibrato and PWM Sweep.
-                        // Because narrow duty cycles carry less acoustic energy, we need a much
-                        // longer sustain/decay time (1.5s) compared to PM/XOR so the note doesn't sound choked.
-                        double decay = Math.max(0.0, 1.0 - (time / 1.5));
-                        
-                        // 1. LFO for Vibrato (6Hz) and Duty Sweep (1.5Hz)
-                        note.lfoPhase += 1.0 / sampleRate; // 1 cycle per second base time
-                        double vibratoLfo = fastSin(note.lfoPhase * 6.0 - Math.floor(note.lfoPhase * 6.0));
-                        double sweepLfo = fastSin(note.lfoPhase * 1.5 - Math.floor(note.lfoPhase * 1.5));
-                        
-                        // 2. Pitch Wobble (Vibrato)
-                        // Modulate the fundamental frequency by +/- 1.5%
-                        double wobbledFreq = note.frequency * (1.0 + (0.015 * vibratoLfo));
-                        
-                        note.phase += wobbledFreq / sampleRate;
-                        note.phase = note.phase - Math.floor(note.phase);
-                        
-                        // 3. Dynamic Duty Cycle Sweep (Wah-Wah effect)
-                        // Sweeps the pulse width between 10% and 90%
-                        double dutyCycle = 0.5 + (0.4 * sweepLfo);
-                        
-                        // 4. Generate the 1-bit Pulse
-                        boolean squareBit = note.phase > dutyCycle;
-                        
-                        // Convert to analog domain and apply decay
-                        out = (squareBit ? 1.0 : -1.0) * decay;
-                        
-                    } else {
-                        // --- MODE 1: PHASE MODULATION (Default) ---
-                        // Smooth, Yamaha-like Phase Modulation using sine waves.
-                        double decay = Math.max(0.0, 1.0 - (time / 0.5));
-                        
-                        double keyScale = 1.0;
-                        if (note.frequency > 261.63) {
-                            keyScale = 261.63 / note.frequency; 
-                        }
-                        
-                        double scaledFmIndex = fmIndex * keyScale;
-                        double envIndex = (scaledFmIndex * 0.1) + (scaledFmIndex * decay); 
-                        
-                        double modFreq = note.frequency * fmRatio;
-                        note.modPhase += modFreq / sampleRate;
-                        note.modPhase = note.modPhase - Math.floor(note.modPhase);
-                        double modulator = fastSin(note.modPhase);
-                        
-                        note.phase += note.frequency / sampleRate;
-                        note.phase = note.phase - Math.floor(note.phase);
-                        
-                        double finalPhase = note.phase + (modulator * (envIndex / (2.0 * Math.PI)));
-                        finalPhase = finalPhase - Math.floor(finalPhase);
-                        
-                        // Pure sine wave
-                        double rawSine = fastSin(finalPhase);
-                        
-                        // 1-Bit Translation Survival Hack (Wave Shaping)
-                        // Pure analog sine waves sound muddy and weak when forced through a 1-bit comparator 
-                        // because they spend too much time near the 0.0 crossing. By pushing the wave through 
-                        // a soft-clipper (Overdrive), we "square off" the edges slightly. 
-                        // This makes the FM timbre much punchier, sharper, and highly resistant to being 
-                        // destroyed by multiplexing interference.
-                        out = Math.tanh(rawSine * 2.5); 
-                        
-                        // Apply volume envelope AFTER the shaping
-                        out *= decay;
-                    }
-                }
-                note.cachedSample = out;
-            }
-            
-            // 2. MULTIPLEXING ENGINE (3-Way Architecture)
             double sumPwm = 0.0;
             int numNotes = assignedNotes.size();
+            double trueSampleRate = sampleRate * oversample;
             
             for (int o = 0; o < oversample; o++) {
                 pwmCarrierPhase += pwmCarrierStep / oversample;
                 if (pwmCarrierPhase > 1.0) pwmCarrierPhase -= 2.0;
                 
-                if ("xor".equals(muxMode)) {
-                    // --- MODE 1: HISTORICAL XOR LOGIC ---
-                    boolean mixedXor = false;
-                    boolean hasActiveNotes = false;
+                double analogMix = 0.0;
+                boolean mixedXor = false;
+                boolean xorMix = false;
+                boolean hasActiveNotes = false;
+                double tdmSample = 0.0;
+                
+                // TRUE OVERSAMPLED SYNTHESIS: Advance phase at 1.4MHz to prevent Zero-Order Hold aliasing!
+                for (int i = 0; i < numNotes; i++) {
+                    ActiveNote note = assignedNotes.get(i);
+                    double time = note.activeFrames / (double) sampleRate; 
+                    double out = 0.0;
                     
-                    for (int i = 0; i < numNotes; i++) {
-                        double sample = assignedNotes.get(i).cachedSample;
-                        
-                        // CRITICAL FIX for XOR MUX: The "Zero-Volume Buzz" Bug
-                        // If the analog sample decays to 0.0 (silence), comparing it to a 
-                        // bipolar [-1.0, 1.0] carrier generates a perfect 50% duty cycle square wave!
-                        // This turns silence into a deafening 22kHz buzz. We MUST implement a Noise Gate
-                        // to kill the bit conversion if the volume is practically zero.
-                        boolean pwmBit;
-                        if (Math.abs(sample) < 0.05) {
-                            pwmBit = false; // Noise Gate: Force silence
-                        } else {
-                            pwmBit = sample > pwmCarrierPhase;
-                            hasActiveNotes = true;
+                    if (note.isDrum) {
+                        int noteNum = note.note;
+                        if (noteNum == 35 || noteNum == 36) { 
+                            if (time < 0.2) {
+                                double pitchDrop = 150.0 * Math.exp(-time * 30.0);
+                                note.phase += (50.0 + pitchDrop) / trueSampleRate;
+                                note.phase = note.phase - Math.floor(note.phase);
+                                out = fastSin(note.phase);
+                            }
+                        } else if (noteNum == 38 || noteNum == 40) { 
+                            if (time < 0.15) {
+                                double noiseEnv = Math.exp(-time * 20.0);
+                                note.phase += 200.0 / trueSampleRate;
+                                note.phase = note.phase - Math.floor(note.phase);
+                                double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
+                                double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
+                                out = Math.max(-1.0, Math.min(1.0, tone + noise));
+                            }
+                        } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49) {
+                            double duration = (noteNum >= 49) ? 0.3 : 0.05;
+                            if (time < duration) {
+                                double env = Math.exp(-time * (1.0 / duration) * 5.0);
+                                out = (fastRandom() > 0.5 ? 1.5 : -1.5) * env;
+                            }
+                        } else { 
+                            if (time < 0.25) {
+                                double pitchDrop = 300.0 * Math.exp(-time * 15.0);
+                                note.phase += (80.0 + pitchDrop) / trueSampleRate;
+                                note.phase = note.phase - Math.floor(note.phase);
+                                out = fastSin(note.phase);
+                            }
                         }
-                        
-                        if (i == 0) mixedXor = pwmBit;
-                        else mixedXor ^= pwmBit;
+                    } else {
+                        if ("xor".equals(synthMode)) {
+                            note.phase += note.frequency / trueSampleRate;
+                            note.phase = note.phase - Math.floor(note.phase);
+                            
+                            double actualRatio = fmRatio == 1.0 ? 1.005 : fmRatio;
+                            double modFreq = note.frequency * actualRatio;
+                            note.modPhase += modFreq / trueSampleRate;
+                            note.modPhase = note.modPhase - Math.floor(note.modPhase);
+                            
+                            boolean carrierBit = note.phase > 0.5;
+                            boolean modBit = note.modPhase > 0.5;
+                            boolean finalBit = (fmIndex < 0.1) ? carrierBit : (carrierBit ^ modBit);
+                            
+                            double decay = Math.max(0.0, 1.0 - (time / 0.5));
+                            out = (finalBit ? 1.0 : -1.0) * decay;
+                            
+                        } else if ("square".equals(synthMode)) {
+                            double decay = Math.max(0.0, 1.0 - (time / 1.5));
+                            note.lfoPhase += 1.0 / trueSampleRate;
+                            double vibratoLfo = fastSin(note.lfoPhase * 6.0 - Math.floor(note.lfoPhase * 6.0));
+                            double sweepLfo = fastSin(note.lfoPhase * 1.5 - Math.floor(note.lfoPhase * 1.5));
+                            
+                            double wobbledFreq = note.frequency * (1.0 + (0.015 * vibratoLfo));
+                            note.phase += wobbledFreq / trueSampleRate;
+                            note.phase = note.phase - Math.floor(note.phase);
+                            
+                            double dutyCycle = 0.5 + (0.4 * sweepLfo);
+                            boolean squareBit = note.phase > dutyCycle;
+                            out = (squareBit ? 1.0 : -1.0) * decay;
+                            
+                        } else {
+                            // Phase Modulation
+                            double decay = Math.max(0.0, 1.0 - (time / 0.5));
+                            double keyScale = 1.0;
+                            if (note.frequency > 261.63) {
+                                keyScale = 261.63 / note.frequency; 
+                            }
+                            double scaledFmIndex = fmIndex * keyScale;
+                            double envIndex = (scaledFmIndex * 0.1) + (scaledFmIndex * decay); 
+                            
+                            double modFreq = note.frequency * fmRatio;
+                            note.modPhase += modFreq / trueSampleRate;
+                            note.modPhase = note.modPhase - Math.floor(note.modPhase);
+                            double modulator = fastSin(note.modPhase);
+                            
+                            note.phase += note.frequency / trueSampleRate;
+                            note.phase = note.phase - Math.floor(note.phase);
+                            
+                            double finalPhase = note.phase + (modulator * (envIndex / (2.0 * Math.PI)));
+                            finalPhase = finalPhase - Math.floor(finalPhase);
+                            
+                            double rawSine = fastSin(finalPhase);
+                            out = Math.tanh(rawSine * 2.5) * decay;
+                        }
                     }
                     
-                    // If all notes are dead, output 0.0 instead of a constant DC offset or buzz
-                    if (!hasActiveNotes) {
-                        sumPwm += 0.0;
-                    } else {
-                        sumPwm += (mixedXor ? 1.0 : -1.0);
-                    }
+                    analogMix += out;
+                    
+                    // Support logic for XOR/TDM muxes
+                    if (Math.abs(out) > 0.05) hasActiveNotes = true;
+                    boolean pwmBit = out > pwmCarrierPhase;
+                    if (i == 0) mixedXor = pwmBit;
+                    else mixedXor ^= pwmBit;
+                    
+                    if (i == (o % numNotes)) tdmSample = out;
+                }
+                
+                analogMix /= numNotes;
+                
+                // MULTIPLEXING ENGINE
+                if ("xor".equals(muxMode)) {
+                    if (!hasActiveNotes) sumPwm += 0.0;
+                    else sumPwm += (mixedXor ? 1.0 : -1.0);
                     
                 } else if ("tdm".equals(muxMode)) {
-                    // --- MODE 2: TIME-DIVISION MULTIPLEXING (TDM) ---
-                    // High-speed switching. Only outputs the PWM state of ONE note per micro-tick.
-                    // Flawless polyphony blending, but has a distinct "thin/sliced" acoustic texture.
-                    double targetSample = assignedNotes.get(o % numNotes).cachedSample;
-                    boolean pwmBit = targetSample > pwmCarrierPhase;
+                    boolean pwmBit = tdmSample > pwmCarrierPhase;
                     sumPwm += (pwmBit ? 1.0 : -1.0);
                     
                 } else if ("pwm".equals(muxMode)) {
-                    // --- MODE 3: PURE PWM MULTIPLEXING ---
-                    // Sum the analog sine waves FIRST, then convert to a single PWM pulse.
-                    // Guarantees 0% intermodulation, but leaves a faint 22kHz retro carrier whine.
-                    double analogMix = 0.0;
-                    for (int i = 0; i < numNotes; i++) {
-                        analogMix += assignedNotes.get(i).cachedSample;
-                    }
-                    analogMix /= numNotes; 
-                    
                     boolean pwmBit = analogMix > pwmCarrierPhase;
                     sumPwm += (pwmBit ? 1.0 : -1.0);
                     
                 } else {
-                    // --- MODE 4: DELTA-SIGMA MODULATION (DSD) - DEFAULT ---
-                    // The Ultimate 2nd-Order Modulator (with Overload Protection)
-                    // We must use 2nd-order to push the 10kHz "whistling" completely out of the human
-                    // hearing band (12dB/octave slope). 1st-order is fundamentally flawed and unfixable.
-                    // To prevent the filter instability (blow-up noise) that occurred previously during 
-                    // dense chords, we implement strict Integrator Clamping (Overload Protection).
-                    double analogMix = 0.0;
-                    for (int i = 0; i < numNotes; i++) {
-                        analogMix += assignedNotes.get(i).cachedSample;
-                    }
-                    analogMix /= numNotes;
+                    // DSD
+                    double dither1 = fastRandom() * 2.0 - 1.0;
+                    double dither2 = fastRandom() * 2.0 - 1.0;
+                    double tpdfDither = (dither1 + dither2) * 0.03; 
                     
-                    // Very light dither just to keep it alive
-                    double dither = (fastRandom() * 2.0 - 1.0) * 0.01; 
-                    
-                    // Ensure input never quite reaches the absolute limits which causes 2nd-order instability
-                    double input = Math.max(-0.95, Math.min(0.95, analogMix + dither));
-                    
-                    // Integrator 1
-                    sigmaDeltaError1 += input;
-                    // Clamp Integrator 1 to prevent windup
-                    sigmaDeltaError1 = Math.max(-2.0, Math.min(2.0, sigmaDeltaError1));
-                    
-                    // Integrator 2
-                    sigmaDeltaError2 += sigmaDeltaError1;
-                    // Clamp Integrator 2 to prevent catastrophic blowup
-                    sigmaDeltaError2 = Math.max(-2.0, Math.min(2.0, sigmaDeltaError2));
-                    
-                    // Quantize
-                    double outBit = (sigmaDeltaError2 > 0.0) ? 1.0 : -1.0;
-                    
-                    // Feedback (Standard 2nd-order coefficients)
-                    sigmaDeltaError1 -= outBit;
-                    sigmaDeltaError2 -= outBit * 2.0;
-                    
+                    sigmaDeltaError += (analogMix + tpdfDither);
+                    double outBit = (sigmaDeltaError > 0.0) ? 1.0 : -1.0;
+                    sigmaDeltaError -= outBit;
                     sumPwm += outBit;
                 }
             }
@@ -371,18 +268,17 @@ public class BeepSynthProvider implements SoftSynthProvider
             double rawPwm = sumPwm / oversample;
             
             // ISOLATION: Apply DC Blocking instantly at the pin level.
-            // This forces the XOR output to be perfectly symmetrical around 0.0,
-            // preventing this unit from pushing the entire analog mix into clipping.
-            double R = 0.995;
-            double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
-            dcBlockerX = rawPwm;
-            dcBlockerY = cleanSignal;
-            
-            return cleanSignal;
+            if ("xor".equals(muxMode) && voicesPerCore > 1) {
+                double R = 0.995;
+                double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
+                dcBlockerX = rawPwm;
+                dcBlockerY = cleanSignal;
+                return cleanSignal;
+            } else {
+                return rawPwm;
+            }
         }
-    }
-
-    private final DigitalUnit[] units;
+    }    private final DigitalUnit[] units;
     private final List<List<ActiveNote>> unitAssignments;
 
     public BeepSynthProvider(NativeAudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode, String synthMode) {
