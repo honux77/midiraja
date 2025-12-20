@@ -103,7 +103,8 @@ public class BeepSynthProvider implements SoftSynthProvider
         // Per-Unit DC Blocker (Isolation)
         private double dcBlockerX = 0.0;
         private double dcBlockerY = 0.0;
-        private double sigmaDeltaError = 0.0;
+        private double sigmaDeltaError1 = 0.0;
+        private double sigmaDeltaError2 = 0.0;
         
 
         
@@ -329,25 +330,39 @@ public class BeepSynthProvider implements SoftSynthProvider
                     
                 } else {
                     // --- MODE 4: DELTA-SIGMA MODULATION (DSD) - DEFAULT ---
-                    // Reverted back to a bulletproof 1st-Order Modulator. 2nd-order blew up (filter overload)
-                    // during dense polyphonic peaks, causing massive broadband noise in the mid-highs.
+                    // The Ultimate 2nd-Order Modulator (with Overload Protection)
+                    // We must use 2nd-order to push the 10kHz "whistling" completely out of the human
+                    // hearing band (12dB/octave slope). 1st-order is fundamentally flawed and unfixable.
+                    // To prevent the filter instability (blow-up noise) that occurred previously during 
+                    // dense chords, we implement strict Integrator Clamping (Overload Protection).
                     double analogMix = 0.0;
                     for (int i = 0; i < numNotes; i++) {
                         analogMix += assignedNotes.get(i).cachedSample;
                     }
                     analogMix /= numNotes;
                     
-                    // TPDF (Triangular Probability Density Function) Dither
-                    // Two random rolls added together create a triangle distribution, which is mathematically
-                    // proven to be the most perfectly invisible dither for breaking quantization limit-cycles
-                    // without adding harsh "hiss". This will smear the 10kHz whistling smoothly.
-                    double dither1 = fastRandom() * 2.0 - 1.0;
-                    double dither2 = fastRandom() * 2.0 - 1.0;
-                    double tpdfDither = (dither1 + dither2) * 0.03; 
+                    // Very light dither just to keep it alive
+                    double dither = (fastRandom() * 2.0 - 1.0) * 0.01; 
                     
-                    sigmaDeltaError += (analogMix + tpdfDither);
-                    double outBit = (sigmaDeltaError > 0.0) ? 1.0 : -1.0;
-                    sigmaDeltaError -= outBit;
+                    // Ensure input never quite reaches the absolute limits which causes 2nd-order instability
+                    double input = Math.max(-0.95, Math.min(0.95, analogMix + dither));
+                    
+                    // Integrator 1
+                    sigmaDeltaError1 += input;
+                    // Clamp Integrator 1 to prevent windup
+                    sigmaDeltaError1 = Math.max(-2.0, Math.min(2.0, sigmaDeltaError1));
+                    
+                    // Integrator 2
+                    sigmaDeltaError2 += sigmaDeltaError1;
+                    // Clamp Integrator 2 to prevent catastrophic blowup
+                    sigmaDeltaError2 = Math.max(-2.0, Math.min(2.0, sigmaDeltaError2));
+                    
+                    // Quantize
+                    double outBit = (sigmaDeltaError2 > 0.0) ? 1.0 : -1.0;
+                    
+                    // Feedback (Standard 2nd-order coefficients)
+                    sigmaDeltaError1 -= outBit;
+                    sigmaDeltaError2 -= outBit * 2.0;
                     
                     sumPwm += outBit;
                 }
