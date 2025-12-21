@@ -262,7 +262,8 @@ public class BeepSynthProvider implements SoftSynthProvider
                     // DSD
                     double dither1 = fastRandom() * 2.0 - 1.0;
                     double dither2 = fastRandom() * 2.0 - 1.0;
-                    double tpdfDither = (dither1 + dither2) * 0.03; 
+                    double ditherParam = Double.parseDouble(System.getProperty("midiraja.tune.dither", "0.03"));
+                    double tpdfDither = (dither1 + dither2) * ditherParam; 
                     
                     sigmaDeltaError += (analogMix + tpdfDither);
                     double outBit = (sigmaDeltaError > 0.0) ? 1.0 : -1.0;
