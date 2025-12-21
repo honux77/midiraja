@@ -29,6 +29,12 @@ public class BeepSynthProvider implements SoftSynthProvider
     private final String synthMode;
     private final int sampleRate = 44100;
     
+    // Dynamic DSP Parameters discovered via Genetic Algorithm
+    private final double dspLpfCutoff;
+    private final double dspDitherAmp;
+    private final double dspDcBlockerR;
+    private final boolean dspUseDcBlocker;
+    
     private @Nullable Thread renderThread;
     private volatile boolean running = false;
     private volatile boolean renderPaused = false;
@@ -276,7 +282,7 @@ public class BeepSynthProvider implements SoftSynthProvider
             
             // ISOLATION: Apply DC Blocking instantly at the pin level.
             if ("xor".equals(muxMode) && voicesPerCore > 1) {
-                double R = 0.995;
+                double R = dspDcBlockerR;
                 double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
                 dcBlockerX = rawPwm;
                 dcBlockerY = cleanSignal;
@@ -296,6 +302,21 @@ public class BeepSynthProvider implements SoftSynthProvider
         this.oversample = Math.max(1, oversample);
         this.muxMode = muxMode;
         this.synthMode = synthMode;
+        
+        // --- DYNAMIC DSP OPTIMIZATION ---
+        // Parameters empirically tuned by a Genetic Algorithm analyzing FFT outputs.
+        if ("xor".equals(muxMode)) {
+            this.dspLpfCutoff = 0.284;
+            this.dspDcBlockerR = 0.958;
+            this.dspUseDcBlocker = true;
+            this.dspDitherAmp = 0.0; // Dither hurts XOR
+        } else {
+            // Modern PM / DSD mode optimizations
+            this.dspLpfCutoff = 0.213;
+            this.dspDcBlockerR = 0.951;
+            this.dspUseDcBlocker = true;
+            this.dspDitherAmp = 0.080;
+        }
         
         // Dynamic Unit Scaling: Always guarantee at least 16 total polyphony (12 Melody + 4 Drum)
         // If voices = 1, we need 16 units. If voices = 2, we need 8 units. If voices = 4, we need 4 units.
