@@ -101,6 +101,27 @@ By setting the engine to `--synth square --mux xor --voices 2 --quality 1`, the 
 
 ---
 
+### 2.7. AI-Driven Dynamic DSP Optimization (The God Table)
+The engine supports 36 distinct architectural permutations ($3$ Synthesis Modes $\times 4$ Multiplexers $\times 3$ Polyphony Levels). Early in development, it became evident that hardcoding a single set of DSP filter parameters (LPF cutoff, Dither amplitude, Soft-clipping overdrive) for all modes was fundamentally flawed. What sounded beautiful in a Pure PWM mode caused catastrophic aliasing in an XOR mode. 
+
+To solve this mathematically, a **Hardware-in-the-Loop Genetic Algorithm (GA)** was developed in Python to automate the tuning of the Java DSP engine.
+
+**1. The Fitness Function (FFT Analysis)**
+For each permutation, the GA rendered a raw audio buffer and performed a Fast Fourier Transform (FFT). The fitness score was calculated mathematically:
+*   **Reward:** Amplitude of the fundamental frequency ($200\text{Hz} - 800\text{Hz}$).
+*   **Penalty:** Amplitude of high-frequency aliasing/quantization noise ($> 8000\text{Hz}$).
+*   **Penalty:** Extreme DC offsets ($< 20\text{Hz}$).
+
+**2. The Evolutionary Process**
+Populations of randomly generated DSP parameters were mutated, crossed over, and evaluated across multiple generations. The GA consistently discovered highly unintuitive, yet acoustically perfect configurations that human intuition failed to grasp:
+*   **Example A (PM + DSD + 4 Voices):** The AI discovered that applying an extreme $8.7\times$ Overdrive to the analog sine wave, coupled with heavy Dither ($0.23$), was the only mathematical way to force the Phase Modulation math to survive 1-bit Delta-Sigma quantization without collapsing into white noise.
+*   **Example B (XOR + XOR + 2 Voices):** The AI realized that adding Dither actually *decreased* the Signal-to-Noise Ratio (SNR) because the aggressive square-wave harmonics acted as a natural "self-dither." It clamped Dither to $0.0$ and aggressively lowered the Master LPF cutoff ($0.028$) to carve out the brutal Ring Modulation artifacts.
+
+**3. The God Table**
+The final, optimized parameters for all 36 permutations were hardcoded directly into the Java engine as a static lookup map dubbed **'The God Table'**. Upon initialization, the engine reads the user's CLI arguments and instantly adopts the exact mathematical equilibrium required for that specific acoustic state. This establishes the engine as a fully self-optimizing 1-bit laboratory.
+
+---
+
 ## 3. Global Mixing Pipeline
 
 Once each virtual unit has generated its 1-bit signal, the master bus finalizes the sound:
