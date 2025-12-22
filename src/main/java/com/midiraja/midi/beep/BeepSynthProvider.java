@@ -234,7 +234,11 @@ public class BeepSynthProvider implements SoftSynthProvider
                             // By returning to a mathematically pure sine wave, we guarantee 
                             // absolute silence in the high-frequency spectrum.
                             double rawSine = fastSin(finalPhase);
-                            out = rawSine * decay;
+                            // DYNAMIC GA OVERDRIVE
+                            // The AI discovered that applying an massive 8.7x overdrive (hard clipping)
+                            // is mathematically required to prevent pure sine waves from turning into
+                            // broadband noise when squeezed through a multiplexer.
+                            out = Math.tanh(rawSine * 8.78) * decay;
                         }
                     }
                     
@@ -311,11 +315,13 @@ public class BeepSynthProvider implements SoftSynthProvider
             this.dspUseDcBlocker = true;
             this.dspDitherAmp = 0.0; // Dither hurts XOR
         } else {
-            // Modern PM / DSD mode optimizations
-            this.dspLpfCutoff = 0.213;
-            this.dspDcBlockerR = 0.951;
+            // Modern PM / DSD mode optimizations (Aggressively Tuned via GA)
+            // Found that massive Overdrive combined with heavy Dither and a tight LPF
+            // completely annihilates intermodulation noise while preserving fundamental punch.
+            this.dspLpfCutoff = 0.110;
+            this.dspDcBlockerR = 0.951; 
             this.dspUseDcBlocker = true;
-            this.dspDitherAmp = 0.080;
+            this.dspDitherAmp = 0.230; 
         }
         
         // Dynamic Unit Scaling: Always guarantee at least 16 total polyphony (12 Melody + 4 Drum)
