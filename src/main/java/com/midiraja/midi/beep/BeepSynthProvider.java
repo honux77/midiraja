@@ -20,6 +20,58 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings({"ThreadPriorityCheck", "EmptyCatch"})
 public class BeepSynthProvider implements SoftSynthProvider
 {
+    private static class DspParams {
+        final double lpfCutoff;
+        final double ditherAmp;
+        final double pmOverdrive;
+        
+        DspParams(double lpfCutoff, double ditherAmp, double pmOverdrive) {
+            this.lpfCutoff = lpfCutoff;
+            this.ditherAmp = ditherAmp;
+            this.pmOverdrive = pmOverdrive;
+        }
+    }
+
+    private static final java.util.Map<String, DspParams> GOD_TABLE = java.util.Map.ofEntries(
+        java.util.Map.entry("pm_dsd_1", new DspParams(0.347, 0.071, 0.000)),
+        java.util.Map.entry("pm_dsd_2", new DspParams(0.374, 0.022, 0.000)),
+        java.util.Map.entry("pm_dsd_4", new DspParams(0.361, 0.009, 1.466)),
+        java.util.Map.entry("pm_pwm_1", new DspParams(0.204, 0.000, 1.778)),
+        java.util.Map.entry("pm_pwm_2", new DspParams(0.244, 0.000, 0.000)),
+        java.util.Map.entry("pm_pwm_4", new DspParams(0.221, 0.000, 1.292)),
+        java.util.Map.entry("pm_tdm_1", new DspParams(0.230, 0.000, 1.580)),
+        java.util.Map.entry("pm_tdm_2", new DspParams(0.241, 0.000, 1.806)),
+        java.util.Map.entry("pm_tdm_4", new DspParams(0.224, 0.000, 0.000)),
+        java.util.Map.entry("pm_xor_1", new DspParams(0.028, 0.000, 8.625)),
+        java.util.Map.entry("pm_xor_2", new DspParams(0.186, 0.000, 0.129)),
+        java.util.Map.entry("pm_xor_4", new DspParams(0.143, 0.000, 0.059)),
+        java.util.Map.entry("xor_dsd_1", new DspParams(0.040, 0.211, 0.000)),
+        java.util.Map.entry("xor_dsd_2", new DspParams(0.019, 0.066, 0.000)),
+        java.util.Map.entry("xor_dsd_4", new DspParams(0.015, 0.072, 0.000)),
+        java.util.Map.entry("xor_pwm_1", new DspParams(0.030, 0.000, 0.000)),
+        java.util.Map.entry("xor_pwm_2", new DspParams(0.028, 0.000, 0.000)),
+        java.util.Map.entry("xor_pwm_4", new DspParams(0.034, 0.000, 0.000)),
+        java.util.Map.entry("xor_tdm_1", new DspParams(0.023, 0.000, 0.000)),
+        java.util.Map.entry("xor_tdm_2", new DspParams(0.036, 0.000, 0.000)),
+        java.util.Map.entry("xor_tdm_4", new DspParams(0.028, 0.000, 0.000)),
+        java.util.Map.entry("xor_xor_1", new DspParams(0.024, 0.000, 0.000)),
+        java.util.Map.entry("xor_xor_2", new DspParams(0.028, 0.000, 0.000)),
+        java.util.Map.entry("xor_xor_4", new DspParams(0.033, 0.000, 0.000)),
+        java.util.Map.entry("square_dsd_1", new DspParams(0.231, 0.043, 0.000)),
+        java.util.Map.entry("square_dsd_2", new DspParams(0.247, 0.094, 0.000)),
+        java.util.Map.entry("square_dsd_4", new DspParams(0.218, 0.205, 0.000)),
+        java.util.Map.entry("square_pwm_1", new DspParams(0.231, 0.000, 0.000)),
+        java.util.Map.entry("square_pwm_2", new DspParams(0.230, 0.000, 0.000)),
+        java.util.Map.entry("square_pwm_4", new DspParams(0.228, 0.000, 0.000)),
+        java.util.Map.entry("square_tdm_1", new DspParams(0.232, 0.000, 0.000)),
+        java.util.Map.entry("square_tdm_2", new DspParams(0.236, 0.000, 0.000)),
+        java.util.Map.entry("square_tdm_4", new DspParams(0.230, 0.000, 0.000)),
+        java.util.Map.entry("square_xor_1", new DspParams(0.230, 0.000, 0.000)),
+        java.util.Map.entry("square_xor_2", new DspParams(0.032, 0.000, 0.000)),
+        java.util.Map.entry("square_xor_4", new DspParams(0.029, 0.000, 0.000))
+    );
+
+
     private final NativeAudioEngine audio;
     private final int voicesPerCore;
     private final double fmRatio;
@@ -32,6 +84,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     // Dynamic DSP Parameters discovered via Genetic Algorithm
     private final double dspLpfCutoff;
     private final double dspDitherAmp;
+    private final double pmOverdrive;
     private final double dspDcBlockerR;
     private final boolean dspUseDcBlocker;
     
@@ -238,7 +291,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                             // The AI discovered that applying an massive 8.7x overdrive (hard clipping)
                             // is mathematically required to prevent pure sine waves from turning into
                             // broadband noise when squeezed through a multiplexer.
-                            out = Math.tanh(rawSine * 8.78) * decay;
+                            out = (pmOverdrive > 0.0) ? Math.tanh(rawSine * pmOverdrive) * decay : rawSine * decay;
                         }
                     }
                     
@@ -285,7 +338,7 @@ public class BeepSynthProvider implements SoftSynthProvider
             double rawPwm = sumPwm / oversample;
             
             // ISOLATION: Apply DC Blocking instantly at the pin level.
-            if ("xor".equals(muxMode) && voicesPerCore > 1) {
+            if (dspUseDcBlocker) {
                 double R = dspDcBlockerR;
                 double cleanSignal = rawPwm - dcBlockerX + (R * dcBlockerY);
                 dcBlockerX = rawPwm;
@@ -307,21 +360,23 @@ public class BeepSynthProvider implements SoftSynthProvider
         this.muxMode = muxMode;
         this.synthMode = synthMode;
         
-        // --- DYNAMIC DSP OPTIMIZATION ---
-        // Parameters empirically tuned by a Genetic Algorithm analyzing FFT outputs.
-        if ("xor".equals(muxMode)) {
-            this.dspLpfCutoff = 0.284;
-            this.dspDcBlockerR = 0.958;
+        // --- THE GOD TABLE: AI-Driven Dynamic DSP Optimization ---
+        // Instantly loads the exact, mathematically perfect filter parameters calculated 
+        // by the Python Genetic Algorithm for the user's specific combination of modes.
+        String key = synthMode + "_" + muxMode + "_" + this.voicesPerCore;
+        DspParams params = GOD_TABLE.getOrDefault(key, new DspParams(0.25, 0.0, 0.0));
+        
+        this.dspLpfCutoff = params.lpfCutoff;
+        this.dspDitherAmp = params.ditherAmp;
+        this.pmOverdrive = params.pmOverdrive;
+        
+        // DC Blocker is mathematically only required (and safe) when combining multiple square waves via XOR.
+        if ("xor".equals(muxMode) && this.voicesPerCore > 1) {
             this.dspUseDcBlocker = true;
-            this.dspDitherAmp = 0.0; // Dither hurts XOR
+            this.dspDcBlockerR = 0.995;
         } else {
-            // Modern PM / DSD mode optimizations (Aggressively Tuned via GA)
-            // Found that massive Overdrive combined with heavy Dither and a tight LPF
-            // completely annihilates intermodulation noise while preserving fundamental punch.
-            this.dspLpfCutoff = 0.110;
-            this.dspDcBlockerR = 0.951; 
-            this.dspUseDcBlocker = true;
-            this.dspDitherAmp = 0.230; 
+            this.dspUseDcBlocker = false;
+            this.dspDcBlockerR = 0.0;
         }
         
         // Dynamic Unit Scaling: Always guarantee at least 16 total polyphony (12 Melody + 4 Drum)
