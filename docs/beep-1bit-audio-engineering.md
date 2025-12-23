@@ -1,6 +1,6 @@
 # 1-Bit Audio Engineering (The 'Beep' Synth)
 
-This document outlines the architecture of the `midra beep` command, a pure mathematical software synthesizer designed to recreate the extreme limitations of 1980s 1-bit audio hardware. Internally dubbed the **'1-Bit Digital Cluster'**, this engine extends the software-based 1-bit polyphony techniques originally developed for the Apple II, fusing them with modern digital synthesis, high-speed Time-Division Multiplexing (TDM), and wait-free concurrency to create the ultimate 1-bit digital instrument.
+This document outlines the architecture of the `midra beep` command, a pure mathematical software synthesizer designed to explore the extreme physical limitations of 1-bit audio logic. Internally dubbed the **'1-Bit Digital Cluster'**, this engine extends the software-based bit-banging techniques of the 1980s (e.g., Apple II, ZX Spectrum), fusing them with True Phase Modulation, Delta-Sigma noise shaping, and Heuristic AI Optimization to create a definitive, zero-dependency 1-bit digital instrument.
 
 ---
 
@@ -97,7 +97,7 @@ Only two distinct acoustic paths were possible within the constraints of a 1MHz 
 *   **Phase Modulation (`--synth pm`):** Impossible. The 6502 had no floating-point unit (FPU) and lacked hardware multiplication/division, making real-time Sine wave generation and phase deviation impossible at audio rates.
 *   **TDM, PWM, and DSD Multiplexing:** Impossible. These require switching the speaker pin at minimums of 44.1kHz up to 1.4MHz. The absolute fastest an Apple II could toggle a pin while doing nothing else was ~150kHz, and realistically ~10kHz when executing audio logic.
 
-By setting the engine to `--synth square --mux xor --voices 2 --quality 1`, the user can exactly replicate the absolute physical limits of 1980s Apple II hardware.
+By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user strips away all heuristic DSP protections and high-speed oversampling, exactly replicating the absolute physical limits and gritty acoustic reality of 1980s 1MHz hardware.
 
 ---
 

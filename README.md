@@ -99,15 +99,16 @@ While a song is playing, you don't need to restart the app to make changes. Just
 |-------------|---------|-------|
 | **FluidSynth** | `fluid <soundfont.sf2>` | General MIDI · SF2 SoundFont |
 | **GUS / Java** | `gus` | Gravis Ultrasound · Zero-dependency pure Java DSP |
-| **PC Speaker / Apple II** | `beep` | 1-bit PC Speaker & Apple II Electric Sixteentet |
+| **1-Bit Digital Cluster** | `beep` | Pure math 1-bit logic synth (PM, XOR, DSD) with AI-tuned DSP |
 | **MT-32 / Munt** | `munt <rom-dir>` | Roland MT-32 · authentic DOS-era game music |
 | **OPL / libADLMIDI** | `opl` | AdLib / Sound Blaster FM · no install required |
 | **OPN2 / libOPNMIDI** | `opn` | Sega Genesis / PC-98 FM · no install required |
 
 ```bash
-# PC Speaker / Apple II 1-Bit synthesis (Zero-dependency)
-midra beep song.mid
-midra beep --mode pwm song.mid            # Mathematical PWM Mode
+# 1-Bit Digital Cluster (Zero-dependency pure math synthesizer)
+midra beep song.mid                               # Default: Modern Phase Modulation + DSD
+midra beep --synth square --mux xor --voices 2    # 1981 Apple II Hardcore Hacker Mode
+midra beep --synth xor --mux dsd --voices 4       # Tim Follin 1-bit Ring Modulation Style
 
 # Gravis Ultrasound (no setup required — uses bundled Freepats)
 midra gus song.mid
