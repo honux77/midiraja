@@ -101,24 +101,25 @@ By setting the engine to `--synth square --mux xor --voices 2 --quality 1`, the 
 
 ---
 
-### 2.7. AI-Driven Dynamic DSP Optimization (The God Table)
-The engine supports 36 distinct architectural permutations ($3$ Synthesis Modes $\times 4$ Multiplexers $\times 3$ Polyphony Levels). Early in development, it became evident that hardcoding a single set of DSP filter parameters (LPF cutoff, Dither amplitude, Soft-clipping overdrive) for all modes was fundamentally flawed. What sounded beautiful in a Pure PWM mode caused catastrophic aliasing in an XOR mode. 
+### 2.7. Heuristic DSP Optimization (Parameter Lookup Matrix)
+The engine supports 36 distinct architectural permutations ($3$ Synthesis Modes $\times 4$ Multiplexers $\times 3$ Polyphony Levels). Empirical testing demonstrated that a static set of DSP parameters (LPF cutoff, Dither amplitude, Non-linear overdrive) was insufficient. For instance, parameters optimized for Phase Modulation produced severe Intermodulation Distortion (IMD) when applied to XOR multiplexing.
 
-To solve this mathematically, a **Hardware-in-the-Loop Genetic Algorithm (GA)** was developed in Python to automate the tuning of the Java DSP engine.
+To objectively resolve these state-dependent acoustic conflicts, a **Genetic Algorithm (GA)** was implemented via a Python-based Hardware-in-the-Loop simulation to programmatically optimize the Java DSP engine's parameters.
 
-**1. The Fitness Function (FFT Analysis)**
-For each permutation, the GA rendered a raw audio buffer and performed a Fast Fourier Transform (FFT). The fitness score was calculated mathematically:
-*   **Reward:** Amplitude of the fundamental frequency ($200\text{Hz} - 800\text{Hz}$).
-*   **Penalty:** Amplitude of high-frequency aliasing/quantization noise ($> 8000\text{Hz}$).
-*   **Penalty:** Extreme DC offsets ($< 20\text{Hz}$).
+**1. Objective Fitness Function (FFT-based)**
+For each permutation, the GA rendered a test audio buffer and applied a Fast Fourier Transform (FFT) to evaluate the frequency spectrum. The heuristic fitness score ($S$) was formulated to maximize the Signal-to-Noise Ratio (SNR):
+$$ S = \sum M_{fund} - (8.0 \times \sum M_{alias}) - (2.0 \times \sum M_{dc}) $$
+*   **$M_{fund}$ (Fundamental Energy):** Sum of magnitudes within the $200\text{Hz} - 800\text{Hz}$ band.
+*   **$M_{alias}$ (Aliasing/Quantization Noise):** Sum of magnitudes exceeding $8000\text{Hz}$.
+*   **$M_{dc}$ (DC Offset):** Sum of magnitudes below $20\text{Hz}$.
 
-**2. The Evolutionary Process**
-Populations of randomly generated DSP parameters were mutated, crossed over, and evaluated across multiple generations. The GA consistently discovered highly unintuitive, yet acoustically perfect configurations that human intuition failed to grasp:
-*   **Example A (PM + DSD + 4 Voices):** The AI discovered that applying an extreme $8.7\times$ Overdrive to the analog sine wave, coupled with heavy Dither ($0.23$), was the only mathematical way to force the Phase Modulation math to survive 1-bit Delta-Sigma quantization without collapsing into white noise.
-*   **Example B (XOR + XOR + 2 Voices):** The AI realized that adding Dither actually *decreased* the Signal-to-Noise Ratio (SNR) because the aggressive square-wave harmonics acted as a natural "self-dither." It clamped Dither to $0.0$ and aggressively lowered the Master LPF cutoff ($0.028$) to carve out the brutal Ring Modulation artifacts.
+**2. The Evolutionary Model**
+The GA utilized a population size of 40 over 15 generations. It employed Roulette Wheel selection biased towards higher SNR scores, combined with elitism (retaining the top 2 candidates per generation) to prevent regression. Mutation operators were designed with a $10\%$ probability of executing a uniform random reset (catastrophe) to escape local minima. This rigorous process identified precise parameter sets that manually tuning could not isolate:
+*   **PM + DSD + 4 Voices:** The algorithm established that applying an aggressive non-linear overdrive ($8.7\times$ via `Math.tanh`) to the analog sine wave, combined with high TPDF dither ($0.23$), was mathematically required to preserve the continuous phase information through the 1-bit Delta-Sigma quantizer. Without this pre-shaping, the high-density signal degraded into broadband noise.
+*   **XOR + XOR + 2 Voices:** The algorithm determined that external Dither decreased overall SNR, as the high-frequency harmonics inherent to the XOR square waves acted as an adequate self-dithering mechanism. The GA minimized Dither to $0.0$ and reduced the Master LPF cutoff coefficient to $0.028$ to strictly attenuate high-frequency folding artifacts.
 
-**3. The God Table**
-The final, optimized parameters for all 36 permutations were hardcoded directly into the Java engine as a static lookup map dubbed **'The God Table'**. Upon initialization, the engine reads the user's CLI arguments and instantly adopts the exact mathematical equilibrium required for that specific acoustic state. This establishes the engine as a fully self-optimizing 1-bit laboratory.
+**3. Static Parameter Injection**
+The optimal vectors for all 36 configurations were compiled into a constant-time ($O(1)$) `HashMap` within the Java architecture. Upon initialization, the engine parses the user's CLI flags and dynamically injects the corresponding DSP coefficients before instantiating the render loop. This ensures consistent, mathematically optimized audio output across all historical and modern configurations without introducing runtime overhead.
 
 ---
 
