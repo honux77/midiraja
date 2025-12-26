@@ -121,19 +121,27 @@ public class BeepSynthProvider implements SoftSynthProvider
         for (int i = 0; i < MAX_POLYPHONY; i++) activeNotes[i] = new ActiveNote();
     }
 
-    private static final int SINE_LUT_SIZE = 4096;
-    private static final double[] SINE_LUT = new double[SINE_LUT_SIZE];
+    // Purist 8-Bit Integer Sine LUT (Retro Hardware Emulation)
+    // Replaced the 64-bit float array with a strict signed 8-bit (-127 to +127) lookup table.
+    // This perfectly recreates the 'quantization grit' inherent to 1980s hardware FM chips (like the OPL2).
+    private static final int SINE_LUT_SIZE = 1024; // Smaller size like old ROMs
+    private static final byte[] SINE_LUT_8BIT = new byte[SINE_LUT_SIZE];
     static {
         for (int i = 0; i < SINE_LUT_SIZE; i++) {
-            SINE_LUT[i] = Math.sin((i / (double) SINE_LUT_SIZE) * 2.0 * Math.PI);
+            // Calculate pure math, then forcefully crush it into a signed 8-bit integer
+            double pureSine = Math.sin((i / (double) SINE_LUT_SIZE) * 2.0 * Math.PI);
+            SINE_LUT_8BIT[i] = (byte) Math.round(pureSine * 127.0); 
         }
     }
     
+    // Returns the 8-bit integer value converted back to a [-1.0, 1.0] float for the modern mixing bridge
     private static double fastSin(double phase) {
         int index = (int) (phase * SINE_LUT_SIZE);
         if (index < 0) index = 0;
         if (index >= SINE_LUT_SIZE) index = SINE_LUT_SIZE - 1;
-        return SINE_LUT[index];
+        
+        // Read the gritty 8-bit value (-127 to 127) and normalize it
+        return SINE_LUT_8BIT[index] / 127.0;
     }
 
     private static int rngSeed = 12345;
