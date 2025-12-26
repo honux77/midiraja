@@ -97,7 +97,13 @@ Only two distinct acoustic paths were possible within the constraints of a 1MHz 
 *   **Phase Modulation (`--synth pm`):** Impossible. The 6502 had no floating-point unit (FPU) and lacked hardware multiplication/division, making real-time Sine wave generation and phase deviation impossible at audio rates.
 *   **TDM, PWM, and DSD Multiplexing:** Impossible. These require switching the speaker pin at minimums of 44.1kHz up to 1.4MHz. The absolute fastest an Apple II could toggle a pin while doing nothing else was ~150kHz, and realistically ~10kHz when executing audio logic.
 
-By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user strips away all heuristic DSP protections and high-speed oversampling, exactly replicating the absolute physical limits and gritty acoustic reality of 1980s 1MHz hardware.
+**The Purist Architectural Critique**
+A strict hardware purist would note that the engine's internal architecture employs an "analog bridge" (summing all notes into a $[-1.0, 1.0]$ floating-point domain before final 1-bit conversion) as a modern software convenience. In a true 1-bit hardware environment, intermediate analog summation is physically impossible. The architecture must strictly follow three layers:
+1.  **Synthesis:** Generation of a raw waveform.
+2.  **Quantization (The 1-Bit Translator):** If the synthesized wave is continuous (like FM), it *must* be converted into a discrete boolean (0 or 1) stream *before* it can interact with other notes. Under this strict taxonomy, **PWM** and **DSD** are Quantizers, not Multiplexers.
+3.  **Multiplexing:** The boolean logic gate that forces multiple 0/1 streams onto a single speaker pin. Only **XOR** (boolean collision) or **TDM** (high-speed sequential pin reading) qualify as true digital multiplexers.
+
+By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user strips away all heuristic DSP protections, analog bridges, and high-speed oversampling, exactly replicating the absolute physical limits and gritty acoustic reality of 1980s 1MHz hardware.
 
 ---
 
