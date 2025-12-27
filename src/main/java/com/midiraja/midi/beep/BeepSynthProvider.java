@@ -80,8 +80,14 @@ public class BeepSynthProvider implements SoftSynthProvider
         int channel;
         int note;
         double frequency;
-        double phase = 0.0;
-        double modPhase = 0.0;
+        // 16-bit Fixed-Point Accumulators (0 to 65535)
+        int phase16 = 0;
+        int modPhase16 = 0;
+        int phaseStep16 = 0;
+        int modPhaseStep16 = 0;
+        
+        double phase = 0.0; // Legacy for LFO/Drum
+        double modPhase = 0.0; // Legacy for LFO
         double lfoPhase = 0.0;
         long activeFrames = 0;
         boolean isDrum = false;
@@ -90,6 +96,10 @@ public class BeepSynthProvider implements SoftSynthProvider
             phase = 0.0;
             modPhase = 0.0;
             lfoPhase = 0.0;
+            phase16 = 0;
+            modPhase16 = 0;
+            phaseStep16 = 0;
+            modPhaseStep16 = 0;
             activeFrames = 0;
             frequency = 0.0;
         }
@@ -104,26 +114,29 @@ public class BeepSynthProvider implements SoftSynthProvider
         for (int i = 0; i < MAX_POLYPHONY; i++) activeNotes[i] = new ActiveNote();
     }
 
-    // Purist 8-Bit Integer Sine LUT (Retro Hardware Emulation)
-    // Replaced the 64-bit float array with a strict signed 8-bit (-127 to +127) lookup table.
-    // This perfectly recreates the 'quantization grit' inherent to 1980s hardware FM chips (like the OPL2).
-    private static final int SINE_LUT_SIZE = 256; // Smaller size like old ROMs
+    // --- PURE INTEGER SINE LUT (8-Bit Amplitude, 8-Bit Phase) ---
+    private static final int SINE_LUT_SIZE = 256; 
     private static final byte[] SINE_LUT_8BIT = new byte[SINE_LUT_SIZE];
     static {
         for (int i = 0; i < SINE_LUT_SIZE; i++) {
-            // Calculate pure math, then forcefully crush it into a signed 8-bit integer
-            double pureSine = Math.sin((i / (double) SINE_LUT_SIZE) * 2.0 * Math.PI);
+            double pureSine = Math.sin((i / 256.0) * 2.0 * Math.PI);
             SINE_LUT_8BIT[i] = (byte) Math.round(pureSine * 127.0); 
         }
     }
     
-    // Returns the 8-bit integer value converted back to a [-1.0, 1.0] float for the modern mixing bridge
+    // Fast 16-bit fixed-point Sine Lookup
+    // Phase is an integer from 0 to 65535. We shift right by 8 to get the 0-255 index.
+    @SuppressWarnings("unused")
+    private static int fastSinInt(int phase16) {
+        int index = (phase16 >>> 8) & 0xFF; // Wrap around safely via bitmask
+        return SINE_LUT_8BIT[index];
+    }
+    
+    // Kept for LFOs which don't need the extreme 16-bit integer performance constraint
     private static double fastSin(double phase) {
-        int index = (int) (phase * SINE_LUT_SIZE);
+        int index = (int) (phase * 256);
         if (index < 0) index = 0;
-        if (index >= SINE_LUT_SIZE) index = SINE_LUT_SIZE - 1;
-        
-        // Read the gritty 8-bit value (-127 to 127) and normalize it
+        if (index > 255) index = 255;
         return SINE_LUT_8BIT[index] / 127.0;
     }
 
@@ -227,37 +240,34 @@ public class BeepSynthProvider implements SoftSynthProvider
                         
                     } else {
                         if ("xor".equals(synthMode)) {
-                            // Synthesizer is inherently Boolean
-                            note.phase += note.frequency / trueSampleRate;
-                            note.phase = note.phase - Math.floor(note.phase);
+                            // --- PURE 16-BIT INTEGER TIMBRAL XOR ---
+                            note.phase16 = (note.phase16 + note.phaseStep16) & 0xFFFF;
+                            note.modPhase16 = (note.modPhase16 + note.modPhaseStep16) & 0xFFFF;
                             
-                            double actualRatio = fmRatio == 1.0 ? 1.005 : fmRatio;
-                            double modFreq = note.frequency * actualRatio;
-                            note.modPhase += modFreq / trueSampleRate;
-                            note.modPhase = note.modPhase - Math.floor(note.modPhase);
-                            
-                            boolean carrierBit = note.phase > 0.5;
-                            boolean modBit = note.modPhase > 0.5;
+                            // A 16-bit phase is > 32767 for the second half of its cycle
+                            boolean carrierBit = note.phase16 > 32767;
+                            boolean modBit = note.modPhase16 > 32767;
                             synthBit = (fmIndex < 0.1) ? carrierBit : (carrierBit ^ modBit);
                             
-                            // Check volume envelope to silence dead notes
                             double decay = Math.max(0.0, 1.0 - (time / 0.5));
                             if (decay > 0.01) hasActiveNotes = true;
-                            else synthBit = false; // Noise gate
+                            else synthBit = false;
                             
                         } else if ("square".equals(synthMode)) {
-                            // Synthesizer is inherently Boolean
+                            // --- PURE 16-BIT INTEGER SQUARE WAVE ---
                             double decay = Math.max(0.0, 1.0 - (time / 1.5));
                             note.lfoPhase += 1.0 / trueSampleRate;
                             double vibratoLfo = fastSin(note.lfoPhase * 6.0 - Math.floor(note.lfoPhase * 6.0));
                             double sweepLfo = fastSin(note.lfoPhase * 1.5 - Math.floor(note.lfoPhase * 1.5));
                             
+                            // Calculate instantaneous phase step for vibrato
                             double wobbledFreq = note.frequency * (1.0 + (0.015 * vibratoLfo));
-                            note.phase += wobbledFreq / trueSampleRate;
-                            note.phase = note.phase - Math.floor(note.phase);
+                            int step16 = (int) ((wobbledFreq * 65536.0) / trueSampleRate);
+                            note.phase16 = (note.phase16 + step16) & 0xFFFF;
                             
-                            double dutyCycle = 0.5 + (0.4 * sweepLfo);
-                            synthBit = note.phase > dutyCycle;
+                            // 16-bit duty cycle comparison (0 to 65535)
+                            int dutyCycle16 = (int) (65535.0 * (0.5 + (0.4 * sweepLfo)));
+                            synthBit = note.phase16 > dutyCycle16;
                             
                             if (decay > 0.01) hasActiveNotes = true;
                             else synthBit = false;
@@ -582,6 +592,12 @@ public class BeepSynthProvider implements SoftSynthProvider
                             n.channel = ch; n.note = note;
                                                         double bendSemitones = (pitchBends[ch] / 8192.0) * 2.0;
                             n.frequency = 440.0 * Math.pow(2.0, (n.note - 69 + bendSemitones) / 12.0);
+                            double oversampledRate = 44100.0 * oversample;
+                            n.phaseStep16 = (int) ((n.frequency * 65536.0) / oversampledRate);
+                            n.modPhaseStep16 = (int) ((n.frequency * fmRatio * 65536.0) / oversampledRate);
+                            if ("xor".equals(synthMode) && fmRatio == 1.0) {
+                                n.modPhaseStep16 = (int) ((n.frequency * 1.005 * 65536.0) / oversampledRate);
+                            }
                             n.isDrum = (ch == 9);
                             n.active = true;
                             break;
@@ -609,6 +625,12 @@ public class BeepSynthProvider implements SoftSynthProvider
                         ActiveNote n = activeNotes[i];
                         if (n.active && n.channel == ch) {
                             n.frequency = 440.0 * Math.pow(2.0, (n.note - 69) / 12.0);
+                            double oversampledRate = 44100.0 * oversample;
+                            n.phaseStep16 = (int) ((n.frequency * 65536.0) / oversampledRate);
+                            n.modPhaseStep16 = (int) ((n.frequency * fmRatio * 65536.0) / oversampledRate);
+                            if ("xor".equals(synthMode) && fmRatio == 1.0) {
+                                n.modPhaseStep16 = (int) ((n.frequency * 1.005 * 65536.0) / oversampledRate);
+                            }
                         }
                     }
                 }
