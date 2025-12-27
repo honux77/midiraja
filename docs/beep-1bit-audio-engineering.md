@@ -99,11 +99,11 @@ Only two distinct acoustic paths were possible within the constraints of a 1MHz 
 
 **The Purist Architectural Critique**
 A strict hardware purist would note that the engine's internal architecture employs an "analog bridge" (summing all notes into a $[-1.0, 1.0]$ floating-point domain before final 1-bit conversion) as a modern software convenience. In a true 1-bit hardware environment, intermediate analog summation is physically impossible. The architecture must strictly follow three layers:
-1.  **Synthesis:** Generation of a raw waveform.
-2.  **Quantization (The 1-Bit Translator):** If the synthesized wave is continuous (like FM), it *must* be converted into a discrete boolean (0 or 1) stream *before* it can interact with other notes. Under this strict taxonomy, **PWM** and **DSD** are Quantizers, not Multiplexers.
+1.  **Pure Integer Synthesis:** Generation of a raw waveform. A strict emulation cannot use 64-bit IEEE floating-point math (`double`), as early CPUs lacked FPUs entirely. The engine enforces this by translating the user's floating-point CLI inputs into strict **16-bit fixed-point phase accumulators** ($0 \sim 65535$) at the driver boundary. Inside the 1.4MHz audio loop, all Phase Modulation relies exclusively on integer addition, bitwise masking (`& 0xFFFF`), and fast bit-shifting (`>>> 8`) to query the 8-bit Sine LUT.
+2.  **Quantization (The 1-Bit Translator):** If the synthesized wave contains varying amplitude (like FM), it *must* be converted into a discrete boolean (0 or 1) stream *before* it can interact with other notes. Under this strict taxonomy, **PWM** and **DSD** are Quantizers, not Multiplexers. Floating-point translation is only permitted at the very end of this stage to apply the analog VCA (Voltage-Controlled Amplifier) volume envelope.
 3.  **Multiplexing:** The boolean logic gate that forces multiple 0/1 streams onto a single speaker pin. Only **XOR** (boolean collision) or **TDM** (high-speed sequential pin reading) qualify as true digital multiplexers.
 
-By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user strips away all heuristic DSP protections, analog bridges, and high-speed oversampling, exactly replicating the absolute physical limits and gritty acoustic reality of 1980s 1MHz hardware.
+By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user strips away all heuristic DSP protections, analog bridges, and high-speed oversampling, exactly replicating the strict integer math, absolute physical limits, and gritty acoustic reality of 1980s 1MHz hardware.
 
 ---
 
