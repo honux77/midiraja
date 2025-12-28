@@ -97,13 +97,18 @@ Only two distinct acoustic paths were possible within the constraints of a 1MHz 
 *   **Phase Modulation (`--synth pm`):** Impossible. The 6502 had no floating-point unit (FPU) and lacked hardware multiplication/division, making real-time Sine wave generation and phase deviation impossible at audio rates.
 *   **TDM, PWM, and DSD Multiplexing:** Impossible. These require switching the speaker pin at minimums of 44.1kHz up to 1.4MHz. The absolute fastest an Apple II could toggle a pin while doing nothing else was ~150kHz, and realistically ~10kHz when executing audio logic.
 
-**The Purist Architectural Critique**
-A strict hardware purist would note that the engine's internal architecture employs an "analog bridge" (summing all notes into a $[-1.0, 1.0]$ floating-point domain before final 1-bit conversion) as a modern software convenience. In a true 1-bit hardware environment, intermediate analog summation is physically impossible. The architecture must strictly follow three layers:
-1.  **Pure Integer Synthesis:** Generation of a raw waveform. A strict emulation cannot use 64-bit IEEE floating-point math (`double`), as early CPUs lacked FPUs entirely. The engine enforces this by translating the user's floating-point CLI inputs into strict **16-bit fixed-point phase accumulators** ($0 \sim 65535$) at the driver boundary. Inside the 1.4MHz audio loop, all Phase Modulation relies exclusively on integer addition, bitwise masking (`& 0xFFFF`), and fast bit-shifting (`>>> 8`) to query the 8-bit Sine LUT.
-2.  **Quantization (The 1-Bit Translator):** If the synthesized wave contains varying amplitude (like FM), it *must* be converted into a discrete boolean (0 or 1) stream *before* it can interact with other notes. Under this strict taxonomy, **PWM** and **DSD** are Quantizers, not Multiplexers. Floating-point translation is only permitted at the very end of this stage to apply the analog VCA (Voltage-Controlled Amplifier) volume envelope.
-3.  **Multiplexing:** The boolean logic gate that forces multiple 0/1 streams onto a single speaker pin. Only **XOR** (boolean collision) or **TDM** (high-speed sequential pin reading) qualify as true digital multiplexers.
+**The Purist Architectural View**
+The engine's internal pipeline was heavily refactored to align with the strict limitations of 1980s hardware engineering. The architecture rigorously enforces the following purist constraints:
+1.  **Pure Integer Synthesis:** Early CPUs lacked Floating-Point Units (FPUs). To emulate this, the engine translates the user's floating-point CLI inputs into strict **16-bit fixed-point phase accumulators** ($0 \sim 65535$) at the driver boundary. Inside the audio loop, Phase Modulation relies exclusively on integer addition, bitwise masking (`& 0xFFFF`), and fast bit-shifting (`>>> 8`) to query a 256-byte, 8-bit Sine LUT.
+2.  **Strict Boolean Multiplexing:** In a true 1-bit hardware environment, intermediate analog summation between digital pins is physically impossible. The engine enforces a rule where all continuous waves (like FM) must be pushed through a hardware-style Quantizer (PWM or DSD) to become discrete boolean streams (0 or 1) *before* they are allowed to mix.
+3.  **Taxonomic Accuracy:** Under this strict framework, PWM and DSD are correctly categorized as "1-Bit Translators", while only **XOR** (boolean collision) and **TDM** (sequential pin reading) are permitted to act as true digital multiplexers.
 
-By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user strips away all heuristic DSP protections, analog bridges, and high-speed oversampling, exactly replicating the strict integer math, absolute physical limits, and gritty acoustic reality of 1980s 1MHz hardware.
+**Remaining Modern Concessions:**
+While the logical data flow is historically accurate, the engine still relies on a few "modern cheats" to achieve listenable polyphony:
+*   **The 1.4MHz Clock Speed:** Generating 32x oversampled TDM or DSD requires switching the speaker pin at ~1.4 million times per second. A stock 1MHz 6502 CPU could realistically only toggle a pin at ~15kHz while executing logic, making these high-fidelity modes physically impossible on original hardware.
+*   **Floating-Point VCAs:** The final application of the volume decay envelope utilizes modern 64-bit floating-point multiplication rather than relying on a constrained 8-bit hardware multiplier.
+
+By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user actively disables these modern clock-speed concessions and oversampling layers, exactly replicating the gritty acoustic reality and absolute physical constraints of 1980s 1MHz hardware.
 
 ---
 
