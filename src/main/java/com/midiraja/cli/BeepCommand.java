@@ -50,10 +50,10 @@ public class BeepCommand implements Callable<Integer>
     private int voices = 2;
 
     @Option(names = {"--fm-ratio"}, defaultValue = "1.0", description = "Modulator frequency ratio (e.g., 1.0 for clean, 3.5 for metallic). Default: 1.0")
-    private double fmRatio = 1.0;
+    private double fmRatio = 2.0;
 
     @Option(names = {"--fm-index"}, defaultValue = "1.1", description = "Modulation intensity peak. Default: 1.1")
-    private double fmIndex = 1.1;
+    private double fmIndex = 2.0;
 
     @Option(names = {"-q", "--quality"}, defaultValue = "1",
         description = "Audio quality level from 1 to 6. (1 = Authentic hardware noise, 6 = Modern studio pristine).")
