@@ -34,10 +34,10 @@ public class BeepCommand implements Callable<Integer>
     @Mixin @org.jspecify.annotations.Nullable private CommonOptions common;
 
     @Option(names = {"--synth"}, defaultValue = "square", description = "Synthesis generation algorithm:\n" +
-        "  'pm'     (Default, Yamaha-like Phase Modulation using smooth sine waves)\n" +
+        "  'fm'     (Yamaha-like Phase/Frequency Modulation using smooth sine waves)\n" +
         "  'xor'    (Historical Tim Follin-style Ring Modulation using intersecting square waves)\n" +
         "  'square' (Classic 8-bit Square Wave with LFO Vibrato and Duty Sweep)")
-    private String synth = "pm";
+    private String synth = "square";
 
     @Option(names = {"--mux"}, defaultValue = "xor", description = "Multiplexing algorithm:\n" +
         "  'dsd' (Default, Delta-Sigma Modulation, highest modern fidelity)\n" +

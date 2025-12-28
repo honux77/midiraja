@@ -34,12 +34,12 @@ public class BeepSynthProvider implements SoftSynthProvider
 
     private static final java.util.Map<String, DspParams> GOD_TABLE = java.util.Map.ofEntries(
         // Purist Architecture: Only XOR and TDM are valid true Multiplexers.
-        java.util.Map.entry("pm_tdm_1", new DspParams(0.230, 0.000, 1.580)),
-        java.util.Map.entry("pm_tdm_2", new DspParams(0.241, 0.000, 1.806)),
-        java.util.Map.entry("pm_tdm_4", new DspParams(0.224, 0.000, 0.000)),
-        java.util.Map.entry("pm_xor_1", new DspParams(0.028, 0.000, 8.625)),
-        java.util.Map.entry("pm_xor_2", new DspParams(0.186, 0.000, 0.129)),
-        java.util.Map.entry("pm_xor_4", new DspParams(0.143, 0.000, 0.059)),
+        java.util.Map.entry("fm_tdm_1", new DspParams(0.230, 0.000, 1.580)),
+        java.util.Map.entry("fm_tdm_2", new DspParams(0.241, 0.000, 1.806)),
+        java.util.Map.entry("fm_tdm_4", new DspParams(0.224, 0.000, 0.000)),
+        java.util.Map.entry("fm_xor_1", new DspParams(0.028, 0.000, 8.625)),
+        java.util.Map.entry("fm_xor_2", new DspParams(0.186, 0.000, 0.129)),
+        java.util.Map.entry("fm_xor_4", new DspParams(0.143, 0.000, 0.059)),
         java.util.Map.entry("xor_tdm_1", new DspParams(0.023, 0.000, 0.000)),
         java.util.Map.entry("xor_tdm_2", new DspParams(0.036, 0.000, 0.000)),
         java.util.Map.entry("xor_tdm_4", new DspParams(0.028, 0.000, 0.000)),
@@ -273,7 +273,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                             else synthBit = false;
                             
                         } else {
-                            // PHASE MODULATION (Analog generation)
+                            // FM (Phase Modulation logic)
                             double decay = Math.max(0.0, 1.0 - (time / 0.5));
                             double keyScale = 1.0;
                             if (note.frequency > 261.63) {

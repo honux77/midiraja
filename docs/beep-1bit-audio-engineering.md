@@ -126,7 +126,7 @@ $$ S = \sum M_{fund} - (8.0 \times \sum M_{alias}) - (2.0 \times \sum M_{dc}) $$
 
 **2. The Evolutionary Model**
 The GA utilized a population size of 40 over 15 generations. It employed Roulette Wheel selection biased towards higher SNR scores, combined with elitism (retaining the top 2 candidates per generation) to prevent regression. Mutation operators were designed with a $10\%$ probability of executing a uniform random reset (catastrophe) to escape local minima. This rigorous process identified precise parameter sets that manually tuning could not isolate:
-*   **PM + DSD + 4 Voices:** The algorithm established that applying an aggressive non-linear overdrive ($8.7\times$ via `Math.tanh`) to the analog sine wave, combined with high TPDF dither ($0.23$), was mathematically required to preserve the continuous phase information through the 1-bit Delta-Sigma quantizer. Without this pre-shaping, the high-density signal degraded into broadband noise.
+*   **FM + DSD + 4 Voices:** The algorithm established that applying an aggressive non-linear overdrive ($8.7\times$ via `Math.tanh`) to the analog sine wave, combined with high TPDF dither ($0.23$), was mathematically required to preserve the continuous phase information through the 1-bit Delta-Sigma quantizer. Without this pre-shaping, the high-density signal degraded into broadband noise.
 *   **XOR + XOR + 2 Voices:** The algorithm determined that external Dither decreased overall SNR, as the high-frequency harmonics inherent to the XOR square waves acted as an adequate self-dithering mechanism. The GA minimized Dither to $0.0$ and reduced the Master LPF cutoff coefficient to $0.028$ to strictly attenuate high-frequency folding artifacts.
 
 **3. Static Parameter Injection**
