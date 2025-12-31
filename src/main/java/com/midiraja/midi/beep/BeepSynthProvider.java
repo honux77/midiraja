@@ -19,9 +19,28 @@ import java.util.Iterator;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 
+/**
+ * A purist 1-bit digital cluster soft-synth provider.
+ * 
+ * <p>This engine emulates the extreme physical limitations of 1980s microcomputers (like the Apple II)
+ * by enforcing a strict boolean-only signal path. It supports various synthesis methods (Square, XOR, FM)
+ * and digital multiplexing strategies (XOR collision, TDM time-slicing).
+ * 
+ * <p>Key features include:
+ * <ul>
+ *   <li>100% Fixed-Point 16-bit integer math for synthesis.</li>
+ *   <li>8-bit signed integer Sine Look-Up Table (LUT).</li>
+ *   <li>Internal PWM quantization for continuous waveforms.</li>
+ *   <li>Psychoacoustic Frequency-Weighted Bass Isolation routing.</li>
+ *   <li>AI-tuned DSP parameters via the 'God Table' lookup matrix.</li>
+ * </ul>
+ */
 @SuppressWarnings({"ThreadPriorityCheck", "EmptyCatch"})
 public class BeepSynthProvider implements SoftSynthProvider
 {
+    /**
+     * Internal container for AI-optimized DSP parameters.
+     */
     private static class DspParams
     {
         final double lpfCutoff;
@@ -36,6 +55,11 @@ public class BeepSynthProvider implements SoftSynthProvider
         }
     }
 
+    /**
+     * The God Table: A static lookup matrix of AI-tuned DSP parameters.
+     * Contains LPF cutoffs, dither amplitudes, and overdrive levels discovered
+     * via Genetic Algorithm for every combination of synth and mux modes.
+     */
     private static final java.util.Map<String, DspParams> GOD_TABLE = java.util.Map.ofEntries(
         // Purist Architecture: Only XOR and TDM are valid true Multiplexers.
         java.util.Map.entry("fm_tdm_1", new DspParams(0.230, 0.000, 1.580)),
@@ -79,6 +103,10 @@ public class BeepSynthProvider implements SoftSynthProvider
     private volatile boolean running = false;
     private volatile boolean renderPaused = false;
 
+    /**
+     * Represents a single active MIDI note in the synthesis engine.
+     * Uses 16-bit fixed-point accumulators for hardware-accurate phase tracking.
+     */
     private static class ActiveNote
     {
         volatile boolean active = false;
@@ -134,6 +162,12 @@ public class BeepSynthProvider implements SoftSynthProvider
     
     // Fast 16-bit fixed-point Sine Lookup
     // Phase is an integer from 0 to 65535. We shift right by 8 to get the 0-255 index.
+    /**
+     * Per-sample 16-bit fixed-point Sine lookup.
+     * 
+     * @param phase16 The 16-bit phase accumulator (0-65535).
+     * @return The 8-bit signed amplitude (-127 to +127).
+     */
     @SuppressWarnings("unused")
     private static int fastSinInt(int phase16)
     {
@@ -168,6 +202,10 @@ public class BeepSynthProvider implements SoftSynthProvider
     // ---------------------------------------------------------
     // Ultimate 1-Bit Digital Unit (XOR Multiplexing FM)
     // ---------------------------------------------------------
+    /**
+     * A virtual 1-bit processing unit representing a single physical speaker output pin.
+     * Multiple units are combined via analog summation to reach modern playback volumes.
+     */
     private class DigitalUnit
     {
         private double pwmCarrierPhase = -1.0;
@@ -188,6 +226,12 @@ public class BeepSynthProvider implements SoftSynthProvider
             this.pwmCarrierStep = (22050.0 / sampleRate) * 2.0;
         }
 
+        /**
+         * Renders 1-bit audio for the notes assigned to this specific unit.
+         * 
+         * @param assignedNotes The list of active notes assigned to this unit.
+         * @return The resulting 1-bit signal normalized to [-1.0, 1.0].
+         */
         double render(List<ActiveNote> assignedNotes)
         {
             if (assignedNotes.isEmpty()) return 0.0;
@@ -374,6 +418,17 @@ public class BeepSynthProvider implements SoftSynthProvider
     }    private final DigitalUnit[] units;
     private final List<List<ActiveNote>> unitAssignments;
 
+    /**
+     * Constructs a new 1-Bit Digital Cluster provider.
+     * 
+     * @param audio The audio engine interface for output.
+     * @param voices Number of voices per core/unit (1-4).
+     * @param fmRatio Modulator frequency ratio for FM synthesis.
+     * @param fmIndex Modulation intensity for FM synthesis.
+     * @param oversample Oversampling factor (e.g., 32x).
+     * @param muxMode Multiplexing algorithm ("xor" or "tdm").
+     * @param synthMode Synthesis algorithm ("fm", "xor", or "square").
+     */
     public BeepSynthProvider(AudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode, String synthMode)
     {
         this.audio = audio;
@@ -482,6 +537,14 @@ public class BeepSynthProvider implements SoftSynthProvider
         renderThread.start();
     }
 
+    /**
+     * Performs frequency-weighted note routing and triggers parallel unit rendering.
+     * Implements "Bass Isolation" to prevent muddy intermodulation in the lower spectrum.
+     * 
+     * @param notes Snapshot of currently active MIDI notes.
+     * @param buffer The output PCM buffer to fill.
+     * @param frames Number of frames to render.
+     */
     private void renderCluster(List<ActiveNote> notes, short[] buffer, int frames)
     {
         for (int i = 0; i < numUnits; i++) unitAssignments.get(i).clear();

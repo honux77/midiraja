@@ -32,6 +32,12 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("ThreadPriorityCheck")
+/**
+ * A Gravis Ultrasound (GUS) soft-synth provider.
+ * 
+ * <p>This engine emulates the classic GF1 wavetable synthesis and supports
+ * authentic retro audio features like RealSound (6-bit PWM) and modular DSP filters.
+ */
 public class GusSynthProvider implements SoftSynthProvider
 {
     private final AudioEngine audio;
@@ -46,11 +52,23 @@ public class GusSynthProvider implements SoftSynthProvider
     private volatile boolean running = false;
     private volatile boolean renderPaused = false;
 
+    /**
+     * Constructs a standard 16-bit GUS provider.
+     * @param audio The audio engine interface.
+     * @param patchDir Path to the GUS patch directory (containing gus.cfg).
+     */
     public GusSynthProvider(AudioEngine audio, @Nullable String patchDir)
     {
         this(audio, patchDir, 16, false);
     }
 
+    /**
+     * Constructs a customizable GUS provider with bit-crushing and PWM options.
+     * @param audio The audio engine interface.
+     * @param patchDir Path to the GUS patch directory.
+     * @param bitDepth Internal rendering bit depth (1-16).
+     * @param pwmMode Whether to enable Pulse Width Modulation (RealSound) output.
+     */
     public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, int bitDepth, boolean pwmMode)
     {
         this.audio = audio;
