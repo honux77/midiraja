@@ -37,7 +37,7 @@ This uses the **1-Bit Digital Cluster** engine. It doesn't use samples; it calcu
 
 ---
 
-## 🎮 3. Basic Playback & TUI Controls
+## 🎮 3. Basic Playback & The 3 Ways to View
 
 ### Playing Multiple Files
 Midiraja handles large collections with ease. You can pass a single file, a list of files, or entire directories. It will automatically scan for MIDI files inside folders.
@@ -46,8 +46,10 @@ midra *.mid
 midra --loop --shuffle ~/my_midi_collection/
 ```
 
-### Live Controls (Terminal UI)
-While the music is playing, Midiraja transforms your terminal into an interactive dashboard. Use these keys to control the experience in real-time:
+### Live Controls & Display Modes (Terminal UI)
+While the music is playing, Midiraja transforms your terminal into an interactive dashboard. You can instantly change how the app looks by pressing **`1` (Classic)**, **`2` (Mini Widget)**, or **`3` (Full Dashboard)**. 
+
+Use these keys to control the experience in real-time:
 
 | Key | Action |
 |-----|--------|
@@ -57,39 +59,37 @@ While the music is playing, Midiraja transforms your terminal into an interactiv
 | **> / <** | Speed up / Slow down playback (Tempo) |
 | **' / /** | Transpose the key up or down |
 | **Space** | Pause or Resume playback |
-| **1, 2, 3**| Toggle UI modes: 1 (Classic), 2 (Mini), 3 (Full Dashboard) |
+| **1, 2, 3**| Toggle UI display modes |
 | **q** | Stop everything and return to the prompt |
 
 ---
 
-## 🎹 4. The Synthesizer Engines (Subcommands)
+## 🎹 4. The 3 Ways to Play (Engines & Subcommands)
 
-Midiraja is a "Museum of Computer Audio." By changing the subcommand, you change the entire acoustic character of the music.
+Midiraja's architecture allows it to output audio in three fundamentally different ways. You choose the method by adding a subcommand.
 
-### 🤖 1-Bit Digital Cluster (`beep`)
-This is our flagship engine. It emulates the raw, gritty sound of the Apple II speaker. It uses 100% fixed-point integer math and AI-tuned filters to make 1-bit audio sound musical.
-* **Best for:** 8-bit chiptune vibes and experimental electronic sounds.
-* **Usage:** `midra beep --synth fm song.mid` (Classic FM synthesis)
+### Option A: OS MIDI Ports (No subcommand)
+If you just type `midra song.mid`, Midiraja acts as a sequencer. It sends raw MIDI signals directly to your operating system.
+* **Best for:** Using Apple CoreMIDI, Windows GS Wavetable, or routing to a physical external synthesizer (like a real Yamaha Motif) plugged in via USB.
+* **Usage:** `midra song.mid` (A menu will pop up asking you to select a port).
 
-### 📻 AdLib / Sound Blaster FM (`opl` & `opn`)
-Perfectly replicates the FM synthesis chips found in 90s sound cards and Sega consoles. No external files are needed as we include dozens of legendary "Bank" files built-in.
-* **Best for:** 90s DOS games, DOOM soundtracks, and Mega Drive/Genesis vibes.
-* **Usage:** `midra opl -b 14 song.mid` (The "DOOM" soundbank)
+### Option B: Built-in Retro Engines (Zero-Dependency)
+These engines are compiled directly into the Midiraja binary. They require absolutely no external installations or downloads to work.
 
-### 🎻 Gravis Ultrasound (`gus`)
-The high-end wavetable alternative to Sound Blaster. On its first run, Midiraja will offer to download a lightweight (27MB) patch set automatically.
-* **Best for:** High-quality orchestral or acoustic MIDI files.
-* **Usage:** `midra gus --bits 6 --realsound song.mid` (Simulates the lower-fidelity PWM output)
+* **🤖 1-Bit Digital Cluster (`beep`):** Emulates the raw, gritty, boolean-logic sound of the Apple II speaker. 
+  * *Usage:* `midra beep --synth fm song.mid`
+* **📻 AdLib / Sound Blaster FM (`opl` & `opn`):** Perfect FM synthesis replicating 90s DOS sound cards and Sega consoles. Includes DOOM and Duke Nukem banks built-in.
+  * *Usage:* `midra opl -b 14 song.mid`
+* **🎻 Gravis Ultrasound (`gus`):** 1990s wavetable synthesis. On its first run, it will automatically download a tiny 27MB patch set for you.
+  * *Usage:* `midra gus --bits 6 --realsound song.mid`
 
-### 🎹 FluidSynth (`fluidsynth`)
-The industry standard for modern MIDI playback. This engine requires you to provide your own SoundFont file (`.sf2`).
-* **Best for:** Modern, realistic instrument reproduction.
-* **Usage:** `midra fluidsynth /path/to/my_piano.sf2 song.mid`
+### Option C: Shared Library Linking (External Engines)
+If you want industry-standard modern rendering or cycle-accurate emulation, Midiraja can dynamically link to popular C-libraries if you have them installed via Homebrew or apt.
 
-### 📟 Roland MT-32 (`mt32`)
-The "Holy Grail" of early PC gaming audio. Due to copyright, you must provide your own MT-32 ROM files. Simply point Midiraja to the folder containing them.
-* **Best for:** LucasArts (Monkey Island) and Sierra (King's Quest) adventures.
-* **Usage:** `midra mt32 ~/roms/ monkey_island.mid`
+* **🎹 FluidSynth (`fluidsynth`):** The industry standard for SoundFont rendering. Requires you to provide your own `.sf2` file.
+  * *Usage:* `midra fluidsynth /path/to/my_piano.sf2 song.mid`
+* **📟 Roland MT-32 (`mt32`):** The "Holy Grail" of early PC gaming audio. Requires the `munt` emulator and original Roland ROM files.
+  * *Usage:* `midra mt32 ~/roms/ monkey_island.mid`
 
 ---
 
@@ -100,5 +100,3 @@ Want to start a song at a specific moment or at a specific volume? You can set t
 * **Jump to time:** `midra --start 01:30 song.mid`
 * **Custom Speed:** `midra --speed 1.5 song.mid` (1.5x faster)
 * **Key Transpose:** `midra --transpose -12 song.mid` (One octave lower)
-
-If you run Midiraja without a engine subcommand (e.g., `midra song.mid`), it will simply send the MIDI data to your OS's default synthesizer.

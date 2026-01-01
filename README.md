@@ -4,14 +4,21 @@
 
 Whether you want to quickly preview a `.mid` file, practice an instrument by changing the key and tempo on the fly, or just listen to a folder full of retro game soundtracks through historically accurate software synthesizers, `midra` makes it incredibly easy.
 
-## ✨ Features
-* **Rich Terminal UI**: Experience MIDI like never before with three adaptive display modes:
-  * `--full` (`-3`): A glorious full-screen dashboard with 16-channel VU meters, progress bars, and a dynamic playlist.
-  * `--mini` (`-2`): A compact, single-line status widget perfect for background listening.
-  * `--classic` (`-1`): Standard, pipe-friendly console output.
-* **Zero Config Retro Audio**: Comes built-in with mathematical software synthesizers (1-Bit, AdLib OPL, OPN2, GUS) that require zero external patches to start playing.
-* **Live Controls**: Change playback speed, transpose the key, or tweak the volume *while* the music is playing—and keep those settings across the entire playlist!
-* **Playlists**: Toss in a folder full of files. Shuffle, loop, and skip tracks seamlessly.
+## ✨ The 3 Ways to Play
+Midiraja isn't just a player; it's a universal audio router. It can output your MIDI files in three fundamentally different ways depending on your needs:
+
+1. **External OS Ports (Hardware & Software):** By default, Midiraja acts as a sequencer, routing raw MIDI events directly to your OS's native ports (like Apple CoreMIDI or Windows GS Wavetable) or to your own external hardware synthesizers connected via USB/MIDI.
+2. **Built-in Retro Engines (Zero-Dependency):** Want instant retro sound without installing anything? Midiraja contains pure-mathematical emulators built directly into the binary. Enjoy Gravis Ultrasound (`gus`), AdLib FM (`opl`/`opn`), and a custom purist 1-Bit Digital Cluster (`beep`) instantly.
+3. **Shared Library Linking:** If you have industry-standard C-libraries installed on your system (like `fluid-synth` or `munt`), Midiraja will dynamically link to them, allowing for ultra-high-fidelity SoundFont rendering or cycle-accurate Roland MT-32 emulation.
+
+## 🖥️ The 3 Ways to View
+Experience your music with three adaptive Terminal UI modes:
+* **`--full` (`-3`):** A glorious full-screen dashboard featuring 16-channel VU meters, progress bars, and a dynamic playlist queue.
+* **`--mini` (`-2`):** A compact, single-line status widget perfect for background listening while you work in another split terminal.
+* **`--classic` (`-1`):** Standard, pipe-friendly console output.
+
+## 🎛️ Live Playback Control
+Change the playback speed, transpose the musical key, or tweak the master volume *while* the music is playing—and keep those settings persistent across an entire folder of files!
 
 ---
 
