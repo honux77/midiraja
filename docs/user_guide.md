@@ -6,12 +6,12 @@ Welcome to the official user guide for **Midiraja**! This manual will walk you t
 
 ## Chapter 1. Introduction
 
-Midiraja (`midra`) is a lightning-fast, terminal-based MIDI player. It is designed to act as a universal bridge between modern CLI environments and the golden age of computer music.
+Midiraja (`midra`) is the ultimate **Terminal-Native** MIDI player. It is designed to bring a deeply interactive, visually rich audio experience directly into your command line—without ever touching a mouse.
 
 **The Core Philosophy:**
-* **Zero Dependency:** You shouldn't need a music degree or a massive 1GB SoundFont library to hear a MIDI file. Midiraja comes batteries-included with pure-math synthesis engines.
-* **The 3 Ways to View:** Your terminal is your canvas. Choose between a full-screen dashboard, a single-line mini widget, or classic pipe-friendly logs.
-* **The 3 Ways to Play:** Route your music anywhere. Send it to an external Roland keyboard, synthesize it internally using 1980s 1-bit logic, or link it to modern C-libraries like FluidSynth.
+* **The Terminal as a Canvas:** We believe CLI tools can be beautiful. Midiraja features a lightning-fast Terminal UI (TUI) with real-time 16-channel VU meters, progress bars, and live keystroke controls for tempo and pitch.
+* **The 3 Ways to View:** Choose how you see your music: a glorious full-screen dashboard, a single-line mini widget for background listening, or classic pipe-friendly logs.
+* **The 3 Ways to Play:** Route your music anywhere. Send it to an external hardware keyboard, link it to modern C-libraries like FluidSynth, or synthesize it internally using built-in, zero-dependency retro engines (like OPL or 1-Bit logic).
 
 ---
 
@@ -37,7 +37,7 @@ Don't want to configure anything? Download any `.mid` file from the internet and
 ```bash
 midra beep song.mid
 ```
-*(This instantly boots up the zero-dependency 1-Bit Digital Cluster engine, generating retro sound using pure mathematics!)*
+*(This instantly fires up the Terminal UI alongside a built-in 1-Bit retro engine, generating sound using pure mathematics!)*
 
 ---
 

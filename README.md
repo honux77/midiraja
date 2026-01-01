@@ -1,6 +1,6 @@
 # Midiraja (midra) 🎵
 
-**Midiraja** (command: `midra`) is a lightning-fast, zero-dependency MIDI player for your terminal. 
+**Midiraja** (command: `midra`) is the ultimate **Terminal-Native** MIDI player. It brings a rich, interactive audio dashboard directly to your command line. 
 
 Whether you want to quickly preview a `.mid` file, practice an instrument by changing the key and tempo on the fly, or just listen to a folder full of retro game soundtracks through historically accurate software synthesizers, `midra` makes it incredibly easy.
 
