@@ -103,32 +103,57 @@ These engines are baked directly into the Midiraja app. They require **absolutel
 
 #### 1. 1-Bit Digital Cluster (`beep`)
 * **What is it?** Back in 1981, computers like the Apple II didn't have sound cards; they just had a tiny beeper that could only be turned ON or OFF (1-Bit). This engine mathematically simulates that incredibly harsh, gritty, and charming sound constraint.
-* **How to use it:** 
-  * `midra beep song.mid` (Plays with a modern, smooth FM synthesis flavor)
-  * `midra beep --synth square --mux xor --voices 2 song.mid` (The hardcore 1981 Apple II emulation mode. Brace your ears!)
+* **How to use it:** `midra beep song.mid`
+* **🎛️ Advanced Options:**
+  * `--synth <mode>`: Choose the waveform generation method.
+    * `fm` *(Default)*: Smooth, Yamaha-style Phase Modulation. Sounds like a retro electric piano, clarinet, or bell.
+    * `square`: The classic "Nintendo" 8-bit sound. Automatically applies a subtle LFO vibrato to simulate authentic 1980s chiptune tracking.
+    * `xor`: A harsh, metallic Ring Modulation generator. Replicates the aggressive, buzzing synth-bass pioneered by legendary composer Tim Follin.
+  * `--mux <mode>`: Choose the "Multiplexer" (how multiple notes are squished into a single 1-bit speaker pin).
+    * `xor` *(Default)*: Historic 1981 Apple II logic. It crashes the notes together using a boolean Exclusive-OR gate. This causes beautiful, gritty phase-cancellations (intermodulation).
+    * `tdm`: A modern "cheat". Switches the speaker between notes at 1.4 million times a second. Sounds incredibly clean with zero distortion.
+  * `--voices <1-4>`: How many notes a single "virtual speaker" is allowed to play. Set this to `2` with `--mux xor` to perfectly emulate the exact physical limits of early 80s hardware!
+  * `--fm-ratio <float>` & `--fm-index <float>`: When using `--synth fm`, these tweak the mathematics of the sound. `Ratio 1.0 / Index 2.5` sounds like a bright keyboard. `Ratio 3.5 / Index 1.8` sounds like a crystal bell.
+* **Example:** `midra beep --synth square --mux xor --voices 2 song.mid` (Hardcore 1981 Apple II mode!)
 
 #### 2. AdLib / Sound Blaster FM (`opl` & `opn`)
 * **What is it?** This perfectly replicates the famous Yamaha chips used in 1990s PC sound cards and Sega Genesis consoles. It gives everything that classic, twangy "DOOM" or "Sonic the Hedgehog" vibe.
-* **How to use it:** 
-  * `midra opl song.mid` (PC DOS style)
-  * `midra opn song.mid` (Sega Genesis style)
-  * `midra opl -b 14 song.mid` (Plays the song using the legendary built-in DOOM instrument bank!)
+* **How to use it:** `midra opl song.mid` (PC DOS style) or `midra opn song.mid` (Sega Genesis style).
+* **🎛️ Advanced Options:**
+  * `-b` or `--bank <bank>`: Changes the instrument "Bank". FM synthesis doesn't use real samples; it uses mathematical recipes to fake instruments. Different games used different recipes!
+    * `-b 14` : The legendary DOOM (1993) soundbank. Heavy, twangy, and dark.
+    * `-b 58` : Duke Nukem 3D soundbank.
+    * `-b 0` : A standard, balanced General MIDI bank.
+    * *(You can also provide a direct file path to your own `.wopl` or `.wopn` bank file!)*
+  * `-e` or `--emulator <name>`: Switch the underlying emulation core.
+    * `nuked` *(Default)*: Cycle-accurate emulation of the Yamaha chip. Heaviest on the CPU, but mathematically perfect.
+    * `dosbox`: The classic, fast, and slightly imperfect emulator used in DOSBox.
+* **Example:** `midra opl -b 14 song.mid` (Plays the song using the DOOM instrument bank!)
 
 #### 3. Gravis Ultrasound (`gus`)
 * **What is it?** In the mid-90s, the GUS card revolutionized PC audio by playing back actual recorded audio samples (wavetables) instead of synthesizing them.
-* **How to use it:** `midra gus song.mid` 
-* *(Note: The very first time you run this, Midiraja will automatically download a tiny 27MB patch set for you. After that, it works completely offline!)*
+* **How to use it:** `midra gus song.mid` (Auto-downloads a 27MB patch set on first run).
+* **🎛️ Advanced Options:**
+  * `-p` or `--patch-dir <path>`: Tell the engine to use a custom folder of GUS patches (like the famous `eawpats`) instead of the default downloaded ones.
+  * `--bits <1-16>`: A built-in Bitcrusher effect! High-end CD audio is 16-bit. If you drop this to `8` or `6`, the engine intentionally mathematically degrades the audio, creating that crunchy, hissing, low-fidelity texture of early 90s DOS games.
+  * `--realsound`: Turns on a mathematical simulation of the 1980s "RealSound" technique. It completely destroys the pristine wavetable audio and forces it out through a simulated Pulse-Width-Modulation (PWM) PC Speaker, making it sound exactly like it's coming from a tiny, overloaded 1989 desktop computer chassis.
+* **Example:** `midra gus --bits 6 --realsound song.mid` (Simulates extreme low-fidelity retro hardware)
 
 ### Method C: Shared Library Linking (External Engines)
 If you want ultra-realistic modern audio or perfect emulation of specific high-end retro gear, Midiraja can "link" to popular tools you may have already installed on your Mac or Linux machine.
 
 #### 1. FluidSynth (`fluidsynth`)
-* **What is it?** The industry standard for playing `.sf2` (SoundFont) files. SoundFonts are massive libraries of professionally recorded real instruments (like grand pianos or orchestras).
-* **Requirements:** You must download your own `.sf2` file from the internet.
+* **What is it?** The industry standard for playing `.sf2` (SoundFont) files. SoundFonts are massive libraries of professionally recorded real instruments.
+* **Official Site:** [fluidsynth.org](https://www.fluidsynth.org/) - Please refer to their official documentation for detailed information on advanced tuning, internal settings, and driver support.
+* **Requirements:** You must download your own `.sf2` file.
 * **How to use it:** `midra fluidsynth /path/to/my_piano.sf2 song.mid`
+* **🎛️ Advanced Options:**
+  * `--driver <name>`: Override the audio driver used by FluidSynth (e.g., `coreaudio`, `pulseaudio`, `dsound`) if the default fails on your machine.
+* **Example:** `midra fluidsynth --driver coreaudio my_piano.sf2 song.mid`
 
 #### 2. Roland MT-32 (`mt32`)
 * **What is it?** The "Holy Grail" of early 90s adventure game audio. If you ever played Monkey Island or King's Quest, this is the magical synthesizer that originally powered them.
+* **Official Site:** [Munt (MT-32 Emulator)](https://github.com/munt/munt) - Visit their repository for in-depth information on installation, ROM requirements, and compatibility lists.
 * **Requirements:** Because of copyright laws, you must legally acquire your own "MT-32 ROM" files and place them in a folder. You also need to install the `munt` emulator via Homebrew.
 * **How to use it:** `midra mt32 ~/my_rom_folder/ monkey_island.mid`
 
