@@ -1,0 +1,40 @@
+package com.midiraja.cli;
+
+import com.midiraja.MidirajaCommand;
+import com.midiraja.cli.AudioLibResolver;
+import com.midiraja.midi.NativeAudioEngine;
+import com.midiraja.midi.psg.PsgSynthProvider;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
+
+@Command(name = "psg", aliases = {"ay", "msx"}, mixinStandardHelpOptions = true,
+         description = "Play using the Programmable Sound Generator (PSG) emulator with 8-bit tracker hacks")
+public class PsgCommand implements java.util.concurrent.Callable<Integer>
+{
+    @ParentCommand @Nullable private MidirajaCommand parent;
+
+    @Parameters(index = "0..*", arity = "1..*",
+        description = "MIDI files, directories, or .m3u playlists to play.")
+    private List<File> files = new ArrayList<>();
+
+    @Mixin private CommonOptions common = new CommonOptions();
+
+    @Override public Integer call() throws Exception
+    {
+        var p = java.util.Objects.requireNonNull(parent);
+        
+        String audioLib = AudioLibResolver.resolve();
+        var audio = new NativeAudioEngine(audioLib);
+        var provider = new PsgSynthProvider(audio);
+
+        var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), false);
+        return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common);
+    }
+}
