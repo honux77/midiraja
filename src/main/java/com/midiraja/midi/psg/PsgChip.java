@@ -120,17 +120,35 @@ class PsgChip
                     }
                 }
                 
-                if (c.activeFrames % (882 * 4) == 0) {
-                    if (c.volume15 > 0) c.volume15--;
+                // 3. Envelope Decay (Drums decay super fast, Melody decays slowly)
+                if (c.midiChannel == 9) {
+                    // FAST DRUM DECAY: Decrement volume violently every single tick (50Hz)
+                    if (c.activeFrames % 882 == 0) {
+                        c.volume15 -= 3; // Crash the volume down quickly!
+                        
+                        // Kick Drum Pitch Drop: Sweep the tone frequency downwards rapidly
+                        if (c.midiNote == 35 || c.midiNote == 36) {
+                            c.baseFrequency *= 0.7; // Drop pitch by 30% every tick!
+                            c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
+                        }
+                    }
+                } else {
+                    // SLOW MELODY DECAY: Decrement every 4 ticks (12.5Hz)
+                    if (c.activeFrames % (882 * 4) == 0) {
+                        if (c.volume15 > 0) c.volume15--;
+                    }
                 }
                 
-                if (c.volume15 == 0) {
+                if (c.volume15 <= 0) {
                     c.active = false;
                     continue;
                 }
                 
-                if (c.midiChannel == 9) {
-                    c.isNoise = !c.isNoise;
+                // 4. Interleaved Noise for Snare (Toggle between Tone Body and Noise Tail)
+                if (c.midiChannel == 9 && (c.midiNote == 38 || c.midiNote == 40)) {
+                    if (c.activeFrames % 882 == 0) {
+                        c.isNoise = !c.isNoise; // Toggle!
+                    }
                 }
             }
             
@@ -181,11 +199,29 @@ class PsgChip
             c.reset();
             c.active = true;
             c.midiChannel = 9;
+            c.midiNote = note;
             c.volume15 = 15;
-            c.isNoise = true;
-            if (note == 35 || note == 36) noiseStep16 = 500; 
-            else if (note == 38 || note == 40) noiseStep16 = 3000;
-            else noiseStep16 = 6000;
+            
+            // Drum Crafting!
+            if (note == 35 || note == 36) { 
+                // KICK: Start with a punchy 120Hz tone, NO noise! The Tracker will pitch-drop this.
+                c.isNoise = false;
+                c.baseFrequency = 120.0;
+                c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
+                c.dutyCycle16 = 32767;
+            } else if (note == 38 || note == 40) { 
+                // SNARE: Start with a sharp 200Hz tone for the "Crack", Tracker will interleave Noise for the "Tail".
+                c.isNoise = false;
+                c.baseFrequency = 200.0;
+                c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
+                c.dutyCycle16 = 32767;
+                noiseStep16 = 3000; // Medium hiss
+            } else { 
+                // HI-HATS: Pure high-frequency noise, decays instantly
+                c.isNoise = true;
+                noiseStep16 = 6000;
+                c.volume15 = 8; // Don't overpower
+            }
             return true;
         }
         
