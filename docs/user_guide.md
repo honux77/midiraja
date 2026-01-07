@@ -123,6 +123,9 @@ These engines are baked directly into the Midiraja app. They require **absolutel
   * `--fm-ratio <float>` & `--fm-index <float>`: When using `--synth fm`, these tweak the mathematics of the sound. `Ratio 1.0 / Index 2.5` sounds like a bright keyboard. `Ratio 3.5 / Index 1.8` sounds like a crystal bell.
 * **Example:** `midra 1bit --synth square --mux xor --voices 2 song.mid` (Hardcore 1981 Apple II mode!)
 
+* **🎛️ Advanced Options:**
+  * `--chips <1-16>`: How many virtual PSG chips to solder onto the motherboard. Default is `4` (giving you 12 channels for modern MIDI compatibility). Set to `1` (3 channels total) for extremely harsh, authentic voice-stealing and forced arpeggios!
+  
 #### 2. AdLib / Sound Blaster FM (`opl` & `opn`)
 * **What is it?** This perfectly replicates the famous Yamaha chips used in 1990s PC sound cards and Sega Genesis consoles. It gives everything that classic, twangy "DOOM" or "Sonic the Hedgehog" vibe.
 * **How to use it:** `midra opl song.mid` (PC DOS style) or `midra opn song.mid` (Sega Genesis style).

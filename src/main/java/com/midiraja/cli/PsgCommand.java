@@ -6,6 +6,7 @@ import com.midiraja.midi.NativeAudioEngine;
 import com.midiraja.midi.psg.PsgSynthProvider;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import java.io.File;
@@ -24,6 +25,9 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         description = "MIDI files, directories, or .m3u playlists to play.")
     private List<File> files = new ArrayList<>();
 
+    @Option(names = {"--chips"}, defaultValue = "4", description = "Number of virtual PSG chips to instantiate (1 to 16). Default: 4 (12 channels). Set to 1 for authentic harsh arpeggios.")
+    private int chips = 4;
+
     @Mixin private CommonOptions common = new CommonOptions();
 
     @Override public Integer call() throws Exception
@@ -32,7 +36,7 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         
         String audioLib = AudioLibResolver.resolve();
         var audio = new NativeAudioEngine(audioLib);
-        var provider = new PsgSynthProvider(audio);
+        var provider = new PsgSynthProvider(audio, chips);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), false);
         return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common);
