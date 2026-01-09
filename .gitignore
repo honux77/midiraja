@@ -30,3 +30,5 @@ build
 ### OS X ###
 .DS_Store
 samples/
+git_hacker.py
+bin/

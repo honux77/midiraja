@@ -1,8 +1,0 @@
-{
-  "track_id": "softsynth_subprocess_20260228",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-02-28T00:00:00Z",
-  "updated_at": "2026-02-28T00:00:00Z",
-  "description": "외부 soft synth 프로세스를 subprocess 통합해서 운영하는 기능을 추가해줘."
-}
