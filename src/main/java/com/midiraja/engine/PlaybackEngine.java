@@ -41,7 +41,12 @@ public class PlaybackEngine {
   private volatile boolean isPaused = false;
   private volatile boolean ignoreSysex = false;
   private volatile PlaybackStatus endStatus = PlaybackStatus.FINISHED;
+  private volatile boolean playbackActuallyStarted = false;
   private Optional<String> initialResetType = Optional.empty();
+
+  public void setInitiallyPaused() {
+      this.isPaused = true;
+  }
 
   public void setIgnoreSysex(boolean ignoreSysex) {
     this.ignoreSysex = ignoreSysex;
@@ -106,12 +111,8 @@ public class PlaybackEngine {
   @SuppressWarnings({"ThreadPriorityCheck", "NonAtomicVolatileUpdate"})
   public PlaybackStatus start(com.midiraja.ui.PlaybackUI ui) throws Exception {
     isPlaying = true;
+    playbackActuallyStarted = false;
     endStatus = PlaybackStatus.FINISHED;
-
-    // Clear any reverb tail / queued audio from a previous song before
-    // starting. No-op for hardware MIDI ports; Munt overrides this to flush the
-    // ring buffer.
-    provider.prepareForNewTrack(sequence);
 
     try (var scope = StructuredTaskScope.open()) {
       scope.fork(() -> {
@@ -127,7 +128,9 @@ public class PlaybackEngine {
         playLoop();
       } finally {
         isPlaying = false;
-        provider.panic(); // Prevent dangling notes
+        if (playbackActuallyStarted) {
+            provider.panic(); // Prevent dangling notes
+        }
       }
 
       scope.join();
@@ -239,6 +242,25 @@ public class PlaybackEngine {
   }
 
   private void playLoop() throws Exception {
+    // STARTUP DELAY (UX Improvement): Wait 500ms before actually starting playback.
+    // This allows the user to quickly skip through tracks (Next/Prev) 
+    // without triggering heavy audio initialization and unwanted noise.
+    long startupWaitEnd = System.currentTimeMillis() + 500;
+    while (System.currentTimeMillis() < startupWaitEnd) {
+        if (!isPlaying) {
+            // User hit next/prev/quit during the delay. Abort immediately.
+            return;
+        }
+        Thread.sleep(10);
+    }
+    
+    playbackActuallyStarted = true;
+
+    // Clear any reverb tail / queued audio from a previous song before
+    // starting. No-op for hardware MIDI ports; Munt overrides this to flush the
+    // ring buffer.
+    provider.prepareForNewTrack(sequence);
+
     // Signal the provider that playback is about to begin. Munt uses this to
     // resume its render thread (paused since prepareForNewTrack) with a fresh
     // timing reference, so the ring buffer starts filling with real audio
@@ -543,6 +565,11 @@ public class PlaybackEngine {
         provider.panic();
       } catch (Exception ignored) { /* Ignore */
       }
+    } else {
+        // Wake up audio engine ring buffers after a long pause
+        try {
+            provider.onPlaybackStarted();
+        } catch (Exception ignored) {}
     }
     listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
   }

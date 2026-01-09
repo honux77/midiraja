@@ -234,6 +234,8 @@ public class PlaybackRunner
 
       try
       {
+        boolean wasPaused = false;
+        
         while (currentTrackIdx >= 0 && currentTrackIdx < playlist.size())
         {
           var file = playlist.get(currentTrackIdx);
@@ -257,6 +259,10 @@ public class PlaybackRunner
             engine.setIgnoreSysex(true);
           if (common.resetType.isPresent())
             engine.setInitialResetType(common.resetType);
+            
+          if (wasPaused) {
+              engine.setInitiallyPaused();
+          }
 
           var status = ScopedValue.where(TerminalIO.CONTEXT, activeIO)
                            .call(() -> engine.start(ui));
@@ -265,6 +271,7 @@ public class PlaybackRunner
           common.volume = (int)(engine.getVolumeScale() * 100);
           common.speed = engine.getCurrentSpeed();
           common.transpose = Optional.of(engine.getCurrentTranspose());
+          wasPaused = engine.isPaused();
 
           switch (status)
           {
