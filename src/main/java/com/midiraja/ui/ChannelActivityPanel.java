@@ -78,21 +78,19 @@ public class ChannelActivityPanel implements Panel
         // Determine optimal number of columns based on available space
         int numCols;
         if (h >= 16 && w < 80) {
-            numCols = 1; // Lots of vertical space, not enough horizontal -> 1 Column
+            numCols = 1;
         } else if (h >= 8 && w >= 60) {
-            numCols = 2; // Good amount of both -> 2 Columns
+            numCols = 2;
         } else if (h >= 4 && w >= 40) {
-            numCols = 4; // Not enough vertical, but enough horizontal -> 4 Columns
+            numCols = 4;
         } else if (h >= 16) {
-            numCols = 1; // Fallback for very tall but somehow not caught
+            numCols = 1;
         } else {
-            numCols = 4; // Absolute fallback for small screens (crammed)
+            numCols = 4;
         }
 
-        // If layout manager gave us less than needed rows, clip it gracefully
         int numRows = (int) Math.ceil(16.0 / numCols);
         int rowsToDraw = Math.min(numRows, h);
-
         int colWidth = w / numCols;
 
         for (int r = 0; r < rowsToDraw; r++)
@@ -105,38 +103,35 @@ public class ChannelActivityPanel implements Panel
 
                 String cell;
                 if (numCols == 4) {
-                    // 4-Column: Compact (No instrument name)
-                    int maxMeter = Math.max(2, colWidth - 7);
+                    // Format: "C01:[███··]"
+                    // CXX: (4 static) + brackets from ProgressBar (2 static) = 6 static
+                    int maxMeter = Math.max(2, colWidth - 6); 
                     int meterLen = (int) (channelLevels[ch] * maxMeter);
-                    String meter = Theme.COLOR_HIGHLIGHT + Theme.CHAR_BLOCK_FULL.repeat(meterLen)
-                        + Theme.COLOR_RESET + " ".repeat(maxMeter - meterLen);
+                    
+                    String meter = ProgressBar.render(meterLen, maxMeter, ProgressBar.Style.DOTTED_BACKGROUND, true);
                     cell = String.format("C%02d:%s", ch + 1, meter);
                     
-                    int visibleLen = 4 + maxMeter;
-                    int padding = Math.max(0, colWidth - visibleLen);
-                    cell += " ".repeat(padding);
+                    int visibleLen = 4 + 2 + maxMeter;
+                    cell += " ".repeat(Math.max(0, colWidth - visibleLen));
                 } else {
-                    // 1 or 2-Column: Rich (Includes instrument name)
                     String instName = getChannelName(ch);
                     if (instName.length() > 11) {
                         instName = instName.substring(0, 11);
                     }
-                    // Format: "CH 01 (Piano      ) : [meter]"
-                    int prefixLen = 22; // length of "CH 01 (Piano      ) : "
-                    int maxMeter = Math.max(2, colWidth - prefixLen - 2); 
+                    
+                    // Format: "CH 01 (Piano      ): [%s]"
+                    // "CH 01 " (6) + "(Piano      )" (13) + ": " (2) + brackets (2) = 23 static
+                    int staticLen = 23;
+                    int maxMeter = Math.max(2, colWidth - staticLen); 
                     int meterLen = (int) (channelLevels[ch] * maxMeter);
-                    String meter = Theme.COLOR_HIGHLIGHT + Theme.CHAR_BLOCK_FULL.repeat(meterLen)
-                        + Theme.COLOR_RESET + " ".repeat(maxMeter - meterLen);
+                    
+                    String meter = ProgressBar.render(meterLen, maxMeter, ProgressBar.Style.DOTTED_BACKGROUND, true);
                         
                     cell = String.format("CH %02d %-13s: %s", ch + 1, "(" + instName + ")", meter);
                     
-                    int visibleLen = 20 + maxMeter; 
-                    int padding = Math.max(0, colWidth - visibleLen);
-                    cell += " ".repeat(padding);
+                    int visibleLen = staticLen + maxMeter; 
+                    cell += " ".repeat(Math.max(0, colWidth - visibleLen));
                 }
-                
-                // For safety, hard-truncate if string calculation overshoots
-                // (ansi codes make length calculation tricky, but our padding logic is based on visible chars)
                 rowSb.append(cell);
             }
             buffer.append(truncate(rowSb.toString(), w)).append("\n");

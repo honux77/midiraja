@@ -64,32 +64,6 @@ public class NowPlayingPanel implements Panel {
   @Override
   public void onChannelActivity(int channel, int velocity) {}
 
-  private String buildProgressBar(int percent, int barWidth) {
-    int filled = (int)((percent / 100.0) * barWidth);
-    filled = Math.max(0, Math.min(barWidth, filled));
-
-    StringBuilder bar = new StringBuilder("[");
-
-    for (int i = 0; i < barWidth; i++) {
-      if (i < filled) {
-        if (i == filled - 1 && percent < 100) {
-          // White Playhead
-          bar.append(Theme.COLOR_RESET).append(Theme.CHAR_BLOCK_FULL);
-        } else {
-          // Highlight Trail
-          bar.append(Theme.COLOR_HIGHLIGHT)
-              .append(Theme.CHAR_BLOCK_FULL)
-              .append(Theme.COLOR_RESET);
-        }
-      } else {
-        bar.append(Theme.COLOR_RESET).append(Theme.CHAR_BLOCK_EMPTY);
-      }
-    }
-
-    bar.append("]");
-    return bar.toString();
-  }
-
   @Override
   public void render(ScreenBuffer buffer) {
     if (constraints.height() <= 0 || context == null)
@@ -128,7 +102,10 @@ public class NowPlayingPanel implements Panel {
     // overflow truncations.
     int barWidth =
         Math.max(10, constraints.width() - 23 - visiblePauseLen - timeLen);
-    String bar = buildProgressBar(percent, barWidth);
+    
+    int filled = (int)((percent / 100.0) * barWidth);
+    String bar = ProgressBar.render(filled, barWidth, ProgressBar.Style.SOLID_BACKGROUND, true);
+    
     String portInfo = String.format("[%d] %s", context.targetPort().index(),
                                     context.targetPort().name());
 

@@ -17,6 +17,9 @@ public final class Theme
 
     // Warning Yellow (for PAUSED state)
     public static final String COLOR_YELLOW = "\033[1;33m";
+    
+    // Dim/Gray (for grids and background elements)
+    public static final String COLOR_DIM = "\033[38;5;238m";
 
     // Invert Colors (for top banner)
     public static final String FORMAT_INVERT = "\033[7m";
@@ -24,6 +27,7 @@ public final class Theme
     // --- UI Magic Characters ---
     public static final String CHAR_BLOCK_FULL = "█";
     public static final String CHAR_BLOCK_EMPTY = "░";
+    public static final String CHAR_GRID_DOT = "·"; // Subtle dot for meter backgrounds
     public static final String CHAR_ARROW_RIGHT = ">";
 
     // For Dashboard structure
