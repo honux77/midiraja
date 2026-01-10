@@ -34,15 +34,25 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
     @Option(names = {"--duty-sweep"}, defaultValue = "25.0", description = "Width of the pulse-width sweep as a percentage (0-100). Default: 25.0 (gentle breathing), 45.0 (harsh wah-wah). Set to 0 to disable.")
     private double dutySweep = 25.0;
 
+    @Option(names = {"--scc"}, description = "Enable Konami SCC (K051649) Sound Cartridge emulation. Uses 32-byte custom wavetables for richer instruments instead of pure square waves.")
+    private boolean useScc = false;
+
     @Mixin private CommonOptions common = new CommonOptions();
 
     @Override public Integer call() throws Exception
     {
         var p = java.util.Objects.requireNonNull(parent);
         
+        // If SCC is requested and chips was left at default (4), change it to 2.
+        // 2 chips in SCC mode gives the classic MSX + SCC combination (1 PSG + 1 SCC).
+        int finalChips = chips;
+        if (useScc && finalChips == 4) {
+            finalChips = 2;
+        }
+        
         String audioLib = AudioLibResolver.resolve();
         var audio = new NativeAudioEngine(audioLib);
-        var provider = new PsgSynthProvider(audio, chips, vibratoDepth, dutySweep);
+        var provider = new PsgSynthProvider(audio, finalChips, vibratoDepth, dutySweep, useScc);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), false);
         return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common);

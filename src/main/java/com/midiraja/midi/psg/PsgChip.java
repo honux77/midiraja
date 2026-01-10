@@ -4,7 +4,7 @@ package com.midiraja.midi.psg;
  * Represents a single physical AY-3-8910 / YM2149F hardware chip.
  * Contains 3 Tone Channels, 1 Noise Generator, and 1 Hardware Envelope Generator.
  */
-class PsgChip
+class PsgChip implements TrackerSynthChip
 {
     private static final int NUM_CHANNELS = 3;
     private final int sampleRate;
@@ -55,7 +55,7 @@ class PsgChip
     private final double vibratoDepth;
     private final double dutySweep;
     
-    PsgChip(int sampleRate, double vibratoDepth, double dutySweep)
+    public PsgChip(int sampleRate, double vibratoDepth, double dutySweep)
     {
         this.vibratoDepth = Math.max(0.0, Math.min(100.0, vibratoDepth)) / 1000.0; // convert per mille 5.0 -> 0.005, max 10% pitch bend
         this.dutySweep = Math.max(0.0, Math.min(50.0, dutySweep)) / 100.0; // convert percentage 25.0 -> 0.25, cap max sweep to avoid inverting phase
@@ -68,12 +68,16 @@ class PsgChip
         dacTable[0] = 0.0;
     }
     
-    void reset() {
+    @Override public void reset() {
         for (int i = 0; i < NUM_CHANNELS; i++) channels[i].reset();
         hwEnvActive = false;
     }
     
-    double render()
+    @Override public void setProgram(int ch, int program) {
+        // PSG does not support instruments (could tweak duty cycle based on program later)
+    }
+    
+    @Override public double render()
     {
         double sumOutput = 0.0;
         
@@ -178,17 +182,27 @@ class PsgChip
         return sumOutput;
     }
     
-    boolean updateNote(int ch, int note, int velocity) {
+    @Override public boolean updateNote(int ch, int note, int velocity) {
         for (int i = 0; i < NUM_CHANNELS; i++) {
-            if (channels[i].active && channels[i].midiChannel == ch && channels[i].midiNote == note) {
-                channels[i].volume15 = (int) ((velocity / 127.0) * 15.0);
-                return true;
+            PsgChannel c = channels[i];
+            if (c.active && c.midiChannel == ch) {
+                if (c.arpSize > 0) {
+                    for (int j = 0; j < c.arpSize; j++) {
+                        if (c.arpNotes[j] == note) {
+                            c.volume15 = (int) ((velocity / 127.0) * 15.0);
+                            return true;
+                        }
+                    }
+                } else if (c.midiNote == note) {
+                    c.volume15 = (int) ((velocity / 127.0) * 15.0);
+                    return true;
+                }
             }
         }
         return false;
     }
     
-    boolean tryAllocateFree(int ch, int note, int velocity) {
+    @Override public boolean tryAllocateFree(int ch, int note, int velocity) {
         int targetCh = -1;
         for (int i = 0; i < NUM_CHANNELS; i++) {
             if (!channels[i].active) {
@@ -254,29 +268,90 @@ class PsgChip
         return true;
     }
     
-    void forceArpeggioFallback(int ch, int note, int velocity) {
-        PsgChannel melCh = channels[1];
-        if (melCh.active && melCh.arpSize < 4) {
-            melCh.arpNotes[melCh.arpSize++] = note;
-        } else {
-            // Hard steal
-            melCh.reset();
-            melCh.active = true;
-            melCh.midiChannel = ch;
-            melCh.midiNote = note;
-            melCh.volume15 = (int) ((velocity / 127.0) * 15.0);
-            melCh.arpNotes[0] = note;
-            melCh.arpSize = 1;
-            melCh.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-            melCh.phaseStep16 = (int) ((melCh.baseFrequency * 65536.0) / sampleRate);
+    @Override public void forceArpeggioFallback(int ch, int note, int velocity) {
+        int targetCh = -1;
+        
+        // 1. Try to find a tone channel already playing the SAME instrument (midiChannel) 
+        // that has room in its arpeggio buffer (< 4 notes).
+        for (int i = 0; i < NUM_CHANNELS; i++) {
+            if (i == 2) continue; // Skip noise channel for arpeggios
+            PsgChannel c = channels[i];
+            if (c.active && c.midiChannel == ch && c.arpSize < 4) {
+                targetCh = i;
+                break;
+            }
+        }
+        
+        // 2. If no matching instrument has room, we must steal a channel.
+        // Let's steal from channel 1 (or the oldest active tone channel).
+        if (targetCh == -1) {
+            targetCh = 1; // Fallback hard steal
+            PsgChannel c = channels[targetCh];
+            c.reset();
+            c.active = true;
+            c.midiChannel = ch;
+            c.midiNote = note;
+            c.volume15 = (int) ((velocity / 127.0) * 15.0);
+            c.arpNotes[0] = note;
+            c.arpSize = 1;
+            c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+            c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
+            return;
+        }
+        
+        // 3. Append to existing arpeggio buffer
+        PsgChannel c = channels[targetCh];
+        
+        // If it was playing a single note, convert it to an arpeggio array
+        if (c.arpSize == 0 && c.active) {
+            c.arpNotes[0] = c.midiNote;
+            c.arpSize = 1;
+        }
+        
+        // Avoid duplicate notes in the arpeggio
+        boolean exists = false;
+        for(int i=0; i<c.arpSize; i++) {
+            if (c.arpNotes[i] == note) exists = true;
+        }
+        
+        if (!exists) {
+            c.arpNotes[c.arpSize++] = note;
+            // Optionally boost volume slightly since it's now playing chords
+            c.volume15 = Math.max(c.volume15, (int) ((velocity / 127.0) * 15.0));
         }
     }
-    
-    void handleNoteOff(int ch, int note) {
+
+    @Override public void handleNoteOff(int ch, int note) {
         for (int i = 0; i < NUM_CHANNELS; i++) {
-            if (channels[i].active && channels[i].midiChannel == ch && channels[i].midiNote == note) {
-                channels[i].active = false;
-                if (i == 2) hwEnvActive = false;
+            PsgChannel c = channels[i];
+            if (c.active && c.midiChannel == ch) {
+                if (c.arpSize > 1) {
+                    // It's playing an arpeggio chord. Try to remove the specific note.
+                    int removeIdx = -1;
+                    for (int j = 0; j < c.arpSize; j++) {
+                        if (c.arpNotes[j] == note) {
+                            removeIdx = j;
+                            break;
+                        }
+                    }
+                    
+                    if (removeIdx != -1) {
+                        // Shift remaining notes left
+                        for (int j = removeIdx; j < c.arpSize - 1; j++) {
+                            c.arpNotes[j] = c.arpNotes[j + 1];
+                        }
+                        c.arpSize--;
+                        
+                        // If index is now out of bounds, reset it
+                        if (c.arpIndex >= c.arpSize) {
+                            c.arpIndex = 0;
+                        }
+                    }
+                } else if (c.midiNote == note) {
+                    // Single note playing, just kill the channel
+                    c.active = false;
+                    if (i == 2) hwEnvActive = false;
+                }
             }
         }
     }

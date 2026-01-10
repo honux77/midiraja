@@ -42,26 +42,58 @@ To bridge the gap between rich MIDI files and 3-channel hardware, the Midiraja `
 * **The Hack:** Rapidly toggle a channel's mixer register between Tone mode and Noise mode on alternate frames.
 * **The Implementation:** When MIDI Channel 10 (Drums) triggers a snare, the Tracker will interleave 1 frame of pure white noise with 1 frame of a 200Hz square wave, creating a punchy, aggressive 8-bit drum hit.
 
+## 3. The Expansion: Konami SCC (K051649) Emulation
+
+While the PSG is powerful when hacked, it remains limited by its pure square waves. To solve this, Midiraja fully emulates the **Konami SCC (Sound Custom Chip)**, the legendary expansion cartridge chip used in late MSX games (like *Gradius II* and *Snatcher*).
+
+### 3.1. MSX Pair Architecture (1x PSG + 1x SCC)
+* **The Concept:** The SCC lacks a noise generator and hardware envelopes, making it terrible for drums and aggressive bass. Historically, the SCC was *never* used alone; it was always plugged into an MSX machine containing a PSG.
+* **The Implementation:** When the `--scc` flag is enabled, the Midiraja engine instantiates chips in **Pairs**. `System 1` consists of `[Chip 0: PSG] + [Chip 1: SCC]`. 
+* **Smart Routing:**
+  * **Drums (Channel 10):** Forced onto the PSG (Chip 0) to utilize its Noise Generator for crisp snares and hi-hats.
+  * **Melody/Chords:** Routed to the SCC (Chip 1) to utilize its 5 custom wavetable channels for rich, lush sounds. Overflow drops back to the PSG's square waves.
+
+### 3.2. 32-Byte Procedural Wavetables & Interpolation
+* **The Hardware:** The SCC uses a tiny 32-byte RAM buffer per channel to define a custom waveform (-128 to +127).
+* **The Implementation:** Instead of violating copyright by dumping original Konami ROMs, Midiraja procedurally generates mathematically pure 32-byte waves based on the General MIDI instrument family (e.g., `sin(t)*0.8 + sin(3t)*0.2` for Strings/Pads, decaying Sawtooth for Pianos). 
+* **Anti-Aliasing:** To prevent harsh bit-crushing when reading only 32 samples, the engine uses **Linear Interpolation** across a double-precision phase accumulator, resulting in incredibly smooth analog-like output.
+
+### 3.3. Volume Compensation (RMS Matching)
+* **The Problem:** A pure square wave (PSG) has massive RMS energy compared to a sine or triangle wave (SCC). If played together at "max volume," the SCC melodies would be completely drowned out by the PSG drums.
+* **The Solution:** The SCC engine applies a **1.75x Volume Boost** and uses the exact same non-linear DAC mapping table as the PSG, ensuring perfect mixing balance between the two drastically different architectures.
+
+### 3.4. Smart Instrument-Matching Arpeggios
+* **The Enhancement:** Building on the Fast Arpeggio hack (2.1), the engine now intelligently handles polyphony overflow across both PSG and SCC.
+* **The Logic:** When a chord is played and channels run out, the engine searches the chip for a channel *already playing that exact MIDI instrument*. It then silently converts that single-note channel into an Arpeggio channel, sliding the new note into its 4-note buffer. This ensures Pianos arpeggiate with Pianos, and Strings with Strings, preventing chaotic "hard stealing" of unrelated tracks.
+
 ---
 
-## 3. Data Flow Diagram
+## 4. Data Flow Diagram
 
 ```text
-[ Modern MIDI File (Polyphonic, Smooth Volume) ]
+[ Modern MIDI File (Polyphonic, Smooth Volume, 16 Channels) ]
        │
        ▼
 [ The 50Hz Software Tracker Layer ]
-   ├── Polyphony Detector  ──> Creates High-Speed Arpeggios
-   ├── Bass Router         ──> Converts to Audio-Rate Hardware Envelope (Buzzer)
-   ├── Drum Mapper         ──> Triggers Interleaved Noise/Tone frames
-   └── ADSR Quantizer      ──> Converts float velocity to 4-Bit stepped decay
+   ├── Smart Polyphony Router ──> Groups identical instruments into Arpeggio Buffers
+   ├── Drum Mapper            ──> Routes to PSG Noise Generator
+   ├── Melody Mapper          ──> Routes to SCC Wavetables
+   └── ADSR Quantizer         ──> Converts float velocity to Stepped Decay
        │
-       ▼
-[ Pure Mathematical PSG Chip Emulation ]
-   ├── Channel A (Square)
-   ├── Channel B (Square)
-   ├── Channel C (Square / Buzzer)
-   └── Noise Generator
+       ├──► [ System 0: PSG (AY-3-8910) ]
+       │      ├── Ch 0 (Square / Buzzer)
+       │      ├── Ch 1 (Square)
+       │      └── Ch 2 (Square) + Noise Gen
+       │
+       └──► [ System 0: SCC (K051649) ]
+              ├── Ch 0 (32-Byte Wavetable + Linear Interpolation)
+              ├── Ch 1 (32-Byte Wavetable + Linear Interpolation)
+              ├── Ch 2 (32-Byte Wavetable + Linear Interpolation)
+              ├── Ch 3 (32-Byte Wavetable + Linear Interpolation)
+              └── Ch 4 (32-Byte Wavetable + Linear Interpolation)
+                     │
+                     ▼
+[ Volume Compensation & Non-Linear DAC Mixing ]
        │
        ▼
 [ Audio Output (44.1kHz PCM) ]

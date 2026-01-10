@@ -28,28 +28,53 @@ public class PsgSynthProvider implements SoftSynthProvider
     private volatile boolean running = false;
     private volatile boolean renderPaused = false;
     
-    private final int numChips;
-    private final PsgChip[] chips;
+    private final int systems; // The number of pairs (or just single PSGs if no SCC)
+    private final TrackerSynthChip[] chips;
+    private final int totalPhysicalChips;
+    private final int[] channelPrograms = new int[16];
+    private final boolean useScc;
     
     public PsgSynthProvider(AudioEngine audio)
     {
-        this(audio, 4, 0.5, 0.25); // Default setup
+        this(audio, 4, 0.5, 0.25, false); // Default setup
     }
     
-    public PsgSynthProvider(AudioEngine audio, int numChips, double vibratoDepth, double dutySweep)
+    public PsgSynthProvider(AudioEngine audio, int systems, double vibratoDepth, double dutySweep, boolean useScc)
     {
         this.audio = audio;
-        this.numChips = Math.max(1, Math.min(16, numChips));
-        this.chips = new PsgChip[this.numChips];
-        for (int i = 0; i < this.numChips; i++) {
-            this.chips[i] = new PsgChip(sampleRate, vibratoDepth, dutySweep);
+        this.systems = Math.max(1, Math.min(16, systems));
+        this.useScc = useScc;
+        this.totalPhysicalChips = useScc ? this.systems * 2 : this.systems;
+        this.chips = new TrackerSynthChip[this.totalPhysicalChips];
+        
+        if (useScc) {
+            // Pair Architecture: Each system is [1 PSG + 1 SCC]
+            for (int i = 0; i < this.systems; i++) {
+                this.chips[i * 2] = new PsgChip(sampleRate, vibratoDepth, dutySweep); // Even: PSG
+                this.chips[i * 2 + 1] = new SccChip(sampleRate, vibratoDepth);        // Odd: SCC
+            }
+        } else {
+            // Standard Mode: N PSGs
+            for (int i = 0; i < this.systems; i++) {
+                this.chips[i] = new PsgChip(sampleRate, vibratoDepth, dutySweep);
+            }
         }
     }
 
     @Override
     public List<MidiPort> getOutputPorts()
     {
-        return List.of(new MidiPort(0, String.format("[%d-Chip] AY-3-8910 Array (Tracker Hacks Mode)", numChips)));
+        String desc;
+        if (useScc) {
+            if (systems == 1) {
+                desc = "MSX System (1x AY-3-8910 + 1x Konami SCC)";
+            } else {
+                desc = String.format("[%d-System] MSX Array (%dx AY-3-8910 + %dx Konami SCC)", systems, systems, systems);
+            }
+        } else {
+            desc = String.format("[%d-Chip] AY-3-8910 Array (Tracker Hacks Mode)", systems);
+        }
+        return List.of(new MidiPort(0, desc));
     }
 
     @Override
@@ -82,12 +107,12 @@ public class PsgSynthProvider implements SoftSynthProvider
                     double sumOutput = 0.0;
                     
                     // Sum the output of all hardware chips
-                    for (int c = 0; c < numChips; c++) {
+                    for (int c = 0; c < totalPhysicalChips; c++) {
                         sumOutput += chips[c].render();
                     }
                     
                     // Normalize by the number of chips to prevent clipping
-                    sumOutput /= (numChips * 0.7);
+                    sumOutput /= (totalPhysicalChips * 0.7);
                     
                     pcmBuffer[i] = (short) (Math.max(-1.0, Math.min(1.0, sumOutput)) * 32767);
                 }
@@ -109,7 +134,7 @@ public class PsgSynthProvider implements SoftSynthProvider
     {
         renderPaused = true;
         if (audio != null) audio.flush();
-        for (int i = 0; i < numChips; i++) chips[i].reset();
+        for (int i = 0; i < totalPhysicalChips; i++) chips[i].reset();
     }
 
     @Override public void onPlaybackStarted() { renderPaused = false; }
@@ -129,21 +154,43 @@ public class PsgSynthProvider implements SoftSynthProvider
             if (velocity > 0)
             {
                 // 1. Update existing note if it's already playing on any chip
-                for (int c = 0; c < numChips; c++) {
+                for (int c = 0; c < totalPhysicalChips; c++) {
                     if (chips[c].updateNote(ch, note, velocity)) return;
                 }
                 
                 // 2. Try to find a FREE channel across all chips
-                // We route drums mostly to the first chip to centralize the noise generator
-                int startChip = (ch == 9) ? 0 : (numChips > 1 ? 1 : 0);
-                
-                for (int offset = 0; offset < numChips; offset++) {
-                    int c = (startChip + offset) % numChips;
-                    if (chips[c].tryAllocateFree(ch, note, velocity)) return;
+                // In Pair Architecture:
+                // Drums (ch == 9) should prioritize PSGs (even indices 0, 2, 4...) to use hardware noise.
+                // Melodies should prioritize SCCs (odd indices 1, 3, 5...) for richer wavetables.
+                int[] searchOrder = new int[totalPhysicalChips];
+                if (useScc) {
+                    if (ch == 9) {
+                        // Drums: PSG first, then SCC
+                        for (int i=0; i<systems; i++) searchOrder[i] = i * 2; // PSGs
+                        for (int i=0; i<systems; i++) searchOrder[systems + i] = i * 2 + 1; // SCCs
+                    } else {
+                        // Melody: SCC first, then PSG
+                        for (int i=0; i<systems; i++) searchOrder[i] = i * 2 + 1; // SCCs
+                        for (int i=0; i<systems; i++) searchOrder[systems + i] = i * 2; // PSGs
+                    }
+                } else {
+                    // Standard PSG-only mode: just search linearly
+                    for (int i=0; i<totalPhysicalChips; i++) searchOrder[i] = i;
                 }
                 
-                // 3. If all physical channels are full, force an Arpeggio fallback on the last chip
-                chips[numChips - 1].forceArpeggioFallback(ch, note, velocity);
+                for (int i = 0; i < totalPhysicalChips; i++) {
+                    int c = searchOrder[i];
+                    if (chips[c].tryAllocateFree(ch, note, velocity)) {
+                        // Ensure the chip knows what instrument is playing on this channel
+                        chips[c].setProgram(ch, channelPrograms[ch]);
+                        return;
+                    }
+                }
+                
+                // 3. If all physical channels are full, force an Arpeggio fallback.
+                // Target the most appropriate chip type based on the instrument
+                int fallbackChip = useScc ? (ch == 9 ? 0 : 1) : (totalPhysicalChips - 1);
+                chips[fallbackChip].forceArpeggioFallback(ch, note, velocity);
                 
             } else {
                 handleNoteOff(ch, note);
@@ -153,19 +200,25 @@ public class PsgSynthProvider implements SoftSynthProvider
         } else if (cmd == 0xB0 && data.length >= 3) {
             int cc = data[1] & 0xFF;
             if (cc == 123 || cc == 120) {
-                for (int c = 0; c < numChips; c++) chips[c].reset();
+                for (int c = 0; c < totalPhysicalChips; c++) chips[c].reset();
+            }
+        } else if (cmd == 0xC0 && data.length >= 2) {
+            int program = data[1] & 0xFF;
+            channelPrograms[ch] = program;
+            for (int c = 0; c < totalPhysicalChips; c++) {
+                chips[c].setProgram(ch, program);
             }
         }
     }
 
     private void handleNoteOff(int ch, int note) {
-        for (int c = 0; c < numChips; c++) {
+        for (int c = 0; c < totalPhysicalChips; c++) {
             chips[c].handleNoteOff(ch, note);
         }
     }
 
     @Override public void panic() { 
-        for (int c = 0; c < numChips; c++) chips[c].reset();
+        for (int c = 0; c < totalPhysicalChips; c++) chips[c].reset();
         if (audio != null) audio.flush(); 
     }
 }
