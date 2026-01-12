@@ -8,7 +8,7 @@ Whether you want to quickly preview a `.mid` file, practice an instrument by cha
 Midiraja isn't just a player; it's a universal audio router. It can output your MIDI files in three fundamentally different ways depending on your needs:
 
 1. **External OS Devices (`device`):** Midiraja can act as a pure sequencer, routing raw MIDI events directly to your OS's native ports (like Apple CoreMIDI or Windows GS Wavetable) or to your own external hardware synthesizers connected via USB/MIDI.
-2. **Built-in Retro Engines (Zero-Dependency):** Want instant retro sound without installing anything? Midiraja contains pure-mathematical emulators built directly into the binary. Enjoy Gravis Ultrasound (`gus`), AdLib FM (`opl`/`opn`), and a custom purist 1-Bit Digital Cluster (`1bit` / `beep`) instantly.
+2. **Built-in Retro Engines (Zero-Dependency):** Want instant retro sound without installing anything? Midiraja contains pure-mathematical emulators built directly into the binary. Enjoy Gravis Ultrasound (`gus`), AdLib FM (`opl`/`opn`), Programmable Sound Generator (`psg`/`msx`) with Konami SCC expansion, and a custom purist 1-Bit Digital Cluster (`1bit` / `beep`) instantly.
 3. **Shared Library Linking:** If you have industry-standard C-libraries installed on your system (like `fluid-synth` or `munt`), Midiraja will dynamically link to them, allowing for ultra-high-fidelity SoundFont rendering or cycle-accurate Roland MT-32 emulation.
 
 ## 🖥️ The 3 Ways to View

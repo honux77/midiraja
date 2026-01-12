@@ -12,7 +12,7 @@ import com.midiraja.midi.AudioEngine;
 import com.midiraja.dsp.AudioProcessor;
 import com.midiraja.dsp.AutoFlushGate;
 import com.midiraja.dsp.NoiseShapedQuantizer;
-import com.midiraja.dsp.PwmAcousticSimulator;
+import com.midiraja.dsp.OneBitAcousticSimulator;
 import com.midiraja.dsp.ReconstructionFilter;
 import com.midiraja.midi.MidiPort;
 import com.midiraja.midi.NativeAudioEngine;
@@ -45,7 +45,7 @@ public class GusSynthProvider implements SoftSynthProvider
     private final @Nullable GusBank bank;
     private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
     private final int bitDepth;
-    private final boolean pwmMode;
+    private final @Nullable String oneBitMode;
     private final List<AudioProcessor> dspPipeline = new ArrayList<>();
     
     private @Nullable Thread renderThread;
@@ -59,7 +59,7 @@ public class GusSynthProvider implements SoftSynthProvider
      */
     public GusSynthProvider(AudioEngine audio, @Nullable String patchDir)
     {
-        this(audio, patchDir, 16, false);
+        this(audio, patchDir, 16, null);
     }
 
     /**
@@ -67,25 +67,33 @@ public class GusSynthProvider implements SoftSynthProvider
      * @param audio The audio engine interface.
      * @param patchDir Path to the GUS patch directory.
      * @param bitDepth Internal rendering bit depth (1-16).
-     * @param pwmMode Whether to enable Pulse Width Modulation (RealSound) output.
+     * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", "tdm", or null to disable).
      */
-    public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, int bitDepth, boolean pwmMode)
+    public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, int bitDepth, @Nullable String oneBitMode)
     {
         this.audio = audio;
         this.engine = new GusEngine(44100);
         this.bank = resolveBank(patchDir);
         this.bitDepth = Math.max(1, Math.min(16, bitDepth));
-        this.pwmMode = pwmMode;
+        this.oneBitMode = oneBitMode != null ? oneBitMode.toLowerCase(java.util.Locale.ROOT) : null;
         
         // Assemble the modular DSP pipeline
         if (this.bitDepth < 16) {
             dspPipeline.add(new NoiseShapedQuantizer(this.bitDepth));
-            dspPipeline.add(new ReconstructionFilter(0.45));
+            
+            // PWM benefits from rounding off the sharp digital steps to prevent intermodulation.
+            // DSD and TDM prefer raw signal without extreme low-pass muddying.
+            if ("pwm".equals(this.oneBitMode)) {
+                dspPipeline.add(new ReconstructionFilter(0.45));
+            } else if (this.oneBitMode == null) {
+                dspPipeline.add(new ReconstructionFilter(0.60));
+            }
+            
             dspPipeline.add(new AutoFlushGate(dspPipeline));
         }
         
-        if (this.pwmMode) {
-            dspPipeline.add(new PwmAcousticSimulator(44100));
+        if (this.oneBitMode != null) {
+            dspPipeline.add(new OneBitAcousticSimulator(44100, this.oneBitMode));
         }
     }
 
@@ -127,11 +135,11 @@ public class GusSynthProvider implements SoftSynthProvider
     {
         String name = bank != null ? "GUS (" + bank.getPatchSetName() + ")" : "GUS (No patches)";
         
-        if (bitDepth == 6 && pwmMode) {
+        if (bitDepth == 6 && "pwm".equals(oneBitMode)) {
             name += " [RealSound]";
         } else {
             if (bitDepth < 16) name += " [" + bitDepth + "-Bit]";
-            if (pwmMode) name += " [PWM]";
+            if (oneBitMode != null) name += " [" + oneBitMode.toUpperCase(java.util.Locale.ROOT) + "]";
         }
         
         return List.of(new MidiPort(0, name));
@@ -183,23 +191,6 @@ public class GusSynthProvider implements SoftSynthProvider
             short[] pcmBuffer = new short[framesToRender * 2];
             float[] left = new float[framesToRender];
             float[] right = new float[framesToRender];
-            
-            double carrierPhase = -1.0;
-            final double carrierStep = (18600.0 / 44100.0) * 2.0; // Original RealSound PIT timer carrier
-            
-            double lp1L = 0, lp1R = 0, lp2L = 0, lp2R = 0;
-            double hpL = 0, hpR = 0, prevL = 0, prevR = 0;
-            
-            // Inter-stage DAC Reconstruction Filter states
-            double dac1L = 0, dac1R = 0, dac2L = 0, dac2R = 0;
-            final double dacAlpha = 0.45;
-            
-            // Quantization Noise Shaper states
-            double qErrL = 0, qErrR = 0;
-            
-            final double lpAlpha = 0.20; // Warm treble cut (Cuts PWM carrier completely)
-            final double hpAlpha = 0.98; // Gentle bass cut (Removes deep sub-bass)
-            final double qSteps = Math.pow(2, bitDepth - 1) - 1;
 
             while (running)
             {
@@ -211,90 +202,16 @@ public class GusSynthProvider implements SoftSynthProvider
 
                 for (int i = 0; i < framesToRender; i++) { left[i] = 0; right[i] = 0; }
                 engine.render(left, right, framesToRender);
+                
+                // Pass through modular DSP pipeline
+                for (AudioProcessor proc : dspPipeline) {
+                    proc.process(left, right, framesToRender);
+                }
 
                 for (int i = 0; i < framesToRender; i++)
                 {
                     double l = Math.max(-1.0, Math.min(1.0, left[i]));
                     double r = Math.max(-1.0, Math.min(1.0, right[i]));
-
-                    // Stage 1: Quantization (Zero-centered Bitcrusher with Noise Shaping)
-                    if (bitDepth < 16)
-                    {
-                        // Add accumulated quantization error (Leaky Integrator to prevent idle tones)
-                        double targetL = l + (qErrL * 0.95);
-                        double targetR = r + (qErrR * 0.95);
-                        
-                        // Quantize
-                        double qL = Math.round(targetL * qSteps) / qSteps;
-                        double qR = Math.round(targetR * qSteps) / qSteps;
-                        
-                        // Feedback error
-                        qErrL = targetL - qL;
-                        qErrR = targetR - qR;
-                        
-                        l = qL;
-                        r = qR;
-                        
-                        // Stage 1.5: Inter-stage DAC Reconstruction Filter
-                        // We must smooth the harsh staircases before they hit the PWM carrier,
-                        // otherwise the sharp edges interact with the PWM carrier causing
-                        // severe intermodulation distortion (Aliasing Sizzle).
-                        dac1L += dacAlpha * (l - dac1L);
-                        dac1R += dacAlpha * (r - dac1R);
-                        dac2L += dacAlpha * (dac1L - dac2L);
-                        dac2R += dacAlpha * (dac1R - dac2R);
-                        
-                        // Force flush to absolute zero to prevent floating-point asymptotes
-                        // from keeping the Noise Gate open forever.
-                        if (l == 0.0 && r == 0.0 && Math.abs(dac2L) < 1e-5 && Math.abs(dac2R) < 1e-5) {
-                            dac1L = 0; dac2L = 0;
-                            dac1R = 0; dac2R = 0;
-                            qErrL = 0; qErrR = 0;
-                        }
-                        
-                        l = dac2L;
-                        r = dac2R;
-                    }
-
-                    // Stage 2: Hardware Delivery Simulation (PWM or Standard DAC)
-                    if (pwmMode)
-                    {
-                        // 32x Oversampling with Boxcar FIR Filter to eliminate Nyquist Aliasing.
-                        double sumL = 0.0;
-                        double sumR = 0.0;
-                        
-                        for (int over = 0; over < 32; over++) {
-                            carrierPhase += carrierStep / 32.0;
-                            if (carrierPhase > 1.0) carrierPhase -= 2.0;
-                            sumL += (l > carrierPhase ? 1.0 : -1.0);
-                            sumR += (r > carrierPhase ? 1.0 : -1.0);
-                        }
-                        
-                        double bitL = sumL / 32.0;
-                        double bitR = sumR / 32.0;
-
-                        if (l == 0.0 && r == 0.0) {
-                            bitL = 0; bitR = 0;
-                            lp1L *= 0.9; lp1R *= 0.9; lp2L *= 0.9; lp2R *= 0.9;
-                            hpL = 0; hpR = 0;
-                        }
-
-                        // 2-Stage Low-Pass (Simulates physical cone inertia)
-                        lp1L += lpAlpha * (bitL - lp1L);
-                        lp1R += lpAlpha * (bitR - lp1R);
-                        lp2L += lpAlpha * (lp1L - lp2L);
-                        lp2R += lpAlpha * (lp1R - lp2R);
-
-                        // 1-Stage High-Pass (Simulates small speaker diameter)
-                        hpL = hpAlpha * (hpL + lp2L - prevL);
-                        hpR = hpAlpha * (hpR + lp2R - prevR);
-                        prevL = lp2L; prevR = lp2R;
-
-                        l = Math.max(-1.0, Math.min(1.0, hpL * 1.5));
-                        r = Math.max(-1.0, Math.min(1.0, hpR * 1.5));
-                    }
-                    // (DAC Filtering is now handled in Stage 1.5 for all modes)
-                    
                     pcmBuffer[i * 2] = (short) (l * 32767);
                     pcmBuffer[i * 2 + 1] = (short) (r * 32767);
                 }

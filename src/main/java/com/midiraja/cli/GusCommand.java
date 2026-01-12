@@ -36,10 +36,10 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"--bits"}, description = "Crush output to a specific bit depth (e.g. 1, 2, 4, 8) for a retro lo-fi effect. Defaults to 16 (original).", defaultValue = "16")
   private int bits;
 
-  @Option(names = {"--pwm"}, description = "Drive the output using a 1-bit Pulse Width Modulator (PC Speaker simulation).")
-  private boolean pwmMode = false;
+  @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm', 'dsd', 'tdm'). If omitted, outputs standard 16-bit PCM.")
+  private @org.jspecify.annotations.Nullable String oneBitMode;
   
-  @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --bits 6 and --pwm).")
+  @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --bits 6 and --1bit pwm).")
   private boolean realSound = false;
 
   @Parameters(paramLabel = "<file>",
@@ -57,8 +57,8 @@ public class GusCommand implements Callable<Integer> {
     String dirPath = patchDir.map(File::getAbsolutePath).orElse(null);
 
     int finalBits = realSound ? 6 : bits;
-    boolean finalPwm = realSound || pwmMode;
-    var provider = new GusSynthProvider(audio, dirPath, finalBits, finalPwm);
+    String finalOneBit = realSound ? "pwm" : oneBitMode; // oneBitMode can be null here
+    var provider = new GusSynthProvider(audio, dirPath, finalBits, finalOneBit);
 
     var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                     p.isInTestMode());

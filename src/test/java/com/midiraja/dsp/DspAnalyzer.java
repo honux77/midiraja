@@ -60,8 +60,20 @@ public class DspAnalyzer {
         List<AudioProcessor> realSoundPipeline = List.of(
             new NoiseShapedQuantizer(6),
             new ReconstructionFilter(0.45),
-            new PwmAcousticSimulator(44100)
+            new OneBitAcousticSimulator(44100, "pwm")
         );
         runSineWaveTest(realSoundPipeline, "realsound_test.raw");
+
+        System.out.println("Testing the Hi-Fi DSD Pipeline...");
+        List<AudioProcessor> dsdPipeline = List.of(
+            new OneBitAcousticSimulator(44100, "dsd")
+        );
+        runSineWaveTest(dsdPipeline, "dsd_test.raw");
+
+        System.out.println("Testing the TDM Pipeline...");
+        List<AudioProcessor> tdmPipeline = List.of(
+            new OneBitAcousticSimulator(44100, "tdm")
+        );
+        runSineWaveTest(tdmPipeline, "tdm_test.raw");
     }
 }

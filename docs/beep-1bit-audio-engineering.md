@@ -54,7 +54,8 @@ The most critical engineering challenge in 1-bit audio is mixing multiple polyph
 
 **4. The Modern Pinnacle: Delta-Sigma Modulation (`--mux dsd`)**
 *   The ultimate conclusion of 1-bit audio. It sums the analog waves perfectly, but replaces the 22kHz PWM carrier with a 1st-order Delta-Sigma error accumulator running at 1.4MHz.
-*   **Acoustic Result:** It pushes all quantization noise (the carrier whine) completely out of the human hearing range. It yields breathtaking, studio-grade Hi-Fi sound while technically remaining a pure 1-bit logic stream.
+*   **The TPDF Breakthrough:** To prevent the deadly "Idle Tones" (limit cycles) inherent to 1st-order DSD, a mathematically precise Triangular Probability Density Function (TPDF) Dither is injected directly into the error loop, effectively randomizing and decorrelating the quantization noise.
+*   **Acoustic Result:** It pushes all quantization noise completely out of the human hearing range, replacing harsh carrier whines with warm analog hiss. It yields breathtaking, studio-grade Hi-Fi sound while technically remaining a pure 1-bit logic stream.
 
 ### 2.3. Psychoacoustic Routing: Bass Isolation
 Even with advanced multiplexing, routing multiple deep bass notes into the same physical unit caused muddy, low-frequency beat frequencies (beating). 

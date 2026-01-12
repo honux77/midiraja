@@ -9,7 +9,6 @@ package com.midiraja.midi.beep;
 
 import com.midiraja.midi.AudioEngine;
 
-import com.midiraja.dsp.PwmAcousticSimulator;
 import com.midiraja.midi.MidiPort;
 import com.midiraja.midi.NativeAudioEngine;
 import com.midiraja.midi.SoftSynthProvider;

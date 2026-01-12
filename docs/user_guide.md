@@ -123,12 +123,18 @@ These engines are baked directly into the Midiraja app. They require **absolutel
   * `--fm-ratio <float>` & `--fm-index <float>`: When using `--synth fm`, these tweak the mathematics of the sound. `Ratio 1.0 / Index 2.5` sounds like a bright keyboard. `Ratio 3.5 / Index 1.8` sounds like a crystal bell.
 * **Example:** `midra 1bit --synth square --mux xor --voices 2 song.mid` (Hardcore 1981 Apple II mode!)
 
+#### 2. Programmable Sound Generator (`psg` or `msx`)
+* **What is it?** Replicates the Yamaha YM2149F/AY-3-8910 chips found in 8-bit computers like the MSX, Atari ST, and ZX Spectrum. This engine uses "Tracker Hacks" to simulate polyphony and complex bass via arpeggios and high-speed hardware envelope modulation.
+* **How to use it:** `midra psg song.mid`
 * **🎛️ Advanced Options:**
-  * `--chips <1-16>`: How many virtual PSG chips to instantiate. Default is `4` (12 channels).
-  * `--vibrato <0-100>`: Depth of the pitch vibration in parts per thousand (per mille) of the base frequency. Default is `5.0` (subtle). `30.0` is a heavy wobble, `100.0` is max (extreme FX).
-  * `--duty-sweep <0-100>`: Width of the pulse-width sweep as a percentage of the waveform cycle. Default is `25.0`. `50.0` is the maximum sweep (0% to 100% duty).
+  * `--chips <1-16>`: How many virtual PSG systems to instantiate. Default is `4`.
+  * `--scc`: **The Konami Expansion!** Enabling this pairs every PSG chip with a 5-channel Konami SCC (K051649) wavetable chip. 
+    * In this mode, drums stay on the PSG (for noise) while melodies move to the richer SCC wavetables.
+    * Example: `midra psg --scc --chips 1` simulates a classic MSX machine with one SCC cartridge (8 channels total).
+  * `--vibrato <0-100>`: Depth of the delayed software vibrato in parts per mille. Default: `5.0`.
+  * `--duty-sweep <0-100>`: Width of the pulse-width modulation sweep (Fake FM). Default: `25.0`.
 
-  #### 2. AdLib / Sound Blaster FM (`opl` & `opn`)
+#### 3. AdLib / Sound Blaster FM (`opl` & `opn`)
 * **What is it?** This perfectly replicates the famous Yamaha chips used in 1990s PC sound cards and Sega Genesis consoles. It gives everything that classic, twangy "DOOM" or "Sonic the Hedgehog" vibe.
 * **How to use it:** `midra opl song.mid` (PC DOS style) or `midra opn song.mid` (Sega Genesis style).
 * **🎛️ Advanced Options:**
@@ -142,13 +148,17 @@ These engines are baked directly into the Midiraja app. They require **absolutel
     * `dosbox`: The classic, fast, and slightly imperfect emulator used in DOSBox.
 * **Example:** `midra opl -b 14 song.mid` (Plays the song using the DOOM instrument bank!)
 
-#### 3. Gravis Ultrasound (`gus`)
+#### 4. Gravis Ultrasound (`gus`)
 * **What is it?** In the mid-90s, the GUS card revolutionized PC audio by playing back actual recorded audio samples (wavetables) instead of synthesizing them.
 * **How to use it:** `midra gus song.mid` (Auto-downloads a 27MB patch set on first run).
 * **🎛️ Advanced Options:**
   * `-p` or `--patch-dir <path>`: Tell the engine to use a custom folder of GUS patches (like the famous `eawpats`) instead of the default downloaded ones.
   * `--bits <1-16>`: A built-in Bitcrusher effect! High-end CD audio is 16-bit. If you drop this to `8` or `6`, the engine intentionally mathematically degrades the audio, creating that crunchy, hissing, low-fidelity texture of early 90s DOS games.
-  * `--realsound`: Turns on a mathematical simulation of the 1980s "RealSound" technique. It completely destroys the pristine wavetable audio and forces it out through a simulated Pulse-Width-Modulation (PWM) PC Speaker, making it sound exactly like it's coming from a tiny, overloaded 1989 desktop computer chassis.
+  * `--1bit <mode>`: Chooses a 1-bit modulation strategy to simulate PC Speaker output.
+    * `pwm` *(Default for RealSound)*: 4x oversampled Pulse Width Modulation. Gritty and aliased, perfect for authentic 1989-style retro sound.
+    * `dsd`: 32x oversampled Delta-Sigma Modulation with TPDF Dither. Audiophile-grade 1-bit sound with zero aliasing and warm analog hiss.
+    * `tdm`: 16x oversampled Time-Division Multiplexing (Randomized switching).
+  * `--realsound`: Turns on a mathematical simulation of the 1980s "RealSound" technique. It completely destroys the pristine wavetable audio and forces it out through a simulated PWM PC Speaker, making it sound exactly like it's coming from a tiny, overloaded 1989 desktop computer chassis. (Equivalent to `--bits 6 --1bit pwm`).
 * **Example:** `midra gus --bits 6 --realsound song.mid` (Simulates extreme low-fidelity retro hardware)
 
 ### Method C: Shared Library Linking (External Engines)
