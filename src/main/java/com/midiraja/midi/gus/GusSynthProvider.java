@@ -11,9 +11,7 @@ import com.midiraja.midi.AudioEngine;
 
 import com.midiraja.dsp.AudioProcessor;
 import com.midiraja.dsp.AutoFlushGate;
-import com.midiraja.dsp.NoiseShapedQuantizer;
 import com.midiraja.dsp.OneBitAcousticSimulator;
-import com.midiraja.dsp.ReconstructionFilter;
 import com.midiraja.midi.MidiPort;
 import com.midiraja.midi.NativeAudioEngine;
 import com.midiraja.midi.SoftSynthProvider;
@@ -44,7 +42,6 @@ public class GusSynthProvider implements SoftSynthProvider
     private final GusEngine engine;
     private final @Nullable GusBank bank;
     private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
-    private final int bitDepth;
     private final @Nullable String oneBitMode;
     private final List<AudioProcessor> dspPipeline = new ArrayList<>();
     
@@ -59,41 +56,26 @@ public class GusSynthProvider implements SoftSynthProvider
      */
     public GusSynthProvider(AudioEngine audio, @Nullable String patchDir)
     {
-        this(audio, patchDir, 16, null);
+        this(audio, patchDir, null);
     }
 
     /**
-     * Constructs a customizable GUS provider with bit-crushing and PWM options.
+     * Constructs a customizable GUS provider with 1-Bit acoustic options.
      * @param audio The audio engine interface.
      * @param patchDir Path to the GUS patch directory.
-     * @param bitDepth Internal rendering bit depth (1-16).
      * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", "tdm", or null to disable).
      */
-    public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, int bitDepth, @Nullable String oneBitMode)
+    public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, @Nullable String oneBitMode)
     {
         this.audio = audio;
         this.engine = new GusEngine(44100);
         this.bank = resolveBank(patchDir);
-        this.bitDepth = Math.max(1, Math.min(16, bitDepth));
         this.oneBitMode = oneBitMode != null ? oneBitMode.toLowerCase(java.util.Locale.ROOT) : null;
         
         // Assemble the modular DSP pipeline
-        if (this.bitDepth < 16) {
-            dspPipeline.add(new NoiseShapedQuantizer(this.bitDepth));
-            
-            // PWM benefits from rounding off the sharp digital steps to prevent intermodulation.
-            // DSD and TDM prefer raw signal without extreme low-pass muddying.
-            if ("pwm".equals(this.oneBitMode)) {
-                dspPipeline.add(new ReconstructionFilter(0.45));
-            } else if (this.oneBitMode == null) {
-                dspPipeline.add(new ReconstructionFilter(0.60));
-            }
-            
-            dspPipeline.add(new AutoFlushGate(dspPipeline));
-        }
-        
         if (this.oneBitMode != null) {
             dspPipeline.add(new OneBitAcousticSimulator(44100, this.oneBitMode));
+            dspPipeline.add(new AutoFlushGate(dspPipeline)); // Ensures silent output when paused
         }
     }
 
@@ -135,11 +117,10 @@ public class GusSynthProvider implements SoftSynthProvider
     {
         String name = bank != null ? "GUS (" + bank.getPatchSetName() + ")" : "GUS (No patches)";
         
-        if (bitDepth == 6 && "pwm".equals(oneBitMode)) {
+        if ("pwm".equals(oneBitMode)) {
             name += " [RealSound]";
-        } else {
-            if (bitDepth < 16) name += " [" + bitDepth + "-Bit]";
-            if (oneBitMode != null) name += " [" + oneBitMode.toUpperCase(java.util.Locale.ROOT) + "]";
+        } else if (oneBitMode != null) {
+            name += " [" + oneBitMode.toUpperCase(java.util.Locale.ROOT) + "]";
         }
         
         return List.of(new MidiPort(0, name));

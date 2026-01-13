@@ -33,9 +33,6 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"-p", "--patch-dir"}, description = "Directory containing GUS .pat files and gus.cfg (or timidity.cfg)")
   private Optional<File> patchDir = Optional.empty();
 
-  @Option(names = {"--bits"}, description = "Crush output to a specific bit depth (e.g. 1, 2, 4, 8) for a retro lo-fi effect. Defaults to 16 (original).", defaultValue = "16")
-  private int bits;
-
   @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm', 'dsd', 'tdm'). If omitted, outputs standard 16-bit PCM.")
   private @org.jspecify.annotations.Nullable String oneBitMode;
   
@@ -56,9 +53,8 @@ public class GusCommand implements Callable<Integer> {
     NativeAudioEngine audio = new NativeAudioEngine(audioLib);
     String dirPath = patchDir.map(File::getAbsolutePath).orElse(null);
 
-    int finalBits = realSound ? 16 : bits; // PWM is inherently ~6-bit, do not pre-crush
     String finalOneBit = realSound ? "pwm" : oneBitMode; // oneBitMode can be null here
-    var provider = new GusSynthProvider(audio, dirPath, finalBits, finalOneBit);
+    var provider = new GusSynthProvider(audio, dirPath, finalOneBit);
 
     var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                     p.isInTestMode());
