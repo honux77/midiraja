@@ -63,7 +63,7 @@ public class GusSynthProvider implements SoftSynthProvider
      * Constructs a customizable GUS provider with 1-Bit acoustic options.
      * @param audio The audio engine interface.
      * @param patchDir Path to the GUS patch directory.
-     * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", "tdm", or null to disable).
+     * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", or null to disable).
      */
     public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, @Nullable String oneBitMode)
     {

@@ -33,7 +33,7 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"-p", "--patch-dir"}, description = "Directory containing GUS .pat files and gus.cfg (or timidity.cfg)")
   private Optional<File> patchDir = Optional.empty();
 
-  @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm', 'dsd', 'tdm'). If omitted, outputs standard 16-bit PCM.")
+  @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm' or 'dsd'). If omitted, outputs standard 16-bit PCM.")
   private @org.jspecify.annotations.Nullable String oneBitMode;
   
   @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --1bit pwm).")

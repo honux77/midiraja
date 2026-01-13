@@ -37,12 +37,9 @@ public class OneBitAcousticSimulator implements AudioProcessor {
             this.lpAlpha = 0.40; 
             this.hpAlpha = 0.995; // Allow more bass through
             this.carrierStep = (15200.0 / sampleRate) * 2.0;
-        } else if ("tdm".equals(this.oneBitMode)) {
-            this.lpAlpha = 0.15; 
-            this.hpAlpha = 0.99;
-            this.carrierStep = (18600.0 / sampleRate) * 2.0;
         } else {
             // "dsd" or default
+            // Audiophile Hi-Fi 1-bit sound. Very light filter preserves treble, just kills 1.4MHz noise.
             this.lpAlpha = 0.85; 
             this.hpAlpha = 0.999; 
             this.carrierStep = (18600.0 / sampleRate) * 2.0;
@@ -78,11 +75,6 @@ public class OneBitAcousticSimulator implements AudioProcessor {
                     dsdErrL -= outBitL;
                     dsdErrR -= outBitR;
                     
-                } else if ("tdm".equals(oneBitMode)) {
-                    // TDM in a generic PCM context is just super-fast randomized 1-bit switching
-                    // that averages out to the analog value.
-                    outBitL = rand.nextDouble() * 2.0 - 1.0 < l ? 1.0 : -1.0;
-                    outBitR = rand.nextDouble() * 2.0 - 1.0 < r ? 1.0 : -1.0;
                 } else {
                     // PWM (Default Retro)
                     carrierPhase += carrierStep / oversampleFactor;
