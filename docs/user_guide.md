@@ -153,13 +153,12 @@ These engines are baked directly into the Midiraja app. They require **absolutel
 * **How to use it:** `midra gus song.mid` (Auto-downloads a 27MB patch set on first run).
 * **🎛️ Advanced Options:**
   * `-p` or `--patch-dir <path>`: Tell the engine to use a custom folder of GUS patches (like the famous `eawpats`) instead of the default downloaded ones.
-  * `--bits <1-16>`: A built-in Bitcrusher effect! High-end CD audio is 16-bit. If you drop this to `8` or `6`, the engine intentionally mathematically degrades the audio, creating that crunchy, hissing, low-fidelity texture of early 90s DOS games.
   * `--1bit <mode>`: Chooses a 1-bit modulation strategy to simulate PC Speaker output.
-    * `pwm` *(Default for RealSound)*: 4x oversampled Pulse Width Modulation. Gritty and aliased, perfect for authentic 1989-style retro sound.
+    * `pwm` *(Default for RealSound)*: 32x oversampled Pulse Width Modulation. Inherently acts as a 6.5-bit DAC due to the 15.2kHz carrier restriction. Gritty and aliased, perfect for authentic 1989-style retro sound.
     * `dsd`: 32x oversampled Delta-Sigma Modulation with TPDF Dither. Audiophile-grade 1-bit sound with zero aliasing and warm analog hiss.
-    * `tdm`: 16x oversampled Time-Division Multiplexing (Randomized switching).
-  * `--realsound`: Turns on a mathematical simulation of the 1980s "RealSound" technique. It completely destroys the pristine wavetable audio and forces it out through a simulated PWM PC Speaker, making it sound exactly like it's coming from a tiny, overloaded 1989 desktop computer chassis. (Equivalent to `--bits 6 --1bit pwm`).
-* **Example:** `midra gus --bits 6 --realsound song.mid` (Simulates extreme low-fidelity retro hardware)
+    * `tdm`: 32x oversampled Time-Division Multiplexing (Randomized switching).
+  * `--realsound`: Turns on a mathematical simulation of the 1980s "RealSound" technique. It completely destroys the pristine wavetable audio and forces it out through a simulated 15.2kHz PWM PC Speaker, making it sound exactly like it's coming from a tiny, overloaded 1989 desktop computer chassis. (Equivalent to `--1bit pwm`).
+* **Example:** `midra gus --realsound song.mid` (Simulates extreme low-fidelity retro hardware)
 
 ### Method C: Shared Library Linking (External Engines)
 If you want ultra-realistic modern audio or perfect emulation of specific high-end retro gear, Midiraja can "link" to popular tools you may have already installed on your Mac or Linux machine.
