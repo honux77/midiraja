@@ -51,7 +51,7 @@ public class OpnCommand implements Callable<Integer>
         var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
         var bridge = new com.midiraja.midi.FFMOpnMidiNativeBridge();
         var provider = new com.midiraja.midi.OpnMidiSynthProvider(
-            bridge, audio, fmOptions.emulator, fmOptions.chips);
+            bridge, audio, fmOptions.emulator, fmOptions.chips, fmOptions.oneBitMode);
 
         // bank: empty string = default built-in GM bank; otherwise WOPN file path
         String soundbankArg = bank.orElse("");

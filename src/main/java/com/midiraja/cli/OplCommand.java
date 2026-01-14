@@ -52,7 +52,7 @@ public class OplCommand implements Callable<Integer>
         var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
         var bridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
         var provider = new com.midiraja.midi.AdlMidiSynthProvider(
-            bridge, audio, fmOptions.emulator, fmOptions.chips);
+            bridge, audio, fmOptions.emulator, fmOptions.chips, fmOptions.oneBitMode);
 
         // Resolve bank argument: "" → "bank:0", "14" → "bank:14", path → path
         String soundbankArg =

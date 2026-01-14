@@ -209,7 +209,7 @@ class OpnMidiSynthProviderTest
         assertTrue(ports.get(0).name().contains("4 chips"), "Default chip count should be 4");
 
         // Nuked YM3438, 2 chips
-        OpnMidiSynthProvider provider2 = new OpnMidiSynthProvider(mockBridge, null, 1, 2);
+        OpnMidiSynthProvider provider2 = new OpnMidiSynthProvider(mockBridge, null, 1, 2, null);
         var ports2 = provider2.getOutputPorts();
         assertTrue(ports2.get(0).name().contains("Nuked YM3438"));
         assertTrue(ports2.get(0).name().contains("2 chips"));

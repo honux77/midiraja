@@ -253,7 +253,7 @@ public class MidirajaCommand implements Callable<Integer>
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
       resolvedProvider = new com.midiraja.midi.AdlMidiSynthProvider(
-          bridge, audio, legacyOplEmulator, legacyOplChips);
+          bridge, audio, legacyOplEmulator, legacyOplChips, null);
       String val = legacyOpl.get();
       soundbankArg = Optional.of(
           val.isEmpty() ? "bank:0"
@@ -266,7 +266,7 @@ public class MidirajaCommand implements Callable<Integer>
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMOpnMidiNativeBridge();
       resolvedProvider = new com.midiraja.midi.OpnMidiSynthProvider(
-          bridge, audio, legacyOpnEmulator, legacyOpnChips);
+          bridge, audio, legacyOpnEmulator, legacyOpnChips, null);
       soundbankArg = Optional.of(legacyOpn.get());
     } else if (legacyFluid.isPresent())
     {

@@ -22,4 +22,7 @@ public class FmSynthOptions
     @Option(names = {"-c", "--chips"}, defaultValue = "4",
         description = "Number of chips to emulate (default: 4). More chips = more polyphony.")
     public int chips = 4;
+
+    @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm' or 'dsd'). If omitted, outputs standard 16-bit PCM.")
+    public @org.jspecify.annotations.Nullable String oneBitMode;
 }

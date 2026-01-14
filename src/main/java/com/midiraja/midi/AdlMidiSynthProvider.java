@@ -8,7 +8,11 @@
 package com.midiraja.midi;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import com.midiraja.dsp.AudioProcessor;
+import com.midiraja.dsp.OneBitAcousticSimulator;
+import org.jspecify.annotations.Nullable;
 
 /**
  * SoftSynthProvider backed by libADLMIDI (OPL2/OPL3 FM synthesis).
@@ -48,21 +52,29 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
 
     private final int emulatorId;
     private final int numChips;
+    private final @Nullable String oneBitMode;
+    private final List<AudioProcessor> dspPipeline = new ArrayList<>();
 
     /** Uses Nuked OPL3 (emulator 0) and 4 chips by default. */
     public AdlMidiSynthProvider(
-        AdlMidiNativeBridge bridge, @org.jspecify.annotations.Nullable AudioEngine audio)
+        AdlMidiNativeBridge bridge, @Nullable AudioEngine audio)
     {
-        this(bridge, audio, 0, 4);
+        this(bridge, audio, 0, 4, null);
     }
 
     public AdlMidiSynthProvider(AdlMidiNativeBridge bridge,
-        @org.jspecify.annotations.Nullable AudioEngine audio, int emulatorId, int numChips)
+        @Nullable AudioEngine audio, int emulatorId, int numChips, @Nullable String oneBitMode)
     {
         this.bridge = bridge;
         this.audio = audio;
         this.emulatorId = emulatorId;
         this.numChips = numChips;
+        this.oneBitMode = oneBitMode;
+
+        if (this.oneBitMode != null)
+        {
+            dspPipeline.add(new OneBitAcousticSimulator(SAMPLE_RATE, this.oneBitMode));
+        }
     }
 
     private static final int SAMPLE_RATE = 44100;
@@ -95,6 +107,10 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
             ? EMULATOR_NAMES[emulatorId]
             : "Emulator " + emulatorId;
         String portName = emuName + " · " + numChips + " chip" + (numChips > 1 ? "s" : "");
+        if (oneBitMode != null)
+        {
+            portName += " [" + oneBitMode.toUpperCase(java.util.Locale.ROOT) + "]";
+        }
         return List.of(new MidiPort(0, portName));
     }
 
@@ -130,6 +146,8 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
         renderThread = new Thread(() -> {
             // Buffer: FRAMES_PER_RENDER stereo frames = FRAMES_PER_RENDER * 2 shorts
             short[] pcmBuffer = new short[FRAMES_PER_RENDER * 2];
+            float[] left = new float[FRAMES_PER_RENDER];
+            float[] right = new float[FRAMES_PER_RENDER];
 
             while (running)
             {
@@ -157,6 +175,29 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
 
                 // Pull rendered PCM from libADLMIDI
                 bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
+
+                // If 1-bit modulation is enabled, process through DSP pipeline
+                if (!dspPipeline.isEmpty())
+                {
+                    // Convert short buffer to float for DSP
+                    for (int i = 0; i < FRAMES_PER_RENDER; i++)
+                    {
+                        left[i] = pcmBuffer[i * 2] / 32768.0f;
+                        right[i] = pcmBuffer[i * 2 + 1] / 32768.0f;
+                    }
+
+                    for (AudioProcessor proc : dspPipeline)
+                    {
+                        proc.process(left, right, FRAMES_PER_RENDER);
+                    }
+
+                    // Convert back to short
+                    for (int i = 0; i < FRAMES_PER_RENDER; i++)
+                    {
+                        pcmBuffer[i * 2] = (short) (Math.max(-1.0f, Math.min(1.0f, left[i])) * 32767);
+                        pcmBuffer[i * 2 + 1] = (short) (Math.max(-1.0f, Math.min(1.0f, right[i])) * 32767);
+                    }
+                }
 
                 // Push to miniaudio ring buffer (blocks if full, pacing the thread)
                 if (audio != null)
