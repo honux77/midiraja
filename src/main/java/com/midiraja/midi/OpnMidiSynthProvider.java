@@ -299,6 +299,10 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         {
             audio.flush();
         }
+        for (com.midiraja.dsp.AudioProcessor proc : dspPipeline)
+        {
+            proc.reset();
+        }
     }
 
     @Override public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
