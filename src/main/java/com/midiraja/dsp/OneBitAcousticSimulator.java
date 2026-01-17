@@ -90,10 +90,10 @@ public class OneBitAcousticSimulator implements AudioProcessor {
             double bitL = sumL / oversampleFactor;
             double bitR = sumR / oversampleFactor;
 
-            // Strict noise gate to kill carrier whine / DSD hiss on absolute silence
-            if (l == 0.0 && r == 0.0) {
+            // Strict noise gate to kill carrier whine / DSD hiss on near silence
+            if (Math.abs(l) < 1e-4 && Math.abs(r) < 1e-4) {
                 bitL = 0.0; bitR = 0.0;
-                lp1L *= 0.9; lp1R *= 0.9; lp2L *= 0.9; lp2R *= 0.9;
+                lp1L *= 0.8; lp1R *= 0.8; lp2L *= 0.8; lp2R *= 0.8;
                 hpL = 0.0; hpR = 0.0;
                 dsdErrL = 0.0; dsdErrR = 0.0;
             }
@@ -108,9 +108,9 @@ public class OneBitAcousticSimulator implements AudioProcessor {
             hpR = hpAlpha * (hpR + lp2R - prevR);
             prevL = lp2L; prevR = lp2R;
 
-            // Output safely scaled
-            left[i] = (float) Math.max(-1.0, Math.min(1.0, hpL * 1.5));
-            right[i] = (float) Math.max(-1.0, Math.min(1.0, hpR * 1.5));
+            // Output safely scaled with soft-clipping
+            left[i] = (float) Math.tanh(hpL * 1.5);
+            right[i] = (float) Math.tanh(hpR * 1.5);
         }
     }
 

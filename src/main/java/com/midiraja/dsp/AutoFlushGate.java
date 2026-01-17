@@ -5,7 +5,7 @@ import java.util.List;
 
 public class AutoFlushGate implements AudioProcessor {
     private final List<AudioProcessor> upstreamProcessors;
-    private final float epsilon = 1e-5f;
+    private final float epsilon = 1e-3f;
 
     public AutoFlushGate(List<AudioProcessor> upstreamProcessors) {
         this.upstreamProcessors = new ArrayList<>(upstreamProcessors);
