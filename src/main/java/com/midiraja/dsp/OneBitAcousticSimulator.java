@@ -90,13 +90,7 @@ public class OneBitAcousticSimulator implements AudioProcessor {
             double bitL = sumL / oversampleFactor;
             double bitR = sumR / oversampleFactor;
 
-            // Strict noise gate to kill carrier whine / DSD hiss on near silence
-            if (Math.abs(l) < 1e-4 && Math.abs(r) < 1e-4) {
-                bitL = 0.0; bitR = 0.0;
-                lp1L *= 0.8; lp1R *= 0.8; lp2L *= 0.8; lp2R *= 0.8;
-                hpL = 0.0; hpR = 0.0;
-                dsdErrL = 0.0; dsdErrR = 0.0;
-            }
+            
 
             // Virtual Speaker Filters
             lp1L += lpAlpha * (bitL - lp1L);

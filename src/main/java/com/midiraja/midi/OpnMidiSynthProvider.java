@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import com.midiraja.dsp.AudioProcessor;
-import com.midiraja.dsp.AutoFlushGate;
 import com.midiraja.dsp.OneBitAcousticSimulator;
 import org.jspecify.annotations.Nullable;
 
@@ -77,7 +76,7 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         if (this.oneBitMode != null)
         {
             dspPipeline.add(new OneBitAcousticSimulator(SAMPLE_RATE, this.oneBitMode));
-            dspPipeline.add(new AutoFlushGate(dspPipeline)); // Ensures silent output when paused
+            
         }
     }
 
@@ -187,16 +186,29 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
                 // If 1-bit modulation is enabled, process through DSP pipeline
                 if (!dspPipeline.isEmpty())
                 {
+                    boolean isSilent = true;
                     // Convert short buffer to float for DSP
                     for (int i = 0; i < FRAMES_PER_RENDER; i++)
                     {
                         left[i] = pcmBuffer[i * 2] / 32768.0f;
                         right[i] = pcmBuffer[i * 2 + 1] / 32768.0f;
+                        if (Math.abs(left[i]) > 1e-4f || Math.abs(right[i]) > 1e-4f) {
+                            isSilent = false;
+                        }
                     }
 
-                    for (AudioProcessor proc : dspPipeline)
-                    {
-                        proc.process(left, right, FRAMES_PER_RENDER);
+                    if (isSilent) {
+                        // The synth generated a completely silent block (e.g. paused).
+                        // Reset DSP to kill carrier whine and skip processing to ensure dead silence.
+                        for (AudioProcessor proc : dspPipeline) {
+                            proc.reset();
+                        }
+                        // Arrays left/right remain 0.0
+                    } else {
+                        for (AudioProcessor proc : dspPipeline)
+                        {
+                            proc.process(left, right, FRAMES_PER_RENDER);
+                        }
                     }
 
                     // Convert back to short using Soft Clipping (tanh)

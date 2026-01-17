@@ -10,7 +10,6 @@ package com.midiraja.midi.gus;
 import com.midiraja.midi.AudioEngine;
 
 import com.midiraja.dsp.AudioProcessor;
-import com.midiraja.dsp.AutoFlushGate;
 import com.midiraja.dsp.OneBitAcousticSimulator;
 import com.midiraja.midi.MidiPort;
 import com.midiraja.midi.NativeAudioEngine;
@@ -75,7 +74,7 @@ public class GusSynthProvider implements SoftSynthProvider
         // Assemble the modular DSP pipeline
         if (this.oneBitMode != null) {
             dspPipeline.add(new OneBitAcousticSimulator(44100, this.oneBitMode));
-            dspPipeline.add(new AutoFlushGate(dspPipeline)); // Ensures silent output when paused
+            
         }
     }
 
@@ -284,7 +283,11 @@ public class GusSynthProvider implements SoftSynthProvider
         }
     }
 
-    @Override public void panic() { engine.getActiveVoices().clear(); if (audio != null) audio.flush(); }
+    @Override public void panic() { 
+        engine.getActiveVoices().clear(); 
+        if (audio != null) audio.flush(); 
+        for (com.midiraja.dsp.AudioProcessor proc : dspPipeline) proc.reset(); 
+    }
 
     @SuppressWarnings("EmptyCatch")
     @Override
