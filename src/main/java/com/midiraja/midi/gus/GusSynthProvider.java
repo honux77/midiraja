@@ -285,7 +285,8 @@ public class GusSynthProvider implements SoftSynthProvider
 
     @Override public void panic() { 
         engine.getActiveVoices().clear(); 
-        if (audio != null) audio.flush(); 
+        if (audio != null) audio.flush();
+        renderPaused = true; 
         for (com.midiraja.dsp.AudioProcessor proc : dspPipeline) proc.reset(); 
     }
 

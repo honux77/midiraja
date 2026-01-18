@@ -18,8 +18,7 @@ public class OneBitAcousticSimulator implements AudioProcessor {
     // Acoustic Filters
     private double lp1L = 0, lp1R = 0, lp2L = 0, lp2R = 0;
     private double hpL = 0, hpR = 0, prevL = 0, prevR = 0;
-    private int silentFrames = 0;
-    private static final int SILENCE_THRESHOLD = 4410; // 100ms at 44.1kHz
+     // 100ms at 44.1kHz
     
     private final double lpAlpha; // High-frequency paper cone attenuation
     private final double hpAlpha; // Low-frequency small diameter attenuation
@@ -53,27 +52,6 @@ public class OneBitAcousticSimulator implements AudioProcessor {
         for (int i = 0; i < frames; i++) {
             double l = left[i];
             double r = right[i];
-
-            // Speaker Power-Off Simulation:
-            // If the digital synth is completely silent for 100ms, power off the PWM
-            // generator. This eliminates eternal carrier whine during pauses.
-            if (Math.abs(l) < 1e-5 && Math.abs(r) < 1e-5) {
-                silentFrames++;
-            } else {
-                silentFrames = 0;
-            }
-
-            if (silentFrames > SILENCE_THRESHOLD) {
-                left[i] = 0.0f;
-                right[i] = 0.0f;
-                // Only reset the DSP state on the exact moment we cross the threshold,
-                // otherwise we create DC offset noise by constantly resetting phase to -1.0
-                if (silentFrames == SILENCE_THRESHOLD + 1) {
-                    reset();
-                }
-                continue;
-            }
-
             double sumL = 0.0;
             double sumR = 0.0;
             
@@ -125,8 +103,8 @@ public class OneBitAcousticSimulator implements AudioProcessor {
             prevL = lp2L; prevR = lp2R;
 
             // Output safely scaled with soft-clipping
-            left[i] = (float) Math.tanh(hpL * 1.5);
-            right[i] = (float) Math.tanh(hpR * 1.5);
+            left[i] = (float) Math.tanh(hpL * 1.4);
+            right[i] = (float) Math.tanh(hpR * 1.4);
         }
     }
 

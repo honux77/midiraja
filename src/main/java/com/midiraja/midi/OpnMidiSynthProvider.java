@@ -297,6 +297,7 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         if (audio != null)
         {
             audio.flush();
+        renderPaused = true;
         }
         for (com.midiraja.dsp.AudioProcessor proc : dspPipeline)
         {
@@ -329,6 +330,7 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         if (audio != null)
         {
             audio.flush();
+        renderPaused = true;
         }
 
         // Step 5: Reset synth state for the new song
