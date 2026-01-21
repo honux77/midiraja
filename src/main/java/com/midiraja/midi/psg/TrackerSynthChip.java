@@ -15,6 +15,7 @@ public interface TrackerSynthChip {
     double render();
     boolean updateNote(int ch, int note, int velocity);
     boolean tryAllocateFree(int ch, int note, int velocity);
+    boolean tryStealChannel(int ch, int note, int velocity);
     void forceArpeggioFallback(int ch, int note, int velocity);
     void handleNoteOff(int ch, int note);
     void setProgram(int ch, int program);

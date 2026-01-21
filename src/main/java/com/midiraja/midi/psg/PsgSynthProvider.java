@@ -170,13 +170,14 @@ public class PsgSynthProvider implements SoftSynthProvider
                 int[] searchOrder = new int[totalPhysicalChips];
                 if (useScc) {
                     if (ch == 9) {
-                        // Drums: PSG first, then SCC
+                        // Drums: Strict PSG allocation. Drums never spill to SCC.
+                        // (We leave the second half of searchOrder as -1, which we will skip)
+                        for (int i=0; i<totalPhysicalChips; i++) searchOrder[i] = -1;
                         for (int i=0; i<systems; i++) searchOrder[i] = i * 2; // PSGs
-                        for (int i=0; i<systems; i++) searchOrder[systems + i] = i * 2 + 1; // SCCs
                     } else {
-                        // Melody: SCC first, then PSG
+                        // Melody: Strict SCC allocation. Melodies never spill to PSG.
+                        for (int i=0; i<totalPhysicalChips; i++) searchOrder[i] = -1;
                         for (int i=0; i<systems; i++) searchOrder[i] = i * 2 + 1; // SCCs
-                        for (int i=0; i<systems; i++) searchOrder[systems + i] = i * 2; // PSGs
                     }
                 } else {
                     // Standard PSG-only mode: just search linearly
@@ -185,6 +186,8 @@ public class PsgSynthProvider implements SoftSynthProvider
                 
                 for (int i = 0; i < totalPhysicalChips; i++) {
                     int c = searchOrder[i];
+                    if (c == -1) continue; // Isolation barrier
+                    
                     if (chips[c].tryAllocateFree(ch, note, velocity)) {
                         // Ensure the chip knows what instrument is playing on this channel
                         chips[c].setProgram(ch, channelPrograms[ch]);
@@ -192,7 +195,25 @@ public class PsgSynthProvider implements SoftSynthProvider
                     }
                 }
                 
-                // 3. If all physical channels are full, force an Arpeggio fallback.
+                // 3. Voice Stealing (Eviction): All channels are full.
+                // If this is a Melody (typically low MIDI channel like 0, 1, 2), 
+                // it shouldn't be forced into an Arpeggio or pushed to a harsh PSG while
+                // background chords (channels 4, 5, 6) hog the premium SCC chips.
+                // We will try to find a less important note on the primary chip and steal it.
+                int primaryChip = searchOrder[0]; // The most desired chip for this note
+                
+                // Simple heuristic: Try to steal a note from a higher MIDI channel number
+                // (assuming ch 0-3 = Lead/Melody, ch 4-8 = Accompaniment)
+                boolean stolen = false;
+                if (ch < 4) { // High priority melody
+                    stolen = chips[primaryChip].tryStealChannel(ch, note, velocity);
+                    if (stolen) {
+                        chips[primaryChip].setProgram(ch, channelPrograms[ch]);
+                        return;
+                    }
+                }
+                
+                // 4. If all physical channels are full and we couldn't steal, force an Arpeggio fallback.
                 // Target the most appropriate chip type based on the instrument
                 int fallbackChip = useScc ? (ch == 9 ? 0 : 1) : (totalPhysicalChips - 1);
                 chips[fallbackChip].forceArpeggioFallback(ch, note, velocity);

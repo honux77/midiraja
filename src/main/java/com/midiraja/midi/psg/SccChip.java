@@ -261,6 +261,25 @@ public class SccChip implements TrackerSynthChip
         return true;
     }
 
+        @Override public boolean tryStealChannel(int ch, int note, int velocity) {
+        // Find an active channel playing a lower priority (higher number) MIDI channel
+        for (int i = 0; i < NUM_CHANNELS; i++) {
+            SccChannel c = channels[i];
+            if (c.active && c.midiChannel > ch && c.midiChannel != 9) {
+                // Steal it!
+                c.reset();
+                c.active = true;
+                c.midiChannel = ch;
+                c.midiNote = note;
+                c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+                c.phaseStep = (c.baseFrequency * 32.0) / sampleRate;
+                c.volume15 = (int) ((velocity / 127.0) * 15.0);
+                return true;
+            }
+        }
+        return false;
+    }
+    
     @Override public void forceArpeggioFallback(int ch, int note, int velocity) {
         int targetCh = -1;
         
