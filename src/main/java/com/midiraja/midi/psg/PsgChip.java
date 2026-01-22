@@ -269,22 +269,38 @@ class PsgChip implements TrackerSynthChip
     }
     
         @Override public boolean tryStealChannel(int ch, int note, int velocity) {
-        // Find an active channel playing a lower priority (higher number) MIDI channel
+        // Steal the channel with the lowest current volume (least noticeable).
+        // If volumes are equal, prefer stealing from a higher MIDI channel number.
+        int targetCh = -1;
+        int minVolume = Integer.MAX_VALUE;
+        int targetMidiCh = -1;
+        
         for (int i = 0; i < NUM_CHANNELS; i++) {
             if (i == 2) continue; // don't steal the hardware envelope/noise channel
             PsgChannel c = channels[i];
-            if (c.active && c.midiChannel > ch && c.midiChannel != 9) {
-                // Steal it!
-                c.reset();
-                c.active = true;
-                c.midiChannel = ch;
-                c.midiNote = note;
-                c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-                c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
-                c.volume15 = (int) ((velocity / 127.0) * 15.0);
-                c.dutyCycle16 = 32767;
-                return true;
+            if (c.active && c.midiChannel != 9) {
+                if (c.volume15 < minVolume || (c.volume15 == minVolume && c.midiChannel > targetMidiCh)) {
+                    minVolume = c.volume15;
+                    targetMidiCh = c.midiChannel;
+                    targetCh = i;
+                }
             }
+        }
+        
+        // Only steal if the target is quieter than our new note, or if our new note is 
+        // high priority (ch 0-3) and the target is low priority (ch > 3).
+        int newVol = (int) ((velocity / 127.0) * 15.0);
+        if (targetCh != -1 && (minVolume <= newVol || (ch < 4 && targetMidiCh >= 4))) {
+            PsgChannel c = channels[targetCh];
+            c.reset();
+            c.active = true;
+            c.midiChannel = ch;
+            c.midiNote = note;
+            c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+            c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
+            c.volume15 = newVol;
+            c.dutyCycle16 = 32767;
+            return true;
         }
         return false;
     }
