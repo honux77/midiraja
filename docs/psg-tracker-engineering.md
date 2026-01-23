@@ -42,11 +42,12 @@ To bridge the gap between rich MIDI files and 3-channel hardware, the Midiraja `
 * **The Hack:** Rapidly toggle a channel's mixer register between Tone mode and Noise mode on alternate frames.
 * **The Implementation:** When MIDI Channel 10 (Drums) triggers a snare, the Tracker will interleave 1 frame of pure white noise with 1 frame of a 200Hz square wave, creating a punchy, aggressive 8-bit drum hit.
 
-## 3. The Expansion: Konami SCC (K051649) Emulation
+## 3. The Expansion: Konami SCC+ (Sound Cartridge) Emulation
 
-While the PSG is powerful when hacked, it remains limited by its pure square waves. To solve this, Midiraja fully emulates the **Konami SCC (Sound Custom Chip)**, the legendary expansion cartridge chip used in late MSX games (like *Gradius II* and *Snatcher*).
+While the PSG is powerful when hacked, it remains limited by its pure square waves. To solve this, Midiraja fully emulates the **Konami SCC+ (Sound Cartridge)**. 
+*Note on Hardware Accuracy:* The original SCC (K051649) had a hardware limitation where channels 4 and 5 were forced to share the same waveform memory. Midiraja bypasses this and emulates the upgraded **SCC+** cartridge (used in *SD Snatcher*), providing 5 truly independent waveform channels, which is vastly superior for complex MIDI polyphony.
 
-### 3.1. MSX Pair Architecture (1x PSG + 1x SCC)
+### 3.1. MSX Pair Architecture (1x PSG + 1x SCC+)
 * **The Concept:** The SCC lacks a noise generator and hardware envelopes, making it terrible for drums and aggressive bass. Historically, the SCC was *never* used alone; it was always plugged into an MSX machine containing a PSG.
 * **The Implementation:** When the `--scc` flag is enabled, the Midiraja engine instantiates chips in **Pairs**. `System 1` consists of `[Chip 0: PSG] + [Chip 1: SCC]`. 
 * **Strict Routing (Domain Isolation):**
@@ -91,7 +92,7 @@ While the PSG is powerful when hacked, it remains limited by its pure square wav
        │      ├── Ch 1 (Square)
        │      └── Ch 2 (Square) + Noise Gen
        │
-       └──► [ System 0: SCC (K051649) ]
+       └──► [ System 0: SCC+ (5 Independent Channels) ]
               ├── Ch 0 (32-Byte Wavetable + Bit-Shift Volume) <─ Steals channels if full
               ├── Ch 1 (32-Byte Wavetable + Bit-Shift Volume)
               ├── Ch 2 (32-Byte Wavetable + Bit-Shift Volume)
