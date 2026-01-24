@@ -71,21 +71,18 @@ public class SccChip implements TrackerSynthChip
     private static final byte[] WAVE_SQUARE = new byte[32];
     
     static {
-        for(int i = 0; i < 32; i++) {
-            // Saw-ish with early decay (Piano/Guitar)
-            WAVE_PIANO[i] = (byte)(255 * (31 - i) / 32 - 128);
-            
-            // Triangle/Sine mix (Strings/Pad)
-            double t = i * Math.PI * 2.0 / 32.0;
-            WAVE_STRINGS[i] = (byte)((Math.sin(t) * 0.8 + Math.sin(t * 3) * 0.2) * 127);
-            
-            // Pure Saw (Brass/Lead)
-            WAVE_BRASS[i] = (byte)(255 * i / 32 - 128);
-            
-            // Plucked pulse (Bass)
-            WAVE_BASS[i] = (byte)(i < 8 ? 127 : -128);
-            
-            // Square (Fallbacks)
+        // Pre-baked optimized SCC waveforms
+        byte[] p = {127, 48, 15, -9, -29, -47, -62, -75, -86, -96, -104, -111, -117, -121, -124, -126, -127, 112, 96, 80, 64, 48, 32, 16, 0, -15, -31, -47, -63, -79, -95, -111};
+        byte[] s = {0, 35, 65, 85, 95, 95, 88, 78, 69, 64, 61, 60, 57, 50, 38, 20, 0, -20, -38, -50, -57, -60, -61, -64, -69, -78, -88, -95, -95, -85, -65, -35};
+        byte[] b = {-128, -116, -104, -92, -80, -68, -56, -44, -32, -20, -8, 3, 15, 27, 39, 51, 63, 75, 87, 99, 111, 123, -120, -108, -96, -84, -72, -60, -48, -36, -24, -12};
+        byte[] bs = {127, 127, 127, 127, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128, -128};
+        
+        System.arraycopy(p, 0, WAVE_PIANO, 0, 32);
+        System.arraycopy(s, 0, WAVE_STRINGS, 0, 32);
+        System.arraycopy(b, 0, WAVE_BRASS, 0, 32);
+        System.arraycopy(bs, 0, WAVE_BASS, 0, 32);
+        
+        for(int i=0; i<32; i++) {
             WAVE_SQUARE[i] = (byte)(i < 16 ? 127 : -128);
         }
     }
