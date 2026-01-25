@@ -40,6 +40,7 @@ public class PlaybackEngine {
   private volatile boolean isPlaying = false;
   private volatile boolean isPaused = false;
   private volatile boolean ignoreSysex = false;
+  private volatile boolean holdAtEnd = false;
   private volatile PlaybackStatus endStatus = PlaybackStatus.FINISHED;
   private volatile boolean playbackActuallyStarted = false;
   private Optional<String> initialResetType = Optional.empty();
@@ -54,6 +55,10 @@ public class PlaybackEngine {
 
   public void setInitialResetType(Optional<String> resetType) {
     this.initialResetType = resetType;
+  }
+  
+  public void setHoldAtEnd(boolean hold) {
+    this.holdAtEnd = hold;
   }
 
   private final double[] channelLevels = new double[16];
@@ -276,7 +281,8 @@ public class PlaybackEngine {
     double ticksToNanos =
         (60000000000.0 / (currentBpm * currentSpeed * resolution));
 
-    while (isPlaying && eventIndex < sortedEvents.size()) {
+    boolean endReached = false;
+    while (isPlaying && (eventIndex < sortedEvents.size() || holdAtEnd)) {
       // Check if an external seek was requested
       if (seekTarget != -1) {
         long target = seekTarget;
@@ -323,6 +329,31 @@ public class PlaybackEngine {
             (60000000000.0 / (currentBpm * currentSpeed * resolution));
         startTimeNanos = System.nanoTime() - elapsedNanos;
         continue;
+      }
+
+      if (eventIndex >= sortedEvents.size()) {
+        if (!endReached) {
+          endReached = true;
+          isPaused = true;
+          currentMicroseconds = getTotalMicroseconds();
+          listeners.forEach(l -> l.onTick(currentMicroseconds));
+          provider.panic(); // Silence the output
+        }
+        
+        // Wait for seek or quit
+        while (isPlaying && seekTarget == -1 && endStatus == PlaybackStatus.FINISHED) {
+            Thread.sleep(50);
+            // If the user presses next/prev, the UI might change endStatus and set isPlaying=false.
+            // But actually the UI calls next() which sets endStatus = NEXT, isPlaying = false.
+        }
+        
+        if (seekTarget != -1) {
+            endReached = false; // Reset so we can seek backward and play again
+            continue;
+        }
+        
+        // If we break out, it means isPlaying became false or endStatus changed
+        break;
       }
 
       while (isPaused && isPlaying) {

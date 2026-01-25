@@ -263,6 +263,13 @@ public class PlaybackRunner
           if (wasPaused) {
               engine.setInitiallyPaused();
           }
+          
+          // If this is the last track in the playlist, we are not looping, 
+          // and we are in full interactive mode, keep the UI alive at the end.
+          boolean isLastTrack = (currentTrackIdx == playlist.size() - 1);
+          if (isLastTrack && !common.loop && (ui instanceof com.midiraja.ui.DashboardUI)) {
+              engine.setHoldAtEnd(true);
+          }
 
           var status = ScopedValue.where(TerminalIO.CONTEXT, activeIO)
                            .call(() -> engine.start(ui));
