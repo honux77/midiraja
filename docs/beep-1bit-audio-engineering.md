@@ -94,7 +94,7 @@ Only two distinct acoustic paths were possible within the constraints of a 1MHz 
 2.  **The Sampler Path (The "Real Sound" Hack):** 
     *   Pre-rendered 1-bit audio (essentially `--mux pwm` or PCM) could be played back. As documented by Michael J. Mahon in his seminal KansasFest presentations ("Real Sound for 8-bit Apple IIs"), by cycle-counting the 1.023 MHz 6502 CPU to drive the $C030 speaker pin at an ~11 kHz sample rate, the CPU effectively acted as a **Time-Domain DAC**.
     *   $1.023 	ext{ MHz (CPU)} \div 11 	ext{ kHz (Sample Rate)} pprox \mathbf{93 	ext{ Steps}}$. This brilliant hack squeezed roughly 6.5 bits of dynamic range out of a 1-bit pin.
-    *   *Constraint:* Real-time polyphonic MIDI synthesis using PWM was mathematically impossible because the 6502 CPU lacked the speed to perform real-time analog summing and high-frequency comparator logic simultaneously while fetching new data.
+    *   *Constraint:* Real-time **polyphonic** synthesis using PWM was mathematically impossible because the 6502 CPU lacked the speed to perform real-time analog summing of multiple channels before driving the high-frequency comparator logic. As Mahon demonstrated in his later *RTSynth* project (a Real-Time Synthesizer), achieving complex wavetable synthesis and dynamic envelopes via PWM consumed 100% of the CPU's 92-cycle execution window, strictly limiting it to a **monophonic (single-voice)** instrument.
 
 **What is a Modern "Cheat"?**
 *   **Phase Modulation (`--synth pm`):** Impossible. The 6502 had no floating-point unit (FPU) and lacked hardware multiplication/division, making real-time Sine wave generation and phase deviation impossible at audio rates.
@@ -157,3 +157,4 @@ The `midra beep` engine is a testament to the power of constraint-driven enginee
 
 1. **Paul Lutus, *Electric Duet* (1981)**: The foundational software that proved polyphonic (2-voice) music was possible on the 1-bit Apple II speaker using interleaved execution and Boolean logic.
 2. **Michael J. Mahon, *Real Sound for 8-bit Apple IIs***: A seminal presentation at KansasFest demonstrating how to achieve multi-bit digital-to-analog conversion (DAC) on a 1-bit speaker using CPU-bound Pulse Width Modulation (PWM), achieving 6.5-bit effective resolution.
+3. **Michael J. Mahon, *RTSynth***: Documentation of an Apple II Real-Time Synthesizer utilizing Direct Digital Synthesis (DDS) via a 5-bit PWM DAC (DAC522). It serves as historical proof that generating high-fidelity wavetables on a 1MHz 6502 required dedicating 100% of the CPU to a rigid 92-cycle loop, strictly limiting the output to a single monophonic voice and validating our use of "modern cheats" to achieve polyphony.
