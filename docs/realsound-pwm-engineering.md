@@ -9,7 +9,7 @@ This document chronicles the engineering journey to mathematically reconstruct t
 
 ## 1. The Hardware Context: The Illusion of RealSound
 
-The original IBM PC internal speaker was a pure 1-bit physical device; it could only exist in two states: **0 (Off)** or **1 (On)** based on applied voltage. It was never designed to play PCM audio. To play analog waveforms through this binary device, RealSound hijacked the **Intel 8253 PIT (Programmable Interval Timer)**'s Timer 2 channel using a technique called **Pulse Width Modulation (PWM)**.
+The original IBM PC internal speaker was a pure 1-bit physical device; it could only exist in two states: **0 (Off)** or **1 (On)** based on applied voltage. It was never designed to play PCM audio. To play analog waveforms through this binary device, RealSound hijacked the **Intel 8253 PIT (Programmable Interval Timer)**'s Timer 2 channel using a technique called **[Pulse Width Modulation (PWM)](https://en.wikipedia.org/wiki/Pulse-width_modulation)**.
 
 By turning the speaker on and off at an extremely high speed (the Carrier Frequency), and varying the *proportion of time* it stayed on during one cycle (the Duty Cycle), they could trick the sluggish 2.25-inch paper speaker cone into hovering at intermediate analog positions.
 
@@ -20,7 +20,7 @@ While historical literature often suggests RealSound divided the 1.19MHz PIT clo
 
 ---
 
-## 2. Time-Domain Quantization: Why PWM *is* a 6-Bit DAC
+## 2. Time-Domain [Quantization](https://en.wikipedia.org/wiki/Quantization_(signal_processing)): Why PWM *is* a 6-Bit DAC
 
 The most critical realization in our DSP engineering was understanding that **PWM inherently acts as a Quantizer (DAC)**. We do not need to artificially crush the audio to 6-bit beforehand; the physics of time take care of it.
 
@@ -62,7 +62,7 @@ The internal DSP clock runs at a staggering **$1.4112 \text{ MHz}$ ($44.1 \text{
 
 ## 4. The Modern Upgrade: Introducing DSD (Direct Stream Digital)
 
-While the $15.2 \text{ kHz}$ PWM perfectly captures the gritty, nostalgic sound of the 1980s, the physical reality is that 1-bit audio can achieve much higher fidelity. To demonstrate the true potential of our $1.41 \text{ MHz}$ 1-bit engine, we implemented an alternative, modern modulation strategy: **DSD (Delta-Sigma Modulation)**.
+While the $15.2 \text{ kHz}$ PWM perfectly captures the gritty, nostalgic sound of the 1980s, the physical reality is that 1-bit audio can achieve much higher fidelity. To demonstrate the true potential of our $1.41 \text{ MHz}$ 1-bit engine, we implemented an alternative, modern modulation strategy: **DSD ([Delta-Sigma Modulation](https://en.wikipedia.org/wiki/Delta-sigma_modulation))**.
 
 ### Why DSD?
 Unlike PWM, which relies on a fixed carrier wave that generates audible high-frequency whining and metallic aliasing, DSD uses an **Error Feedback Loop (Noise Shaping)**. 
@@ -116,4 +116,4 @@ You can experience the results of this research by running Midiraja with the fol
 ## 7. References & Historical Documentation
 
 1. **Access Software, *RealSound***: The original commercial PC game technology that hijacked the Intel 8253 PIT to produce digitized speech and music via PWM on the IBM PC internal speaker.
-2. **Michael J. Mahon, *Real Sound for 8-bit Apple IIs***: KansasFest presentation detailing the fundamental mathematics of Time-Domain Quantization, proving that a ~1 MHz clock divided by an audio rate naturally produces ~6.5 bits of dynamic range resolution on a 1-bit speaker pin.
+2. **Michael J. Mahon, *Real Sound for 8-bit Apple IIs***: KansasFest presentation detailing the fundamental mathematics of Time-Domain [Quantization](https://en.wikipedia.org/wiki/Quantization_(signal_processing)), proving that a ~1 MHz clock divided by an audio rate naturally produces ~6.5 bits of dynamic range resolution on a 1-bit speaker pin.

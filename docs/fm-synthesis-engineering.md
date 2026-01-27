@@ -8,11 +8,11 @@
 ## 1. Background: FM Synthesis and Target Hardware
 
 ### What is FM Synthesis?
-Frequency Modulation (FM) synthesis generates complex harmonic timbres by modulating the frequency of one waveform (the carrier) with another (the modulator). This technique, pioneered by John Chowning and popularized by Yamaha, was the dominant method for computer and console audio in the 1980s and early 1990s due to its ability to produce rich, metallic, and "electric" sounds with very low memory overhead.
+[Frequency Modulation (FM) synthesis](https://en.wikipedia.org/wiki/Frequency_modulation_synthesis) generates complex harmonic timbres by modulating the frequency of one waveform (the carrier) with another (the modulator). This technique, pioneered by John Chowning and popularized by Yamaha, was the dominant method for computer and console audio in the 1980s and early 1990s due to its ability to produce rich, metallic, and "electric" sounds with very low memory overhead.
 
 ### Target Hardware
-*   **OPL (Yamaha YM3812/YMF262):** The heart of the AdLib and Sound Blaster series. It defined the sound of the DOS gaming era.
-*   **OPN (Yamaha YM2612/YM2608):** Used in the Sega Genesis (Mega Drive) and Japanese PC-98 computers. It is known for its distinctively gritty FM bass and drum sounds.
+*   **[OPL (Yamaha YM3812/YMF262)](https://en.wikipedia.org/wiki/Yamaha_OPL):** The heart of the AdLib and Sound Blaster series. It defined the sound of the DOS gaming era.
+*   **[OPN (Yamaha YM2612/YM2608)](https://en.wikipedia.org/wiki/Yamaha_YM2612)** (Related to [YM2203](https://en.wikipedia.org/wiki/Yamaha_YM2203)):  Used in the Sega Genesis (Mega Drive) and Japanese PC-98 computers. It is known for its distinctively gritty FM bass and drum sounds.
 
 ### Native Libraries
 Midiraja utilizes two high-fidelity native emulation libraries via Java's Foreign Function & Memory (FFM) API:
@@ -54,7 +54,7 @@ To normalize perceived loudness while preventing digital clipping, a gain and li
 
 ## 4. 1-Bit PWM Acoustic Modulation
 
-The `--1bit pwm` flag simulates routing multi-channel FM audio through a standard 1-bit PC motherboard speaker using Pulse Width Modulation (15.2kHz carrier).
+The `--1bit pwm` flag simulates routing multi-channel FM audio through a standard 1-bit PC motherboard speaker using [Pulse Width Modulation](https://en.wikipedia.org/wiki/Pulse-width_modulation) (15.2kHz carrier).
 
 ### Pause/Silence Handling
 If the render thread continues to feed silence to the PWM generator after a pause event, the generator outputs a constant 50% duty cycle square wave at the 15.2kHz carrier frequency, resulting in an audible continuous tone.

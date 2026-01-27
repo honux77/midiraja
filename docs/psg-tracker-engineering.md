@@ -2,13 +2,13 @@
 
 **Status:** Research & Design Phase (Target: `midra psg`)
 
-This document outlines the architectural blueprint for the upcoming Programmable Sound Generator (PSG) emulator in Midiraja. Our goal is not simply to emulate the hardware specifications of the AY-3-8910 or SN76489 chips, but to **emulate the software tricks (Tracker Techniques)** that 1980s demoscene hackers used to push this hardware far beyond its physical limits.
+This document outlines the architectural blueprint for the upcoming [Programmable Sound Generator (PSG)](https://en.wikipedia.org/wiki/Programmable_sound_generator) emulator in Midiraja. Our goal is not simply to emulate the hardware specifications of the AY-3-8910 or [SN76489](https://en.wikipedia.org/wiki/Texas_Instruments_SN76489) chips, but to **emulate the software tricks (Tracker Techniques)** that 1980s demoscene hackers used to push this hardware far beyond its physical limits.
 
 ---
 
 ## 1. The Hardware Reality (The Constraint)
 
-A standard PSG chip (like the Yamaha YM2149F found in MSX and Atari ST) provides extremely limited resources:
+A standard PSG chip (like the [Yamaha YM2149F](https://en.wikipedia.org/wiki/General_Instrument_AY-3-8910) found in MSX and Atari ST) provides extremely limited resources:
 * **3 Tone Channels:** Capable of generating pure Square Waves.
 * **1 Noise Generator:** A Pseudo-Random LFSR generator.
 * **1 Hardware Envelope Generator:** A single, global timer that can apply geometric volume shapes (Sawtooth, Triangle, Decay) to any channel.
