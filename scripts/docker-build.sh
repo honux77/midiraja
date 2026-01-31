@@ -15,6 +15,13 @@ docker build -t "${IMAGE_NAME}" -f Dockerfile.linux .
 echo "🚀 Running Linux Native Compilation inside Docker..."
 # Mount current directory, run the container
 # Use the Gradle cache from host if possible, but safely.
+# Clean up CMakeCache to prevent path conflicts between macOS host and Linux container
+rm -f src/main/c/adlmidi/CMakeCache.txt
+rm -f src/main/c/opnmidi/CMakeCache.txt
+
+# The ext submodules might not be checked out if we just cloned.
+# But since this is a local volume mount, they should be there.
+
 docker run --rm -v "$(pwd)":/app -w /app "${IMAGE_NAME}" ./gradlew nativeCompile --no-daemon
 
 echo "✅ Linux Native Build Completed."
