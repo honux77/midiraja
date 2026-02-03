@@ -25,9 +25,15 @@ public final class AudioLibResolver
     /** Returns the resolved path suitable for passing to {@code NativeAudioEngine}. */
     public static String resolve() throws Exception
     {
-        String os = System.getProperty("os.name").toLowerCase(Locale.ROOT);
-        String libName = os.contains("mac") ? "libmidiraja_audio.dylib" : "libmidiraja_audio.so";
-        String devPath = new File("").getAbsolutePath() + "/src/main/c/miniaudio/" + libName;
+        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        String osFamily = osName.contains("mac") ? "macos" : (osName.contains("linux") ? "linux" : "windows");
+        String arch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+        if (arch.equals("amd64")) arch = "x86_64";
+        if (arch.equals("arm64")) arch = "aarch64";
+        
+        String nativeTarget = osFamily + "-" + arch;
+        String libName = osName.contains("mac") ? "libmidiraja_audio.dylib" : "libmidiraja_audio.so";
+        String devPath = new File("").getAbsolutePath() + "/build/native-libs/" + nativeTarget + "/miniaudio/" + libName;
         String[] paths = {libName, devPath};
 
         try (Arena arena = Arena.ofShared())

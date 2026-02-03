@@ -140,6 +140,14 @@ run {
     }
 }
 
+// Determine OS and Architecture for isolating native build artifacts
+def osName = System.getProperty("os.name").toLowerCase().replaceAll(" ", "")
+def osFamily = osName.contains("mac") ? "macos" : (osName.contains("linux") ? "linux" : "windows")
+def arch = System.getProperty("os.arch").toLowerCase()
+if (arch == "amd64") arch = "x86_64"
+if (arch == "arm64") arch = "aarch64"
+def nativeTarget = "${osFamily}-${arch}"
+
 // ── Native library build tasks ────────────────────────────────────────────────
 // cmake + make are run automatically before nativeCompile so developers don't
 // need to run build-native-libs.sh manually. Gradle's input/output tracking
@@ -150,9 +158,9 @@ task buildAdlMidiLib(type: Exec) {
     onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
 
     def sourceDir = file("ext/libADLMIDI")
-    def buildDir  = file("src/main/c/adlmidi")
+    def buildDir  = file("build/native-libs/${nativeTarget}/adlmidi")
     inputs.dir(sourceDir)
-    outputs.file(file("src/main/c/adlmidi/libADLMIDI.a"))
+    outputs.file(file("${buildDir}/libADLMIDI.a"))
 
     doFirst { buildDir.mkdirs() }
     workingDir { buildDir }
@@ -173,9 +181,9 @@ task buildOpnMidiLib(type: Exec) {
     onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
 
     def sourceDir = file("ext/libOPNMIDI")
-    def buildDir  = file("src/main/c/opnmidi")
+    def buildDir  = file("build/native-libs/${nativeTarget}/opnmidi")
     inputs.dir(sourceDir)
-    outputs.file(file("src/main/c/opnmidi/libOPNMIDI.a"))
+    outputs.file(file("${buildDir}/libOPNMIDI.a"))
 
     doFirst { buildDir.mkdirs() }
     workingDir { buildDir }
@@ -206,7 +214,7 @@ graalvmNative {
             buildArgs.add('--install-exit-handlers')
 
             // Statically link libADLMIDI: --opl works without distributing a .dylib/.so
-            def adlLib = "${projectDir}/src/main/c/adlmidi/libADLMIDI.a"
+            def adlLib = "${project.buildDir}/native-libs/${nativeTarget}/adlmidi/libADLMIDI.a"
             if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
                 // Apple ld: -force_load includes all symbols from the archive (prevents dead-stripping
                 // of symbols referenced only via FFM MethodHandle string lookup at runtime)
@@ -226,7 +234,7 @@ graalvmNative {
             }
 
             // Statically link libOPNMIDI: --opn works without distributing a .dylib/.so
-            def opnLib = "${projectDir}/src/main/c/opnmidi/libOPNMIDI.a"
+            def opnLib = "${project.buildDir}/native-libs/${nativeTarget}/opnmidi/libOPNMIDI.a"
             if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
                 // Do not force_load opnLib on Mac either, to avoid duplicate symbols with adlLib (ymfm backend)
                 buildArgs.add("-H:NativeLinkerOption=${opnLib}")
@@ -248,7 +256,8 @@ task buildMiniaudioLib(type: Exec) {
     onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
 
     def sourceFile = file("src/main/c/miniaudio/midiraja_audio.c")
-    def outputDir  = file("src/main/c/miniaudio")
+    def outputDir  = file("build/native-libs/${nativeTarget}/miniaudio")
+    doFirst { outputDir.mkdirs() }
     inputs.file(sourceFile)
     
     def libName = org.gradle.internal.os.OperatingSystem.current().isMacOsX() ? "libmidiraja_audio.dylib" : "libmidiraja_audio.so"
