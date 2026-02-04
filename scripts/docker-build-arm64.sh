@@ -1,16 +1,16 @@
 #!/bin/bash
-# scripts/docker-build.sh
-# Builds the Linux Native Image using Docker (Ubuntu 24.04 + GraalVM 25)
+# scripts/docker-build-arm64.sh
+# Builds the Linux Native Image for aarch64 (ARM64) using Docker (Ubuntu 24.04 + GraalVM 25)
 
 set -e
 
 # Move to the project root directory
 cd "$(dirname "$0")/.."
 
-IMAGE_NAME="midra-linux-builder:latest"
+IMAGE_NAME="midra-linux-builder-arm64:latest"
 
 echo "🐳 Building Docker image: ${IMAGE_NAME}..."
-docker build -t "${IMAGE_NAME}" -f Dockerfile.linux .
+docker build --platform linux/arm64 -t "${IMAGE_NAME}" -f Dockerfile.linux .
 
 echo "🚀 Running Linux Native Compilation inside Docker..."
 # Mount current directory, run the container
@@ -21,7 +21,7 @@ git submodule update --init --recursive
 # The ext submodules might not be checked out if we just cloned.
 # But since this is a local volume mount, they should be there.
 
-docker run --rm -v "$(pwd)":/app -w /app "${IMAGE_NAME}" ./gradlew nativeCompile --no-daemon
+docker run --rm --platform linux/arm64 -v "$(pwd)":/app -w /app "${IMAGE_NAME}" ./gradlew nativeCompile --no-daemon
 
 echo "✅ Linux Native Build Completed."
 echo "Output binary: build/native/nativeCompile/midra"
