@@ -53,7 +53,8 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
     private final int emulatorId;
     private final int numChips;
     private final @Nullable String oneBitMode;
-    private final List<AudioProcessor> dspPipeline = new ArrayList<>();
+    private final List<com.midiraja.dsp.AudioProcessor> dspPipeline = new ArrayList<>();
+    private com.midiraja.dsp.ShortToFloatFilter audioPipeline;
 
     /** Uses Nuked OPL3 (emulator 0) and 4 chips by default. */
     public AdlMidiSynthProvider(
@@ -73,9 +74,15 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
 
         if (this.oneBitMode != null)
         {
-            dspPipeline.add(new OneBitAcousticSimulator(SAMPLE_RATE, this.oneBitMode));
-            
+            dspPipeline.add(new com.midiraja.dsp.OneBitAcousticSimulator(SAMPLE_RATE, this.oneBitMode));
         }
+        
+        // Assemble audio pipeline: short[] -> float[] -> legacy Processors -> short[] -> NativeAudioEngine
+        com.midiraja.dsp.AudioSink endSink = new com.midiraja.dsp.FloatToShortSink(audio);
+        if (!dspPipeline.isEmpty()) {
+            endSink = new com.midiraja.dsp.LegacyProcessorSink(endSink, dspPipeline);
+        }
+        this.audioPipeline = new com.midiraja.dsp.ShortToFloatFilter(endSink);
     }
 
     private static final int SAMPLE_RATE = 44100;
@@ -147,8 +154,7 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
         renderThread = new Thread(() -> {
             // Buffer: FRAMES_PER_RENDER stereo frames = FRAMES_PER_RENDER * 2 shorts
             short[] pcmBuffer = new short[FRAMES_PER_RENDER * 2];
-            float[] left = new float[FRAMES_PER_RENDER];
-            float[] right = new float[FRAMES_PER_RENDER];
+            
 
             while (running)
             {
@@ -177,45 +183,14 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
                 // Pull rendered PCM from libADLMIDI
                 bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
 
-                // If 1-bit modulation is enabled, process through DSP pipeline
-                if (!dspPipeline.isEmpty())
-                {
-                    for (int i = 0; i < FRAMES_PER_RENDER; i++)
-                    {
-                        left[i] = pcmBuffer[i * 2] / 32768.0f;
-                        right[i] = pcmBuffer[i * 2 + 1] / 32768.0f;
+                if (audio != null) {
+                    if (!dspPipeline.isEmpty()) {
+                        audioPipeline.processInterleaved(pcmBuffer, FRAMES_PER_RENDER);
+                    } else {
+                        audio.push(pcmBuffer);
                     }
-
-                    for (com.midiraja.dsp.AudioProcessor proc : dspPipeline)
-                    {
-                        proc.process(left, right, FRAMES_PER_RENDER);
-                    }
-
-                    for (int i = 0; i < FRAMES_PER_RENDER; i++)
-                    {
-                        float clampL = Math.max(-1.0f, Math.min(1.0f, left[i]));
-                        float clampR = Math.max(-1.0f, Math.min(1.0f, right[i]));
-                        pcmBuffer[i * 2] = (short) (clampL * 32767);
-                        pcmBuffer[i * 2 + 1] = (short) (clampR * 32767);
-                    }
-                }
-
-                // Push to miniaudio ring buffer (blocks if full, pacing the thread)
-                if (audio != null)
-                {
-                    audio.push(pcmBuffer);
-                }
-                else
-                {
-                    try
-                    {
-                        Thread.sleep(10);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+                } else {
+                    try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
                 }
             }
         });
