@@ -8,7 +8,7 @@ echo "Building Native Libraries for Midiraja..."
 echo "==> Building libmidiraja_audio..."
 cd "$PROJECT_ROOT/src/main/c/miniaudio"
 if [[ "$OSTYPE" == "darwin"* ]]; then
-    gcc -shared -fPIC -O2 -o libmidiraja_audio.dylib midiraja_audio.c
+    gcc -shared -fPIC -O2 -framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreFoundation -o libmidiraja_audio.dylib midiraja_audio.c
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     gcc -shared -fPIC -O2 -o libmidiraja_audio.so midiraja_audio.c
 else

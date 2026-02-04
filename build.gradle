@@ -266,7 +266,7 @@ task buildMiniaudioLib(type: Exec) {
     workingDir { outputDir }
     commandLine 'bash', '-c', """
         if [[ "\$OSTYPE" == "darwin"* ]]; then
-            gcc -shared -fPIC -O2 -o libmidiraja_audio.dylib "${sourceFile.absolutePath}"
+            gcc -shared -fPIC -O2 -framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreFoundation -o libmidiraja_audio.dylib "${sourceFile.absolutePath}"
         else
             gcc -shared -fPIC -O2 -o libmidiraja_audio.so "${sourceFile.absolutePath}" -lasound
         fi

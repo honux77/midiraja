@@ -13,13 +13,16 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
+          - os: ubuntu-22.04
             artifact_name: midra
             asset_name: midra-linux-amd64
-          - os: macos-latest
+          - os: ubuntu-24.04-arm
+            artifact_name: midra
+            asset_name: midra-linux-arm64
+          - os: macos-13
             artifact_name: midra
             asset_name: midra-darwin-arm64
-          - os: windows-latest
+          - os: windows-2022
             artifact_name: midra.exe
             asset_name: midra-windows-amd64.exe
 
@@ -114,8 +117,8 @@ jobs:
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-          - os: macos-latest
+          - os: ubuntu-22.04
+          - os: macos-13
 
     runs-on: ${{ matrix.os }}
     
@@ -144,7 +147,7 @@ jobs:
           files: dist/midrac-*.tar.gz
 
   build-midrax-jar:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
       - name: Set up GraalVM Community Edition
