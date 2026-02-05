@@ -94,7 +94,7 @@ class AdlMidiSynthProviderTest
     @Test void testLifecycleAndMidiRouting() throws Exception
     {
         MockAdlBridge mockBridge = new MockAdlBridge();
-        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null);
+        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null, 0, 4, null);
 
         // 1. Lifecycle: openPort → init, setNumChips
         provider.openPort(0);
@@ -152,7 +152,7 @@ class AdlMidiSynthProviderTest
     @Test void testLoadSoundbankWithWoplFile() throws Exception
     {
         MockAdlBridge mockBridge = new MockAdlBridge();
-        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null);
+        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null, 0, 4, null);
         provider.openPort(0);
 
         provider.loadSoundbank("/path/to/custom.wopl");
@@ -164,7 +164,7 @@ class AdlMidiSynthProviderTest
     @Test void testLoadSoundbankDefaultBank() throws Exception
     {
         MockAdlBridge mockBridge = new MockAdlBridge();
-        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null);
+        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null, 0, 4, null);
         provider.openPort(0);
 
         provider.loadSoundbank("bank:0");
@@ -174,7 +174,7 @@ class AdlMidiSynthProviderTest
     @Test void testPanic() throws Exception
     {
         MockAdlBridge mockBridge = new MockAdlBridge();
-        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null);
+        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null, 0, 4, null);
 
         provider.panic();
 
@@ -199,7 +199,7 @@ class AdlMidiSynthProviderTest
     @Test void testPrepareForNewTrack() throws Exception
     {
         MockAdlBridge mockBridge = new MockAdlBridge();
-        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null);
+        AdlMidiSynthProvider provider = new AdlMidiSynthProvider(mockBridge, null, 0, 4, null);
 
         // Queue some stale events
         provider.sendMessage(new byte[] {(byte) 0x90, 60, 100});

@@ -53,36 +53,21 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
     private final int emulatorId;
     private final int numChips;
     private final @Nullable String oneBitMode;
-    private final List<com.midiraja.dsp.AudioProcessor> dspPipeline = new ArrayList<>();
-    private com.midiraja.dsp.ShortToFloatFilter audioPipeline;
+    private final com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
 
     /** Uses Nuked OPL3 (emulator 0) and 4 chips by default. */
-    public AdlMidiSynthProvider(
-        AdlMidiNativeBridge bridge, @Nullable AudioEngine audio)
-    {
-        this(bridge, audio, 0, 4, null);
-    }
+    
 
     public AdlMidiSynthProvider(AdlMidiNativeBridge bridge,
-        @Nullable AudioEngine audio, int emulatorId, int numChips, @Nullable String oneBitMode)
+        com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, int emulatorId, int numChips, @Nullable String oneBitMode)
     {
         this.bridge = bridge;
-        this.audio = audio;
+        this.audioOut = audioOut;
+        this.audio = null; // Unused directly anymore, but kept for interface compatibility if needed.
+                           // Actually let's just keep audioOut.
         this.emulatorId = emulatorId;
         this.numChips = numChips;
         this.oneBitMode = oneBitMode;
-
-        if (this.oneBitMode != null)
-        {
-            dspPipeline.add(new com.midiraja.dsp.OneBitAcousticSimulator(SAMPLE_RATE, this.oneBitMode));
-        }
-        
-        // Assemble audio pipeline: short[] -> float[] -> legacy Processors -> short[] -> NativeAudioEngine
-        com.midiraja.dsp.AudioSink endSink = new com.midiraja.dsp.FloatToShortSink(audio);
-        if (!dspPipeline.isEmpty()) {
-            endSink = new com.midiraja.dsp.LegacyProcessorSink(endSink, dspPipeline);
-        }
-        this.audioPipeline = new com.midiraja.dsp.ShortToFloatFilter(endSink);
     }
 
     private static final int SAMPLE_RATE = 44100;
@@ -91,9 +76,8 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
 
     @Override public long getAudioLatencyNanos()
     {
-        if (audio == null)
-            return 0L;
-        long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES + audio.getDeviceLatencyFrames();
+        // Latency should ideally be queried from the pipeline, but for now we hardcode the synth's internal buffer
+        long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES; 
         return totalFrames * 1_000_000_000L / SAMPLE_RATE;
     }
 
@@ -141,9 +125,9 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
             bridge.loadBankFile(path);
         }
 
-        if (audio != null)
+        if (audioOut != null)
         {
-            audio.init(SAMPLE_RATE, 2, RING_BUFFER_CAPACITY_FRAMES);
+            // The audioOut pipeline should be fully initialized by the caller.
             startRenderThread();
         }
     }
@@ -183,12 +167,8 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
                 // Pull rendered PCM from libADLMIDI
                 bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
 
-                if (audio != null) {
-                    if (!dspPipeline.isEmpty()) {
-                        audioPipeline.processInterleaved(pcmBuffer, FRAMES_PER_RENDER);
-                    } else {
-                        audio.push(pcmBuffer);
-                    }
+                if (audioOut != null) {
+                    audioOut.processInterleaved(pcmBuffer, FRAMES_PER_RENDER);
                 } else {
                     try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
                 }
@@ -263,14 +243,10 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
             {
             }
         }
-        if (audio != null)
+        if (audioOut != null)
         {
-            audio.flush();
-        renderPaused = true;
-        }
-        for (com.midiraja.dsp.AudioProcessor proc : dspPipeline)
-        {
-            proc.reset();
+            audioOut.reset();
+            renderPaused = true;
         }
     }
 
@@ -296,10 +272,10 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
         bridge.panic();
 
         // Step 4: Flush old audio from the ring buffer
-        if (audio != null)
+        if (audioOut != null)
         {
-            audio.flush();
-        renderPaused = true;
+            audioOut.reset();
+            renderPaused = true;
         }
 
         // Step 5: Reset synth state for the new song
@@ -330,10 +306,7 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
             }
         }
         bridge.close();
-        if (audio != null)
-        {
-            audio.close();
-        }
+
     }
 
     /**

@@ -251,9 +251,11 @@ public class MidirajaCommand implements Callable<Integer>
                   + "<files...>' instead.");
       String audioLib = AudioLibResolver.resolve();
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
+      audio.init(44100, 2, 4096);
+      com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
       var bridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
       resolvedProvider = new com.midiraja.midi.AdlMidiSynthProvider(
-          bridge, audio, legacyOplEmulator, legacyOplChips, null);
+          bridge, pipeline, legacyOplEmulator, legacyOplChips, null);
       String val = legacyOpl.get();
       soundbankArg = Optional.of(
           val.isEmpty() ? "bank:0"

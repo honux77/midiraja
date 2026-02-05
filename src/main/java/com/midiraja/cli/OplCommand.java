@@ -54,9 +54,20 @@ public class OplCommand implements Callable<Integer>
 
         String audioLib = AudioLibResolver.resolve();
         var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
+        audio.init(44100, 2, 4096);
+        
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
+        if (fmOptions.oneBitMode != null) {
+            pipeline = new com.midiraja.dsp.ShortToFloatFilter(
+                new com.midiraja.dsp.LegacyProcessorSink(pipeline, 
+                    java.util.List.of(new com.midiraja.dsp.OneBitAcousticSimulator(44100, fmOptions.oneBitMode))));
+        } else {
+            // If no Float processing is needed, FloatToShortSink acts as a passthrough for interleaved shorts
+        }
+        
         var bridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();
         var provider = new com.midiraja.midi.AdlMidiSynthProvider(
-            bridge, audio, emulator, fmOptions.chips, fmOptions.oneBitMode);
+            bridge, pipeline, emulator, fmOptions.chips, fmOptions.oneBitMode);
 
         // Resolve bank argument: "" → "bank:0", "14" → "bank:14", path → path
         String soundbankArg =
