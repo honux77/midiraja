@@ -45,8 +45,10 @@ public class MuntCommand implements Callable<Integer>
 
         String audioLib = AudioLibResolver.resolve();
         var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
+        audio.init(32000, 2, 4096);
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
         var bridge = new com.midiraja.midi.FFMMuntNativeBridge();
-        var provider = new com.midiraja.midi.MuntSynthProvider(bridge, audio);
+        var provider = new com.midiraja.midi.MuntSynthProvider(bridge, pipeline);
 
         var runner =
             new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());

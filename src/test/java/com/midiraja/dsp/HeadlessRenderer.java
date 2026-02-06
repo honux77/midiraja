@@ -45,7 +45,7 @@ public class HeadlessRenderer {
             @Override public void close() {}
         };
         
-        BeepSynthProvider provider = new BeepSynthProvider(engine, voices, 1.0, 1.1, 32, mux, synth);
+        BeepSynthProvider provider = new BeepSynthProvider(new FloatToShortSink(engine, 1), voices, 1.0, 1.1, 32, mux, synth);
         provider.openPort(0);
         
         // Play a solid C4 note

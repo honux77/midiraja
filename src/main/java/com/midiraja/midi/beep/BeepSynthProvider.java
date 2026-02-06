@@ -82,7 +82,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     );
 
 
-    private final AudioEngine audio;
+    private final com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
     private final int voicesPerCore;
     private final double fmRatio;
     private final double fmIndex;
@@ -428,9 +428,9 @@ public class BeepSynthProvider implements SoftSynthProvider
      * @param muxMode Multiplexing algorithm ("xor" or "tdm").
      * @param synthMode Synthesis algorithm ("fm", "xor", or "square").
      */
-    public BeepSynthProvider(AudioEngine audio, int voices, double fmRatio, double fmIndex, int oversample, String muxMode, String synthMode)
+    public BeepSynthProvider(com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, int voices, double fmRatio, double fmIndex, int oversample, String muxMode, String synthMode)
     {
-        this.audio = audio;
+        this.audioOut = audioOut;
         this.voicesPerCore = Math.max(1, Math.min(4, voices));
         this.fmRatio = fmRatio;
         this.fmIndex = fmIndex;
@@ -482,8 +482,7 @@ public class BeepSynthProvider implements SoftSynthProvider
     @Override
     public void openPort(int portIndex) throws Exception
     {
-        audio.init(sampleRate, 1, 4096);
-        startRenderThread();
+        if (audioOut != null) startRenderThread();
     }
 
     @Override public void loadSoundbank(String path) throws Exception {}
@@ -528,7 +527,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                 {
                     renderCluster(currentNotes, pcmBuffer, framesToRender);
                 }
-                audio.push(pcmBuffer);
+                if (audioOut != null) audioOut.processInterleaved(pcmBuffer, 512, 1);
             }
         });
         renderThread.setPriority(Thread.MAX_PRIORITY);
@@ -675,9 +674,8 @@ public class BeepSynthProvider implements SoftSynthProvider
 
     @Override public void prepareForNewTrack(javax.sound.midi.Sequence seq)
     {
-        if (audio == null) return;
         renderPaused = true;
-        audio.flush();
+        if (audioOut != null) audioOut.reset();
         for (int i = 0; i < MAX_POLYPHONY; i++) activeNotes[i].active = false;
     }
 

@@ -1,31 +1,49 @@
 package com.midiraja.dsp;
 
+import org.jspecify.annotations.Nullable;
+
 /**
  * A utility class that converts interleaved short[] PCM to non-interleaved float[] arrays
- * and feeds them to an AudioSink pipeline.
+ * and feeds them to an AudioProcessor pipeline.
  */
-public class ShortToFloatFilter {
-    private final AudioSink next;
-    private float @org.jspecify.annotations.Nullable [] leftBuffer = null;
-    private float @org.jspecify.annotations.Nullable [] rightBuffer = null;
+public class ShortToFloatFilter implements AudioProcessor {
+    private final AudioProcessor next;
+    private float @Nullable [] leftBuffer = null;
+    private float @Nullable [] rightBuffer = null;
 
-    public ShortToFloatFilter(AudioSink next) {
+    public ShortToFloatFilter(AudioProcessor next) {
         this.next = next;
     }
 
-    public void processInterleaved(short[] pcm, int frames) {
+    @Override
+    public void process(float[] left, float[] right, int frames) {
+        next.process(left, right, frames);
+    }
+
+    @Override
+    public void processInterleaved(short[] pcm, int frames, int channels) {
         if (leftBuffer == null || leftBuffer.length < frames) {
             leftBuffer = new float[frames];
             rightBuffer = new float[frames];
         }
         
-        for (int i = 0; i < frames; i++) {
-            if (leftBuffer != null && rightBuffer != null) {
-                leftBuffer[i] = pcm[i * 2] / 32768.0f;
-                rightBuffer[i] = pcm[i * 2 + 1] / 32768.0f;
-            }
-        }
+        final float[] l = leftBuffer;
+        final float[] r = rightBuffer;
         
-        if (leftBuffer != null && rightBuffer != null) next.push(leftBuffer, rightBuffer, frames);
+        if (l != null && r != null) {
+            if (channels == 1) {
+                for (int i = 0; i < frames; i++) {
+                    float val = pcm[i] / 32768.0f;
+                    l[i] = val;
+                    r[i] = val;
+                }
+            } else {
+                for (int i = 0; i < frames; i++) {
+                    l[i] = pcm[i * 2] / 32768.0f;
+                    r[i] = pcm[i * 2 + 1] / 32768.0f;
+                }
+            }
+            next.process(l, r, frames);
+        }
     }
 }

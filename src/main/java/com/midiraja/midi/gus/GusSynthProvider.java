@@ -37,7 +37,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class GusSynthProvider implements SoftSynthProvider
 {
-    private final AudioEngine audio;
+    private final com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
     private final GusEngine engine;
     private final @Nullable GusBank bank;
     private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
@@ -49,24 +49,14 @@ public class GusSynthProvider implements SoftSynthProvider
     private volatile boolean renderPaused = false;
 
     /**
-     * Constructs a standard 16-bit GUS provider.
-     * @param audio The audio engine interface.
-     * @param patchDir Path to the GUS patch directory (containing gus.cfg).
-     */
-    public GusSynthProvider(AudioEngine audio, @Nullable String patchDir)
-    {
-        this(audio, patchDir, null);
-    }
-
-    /**
      * Constructs a customizable GUS provider with 1-Bit acoustic options.
-     * @param audio The audio engine interface.
+     * @param audioOut The audio processor pipeline.
      * @param patchDir Path to the GUS patch directory.
      * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", or null to disable).
      */
-    public GusSynthProvider(AudioEngine audio, @Nullable String patchDir, @Nullable String oneBitMode)
+    public GusSynthProvider(com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, @Nullable String patchDir, @Nullable String oneBitMode)
     {
-        this.audio = audio;
+        this.audioOut = audioOut;
         this.engine = new GusEngine(44100);
         this.bank = resolveBank(patchDir);
         this.oneBitMode = oneBitMode != null ? oneBitMode.toLowerCase(java.util.Locale.ROOT) : null;
@@ -74,8 +64,12 @@ public class GusSynthProvider implements SoftSynthProvider
         // Assemble the modular DSP pipeline
         if (this.oneBitMode != null) {
             dspPipeline.add(new OneBitAcousticSimulator(44100, this.oneBitMode));
-            
         }
+    }
+
+    public GusSynthProvider(com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, @Nullable String patchDir)
+    {
+        this(audioOut, patchDir, null);
     }
 
     private @Nullable GusBank resolveBank(@Nullable String userPath)
@@ -145,7 +139,7 @@ public class GusSynthProvider implements SoftSynthProvider
             }
             preloadPatch(0, 0);
         }
-        if (audio != null) { audio.init(44100, 2, 4096); startRenderThread(); }
+        if (audioOut != null) startRenderThread();
     }
 
     private void preloadPatch(int bankNum, int program)
@@ -195,7 +189,7 @@ public class GusSynthProvider implements SoftSynthProvider
                     pcmBuffer[i * 2] = (short) (Math.tanh(left[i]) * 32767);
                     pcmBuffer[i * 2 + 1] = (short) (Math.tanh(right[i]) * 32767);
                 }
-                if (audio != null) audio.push(pcmBuffer);
+                if (audioOut != null) audioOut.processInterleaved(pcmBuffer, framesToRender, 2);
             }
         });
         renderThread.setPriority(Thread.MAX_PRIORITY);
@@ -232,10 +226,10 @@ public class GusSynthProvider implements SoftSynthProvider
                 }
             }
         }
-        if (audio == null) return;
+        
         renderPaused = true;
         try { Thread.sleep(20); } catch (InterruptedException ignored) {}
-        audio.flush();
+        if (audioOut != null) audioOut.reset();
         engine.getActiveVoices().clear();
     }
 
@@ -285,7 +279,7 @@ public class GusSynthProvider implements SoftSynthProvider
 
     @Override public void panic() { 
         engine.getActiveVoices().clear(); 
-        if (audio != null) audio.flush();
+        if (audioOut != null) audioOut.reset();
         renderPaused = true; 
         for (com.midiraja.dsp.AudioProcessor proc : dspPipeline) proc.reset(); 
     }
@@ -300,7 +294,7 @@ public class GusSynthProvider implements SoftSynthProvider
             renderThread.interrupt();
             try { renderThread.join(500); } catch (InterruptedException ignored) {}
         }
-        if (audio != null) audio.close();
+        
         engine.getActiveVoices().clear();
     }
 }

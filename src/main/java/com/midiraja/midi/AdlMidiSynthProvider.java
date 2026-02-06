@@ -168,7 +168,7 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
                 bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
 
                 if (audioOut != null) {
-                    audioOut.processInterleaved(pcmBuffer, FRAMES_PER_RENDER);
+                    audioOut.processInterleaved(pcmBuffer, FRAMES_PER_RENDER, 2);
                 } else {
                     try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
                 }

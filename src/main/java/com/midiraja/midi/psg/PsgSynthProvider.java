@@ -21,7 +21,7 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings({"ThreadPriorityCheck", "EmptyCatch"})
 public class PsgSynthProvider implements SoftSynthProvider
 {
-    private final AudioEngine audio;
+    private final com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
     private final int sampleRate = 44100;
     
     private @Nullable Thread renderThread;
@@ -34,19 +34,9 @@ public class PsgSynthProvider implements SoftSynthProvider
     private final int[] channelPrograms = new int[16];
     private final boolean useScc;
     
-    public PsgSynthProvider(AudioEngine audio)
+    public PsgSynthProvider(com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, int systems, double vibratoDepth, double dutySweep, boolean useScc, boolean smoothScc)
     {
-        this(audio, 4, 0.5, 0.25, false, false); // Default setup
-    }
-    
-    public PsgSynthProvider(AudioEngine audio, int systems, double vibratoDepth, double dutySweep, boolean useScc)
-    {
-        this(audio, systems, vibratoDepth, dutySweep, useScc, false);
-    }
-    
-    public PsgSynthProvider(AudioEngine audio, int systems, double vibratoDepth, double dutySweep, boolean useScc, boolean smoothScc)
-    {
-        this.audio = audio;
+        this.audioOut = audioOut;
         this.systems = Math.max(1, Math.min(16, systems));
         this.useScc = useScc;
         this.totalPhysicalChips = useScc ? this.systems * 2 : this.systems;
@@ -85,8 +75,7 @@ public class PsgSynthProvider implements SoftSynthProvider
     @Override
     public void openPort(int portIndex) throws Exception
     {
-        audio.init(sampleRate, 1, 4096);
-        startRenderThread();
+        if (audioOut != null) startRenderThread();
     }
 
     @Override public void loadSoundbank(String path) throws Exception {}
@@ -121,7 +110,7 @@ public class PsgSynthProvider implements SoftSynthProvider
                     
                     pcmBuffer[i] = (short) (Math.max(-1.0, Math.min(1.0, sumOutput)) * 32767);
                 }
-                audio.push(pcmBuffer);
+                if (audioOut != null) audioOut.processInterleaved(pcmBuffer, framesToRender, 1);
             }
         });
         renderThread.setPriority(Thread.MAX_PRIORITY);
@@ -138,7 +127,7 @@ public class PsgSynthProvider implements SoftSynthProvider
     @Override public void prepareForNewTrack(javax.sound.midi.Sequence seq)
     {
         renderPaused = true;
-        if (audio != null) audio.flush();
+        if (audioOut != null) audioOut.reset();
         for (int i = 0; i < totalPhysicalChips; i++) chips[i].reset();
     }
 
@@ -245,6 +234,6 @@ public class PsgSynthProvider implements SoftSynthProvider
 
     @Override public void panic() { 
         for (int c = 0; c < totalPhysicalChips; c++) chips[c].reset();
-        if (audio != null) audio.flush(); 
+        if (audioOut != null) audioOut.reset(); 
     }
 }

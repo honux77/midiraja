@@ -26,7 +26,7 @@ class PsgSynthProviderTest {
     @BeforeEach
     void setUp() {
         audioEngine = new DummyAudioEngine();
-        provider = new PsgSynthProvider(audioEngine, 1, 5.0, 25.0, true);
+        provider = new PsgSynthProvider(new com.midiraja.dsp.FloatToShortSink(audioEngine, 1), 1, 5.0, 25.0, true, false);
     }
 
     @Test
@@ -50,14 +50,14 @@ class PsgSynthProviderTest {
 
     @Test
     void testSendMessageDrumsOnPsgOnly() throws Exception {
-        provider = new PsgSynthProvider(audioEngine, 1, 0, 0, true);
+        provider = new PsgSynthProvider(new com.midiraja.dsp.FloatToShortSink(audioEngine, 1), 1, 0, 0, true, false);
         byte[] drumOn = new byte[]{(byte) 0x99, 36, 100};
         provider.sendMessage(drumOn);
     }
 
     @Test
     void testVoiceStealing() throws Exception {
-        provider = new PsgSynthProvider(audioEngine, 1, 0, 0, true);
+        provider = new PsgSynthProvider(new com.midiraja.dsp.FloatToShortSink(audioEngine, 1), 1, 0, 0, true, false);
         for (int i = 0; i < 5; i++) {
             provider.sendMessage(new byte[]{(byte) 0x94, (byte)(60 + i), 100});
         }

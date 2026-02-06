@@ -33,7 +33,7 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"-p", "--patch-dir"}, description = "Directory containing GUS .pat files and gus.cfg (or timidity.cfg)")
   private Optional<File> patchDir = Optional.empty();
 
-  @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm' or 'dsd'). If omitted, outputs standard 16-bit PCM.")
+  @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy (\"pwm\" or \"dsd\"). If omitted, outputs standard 16-bit PCM.")
   private @org.jspecify.annotations.Nullable String oneBitMode;
   
   @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --1bit pwm).")
@@ -46,15 +46,16 @@ public class GusCommand implements Callable<Integer> {
   @Override
   public Integer call() throws Exception
   {
-      // ... debug logs removed ...
-
       var p = java.util.Objects.requireNonNull(parent);
     String audioLib = AudioLibResolver.resolve();
     NativeAudioEngine audio = new NativeAudioEngine(audioLib);
+    audio.init(44100, 2, 4096);
+    com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
+    
     String dirPath = patchDir.map(File::getAbsolutePath).orElse(null);
 
-    String finalOneBit = realSound ? "pwm" : oneBitMode; // oneBitMode can be null here
-    var provider = new GusSynthProvider(audio, dirPath, finalOneBit);
+    String finalOneBit = realSound ? "pwm" : oneBitMode; 
+    var provider = new GusSynthProvider(pipeline, dirPath, finalOneBit);
 
     var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                     p.isInTestMode());

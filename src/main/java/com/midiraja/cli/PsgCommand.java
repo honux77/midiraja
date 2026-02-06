@@ -55,7 +55,9 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         
         String audioLib = AudioLibResolver.resolve();
         var audio = new NativeAudioEngine(audioLib);
-        var provider = new PsgSynthProvider(audio, finalChips, vibratoDepth, dutySweep, useScc, smooth);
+        audio.init(44100, 1, 4096);
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio, 1);
+        var provider = new PsgSynthProvider(pipeline, finalChips, vibratoDepth, dutySweep, useScc, smooth);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), false);
         return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common);

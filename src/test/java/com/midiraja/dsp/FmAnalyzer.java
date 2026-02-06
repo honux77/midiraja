@@ -25,7 +25,7 @@ public class FmAnalyzer {
         };
         
         // Single Voice, XOR Synth, DSD Mux
-        BeepSynthProvider provider = new BeepSynthProvider(engine, 1, 1.0, 1.1, 32, "dsd", "xor");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(engine, 1), 1, 1.0, 1.1, 32, "dsd", "xor");
         provider.openPort(0);
         
         byte[] noteOn = new byte[] { (byte)0x90, 60, 100 };

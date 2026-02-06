@@ -53,9 +53,16 @@ public class OpnCommand implements Callable<Integer>
 
         String audioLib = AudioLibResolver.resolve();
         var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
+        audio.init(44100, 2, 4096);
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
+        if (fmOptions.oneBitMode != null) {
+            pipeline = new com.midiraja.dsp.ShortToFloatFilter(
+                new com.midiraja.dsp.LegacyProcessorSink(pipeline, 
+                    java.util.List.of(new com.midiraja.dsp.OneBitAcousticSimulator(44100, fmOptions.oneBitMode))));
+        }
         var bridge = new com.midiraja.midi.FFMOpnMidiNativeBridge();
         var provider = new com.midiraja.midi.OpnMidiSynthProvider(
-            bridge, audio, emulator, fmOptions.chips, fmOptions.oneBitMode);
+            bridge, pipeline, emulator, fmOptions.chips, fmOptions.oneBitMode);
 
         // bank: empty string = default built-in GM bank; otherwise WOPN file path
         String soundbankArg = bank.orElse("");

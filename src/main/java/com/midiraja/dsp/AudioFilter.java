@@ -1,12 +1,12 @@
 package com.midiraja.dsp;
 
 /**
- * A base class for an audio processing node that modifies audio and passes it to the next node.
+ * A base class for an audio processing node that modifies audio and passes it to the next processor in the chain.
  */
-public abstract class AudioFilter implements AudioSink {
-    protected final AudioSink next;
+public abstract class AudioFilter implements AudioProcessor {
+    protected final AudioProcessor next;
 
-    public AudioFilter(AudioSink next) {
+    public AudioFilter(AudioProcessor next) {
         this.next = next;
     }
 

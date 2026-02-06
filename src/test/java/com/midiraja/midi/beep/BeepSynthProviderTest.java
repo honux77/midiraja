@@ -42,7 +42,7 @@ class BeepSynthProviderTest
             {
                 for (int voices : voiceOptions)
                 {
-                    BeepSynthProvider provider = new BeepSynthProvider(mockAudio, voices, 1.0, 1.1, 32, mux, synth);
+                    BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), voices, 1.0, 1.1, 32, mux, synth);
                     provider.openPort(0);
                     
                     // Trigger note events to force the render loop to evaluate math blocks
@@ -66,28 +66,28 @@ class BeepSynthProviderTest
     @Test
     void testInitializationAndPortName()
     {
-        BeepSynthProvider provider = new BeepSynthProvider(mockAudio, 2, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 2, 1.0, 1.1, 32, "dsd", "fm");
         assertEquals(1, provider.getOutputPorts().size());
         assertEquals("[8-Unit] 1-Bit Digital Cluster", provider.getOutputPorts().get(0).name());
         
-        BeepSynthProvider providerMax = new BeepSynthProvider(mockAudio, 4, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider providerMax = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 4, 1.0, 1.1, 32, "dsd", "fm");
         assertEquals("[4-Unit] 1-Bit Digital Cluster", providerMax.getOutputPorts().get(0).name());
         
-        BeepSynthProvider providerMin = new BeepSynthProvider(mockAudio, 1, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider providerMin = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 1, 1.0, 1.1, 32, "dsd", "fm");
         assertEquals("[16-Unit] 1-Bit Digital Cluster", providerMin.getOutputPorts().get(0).name());
     }
     
     @Test
     void testExtremeBoundaryParameters()
     {
-        BeepSynthProvider provider = new BeepSynthProvider(mockAudio, 10, -5.0, 999.0, 0, "UNKNOWN", "INVALID");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 10, -5.0, 999.0, 0, "UNKNOWN", "INVALID");
         assertEquals("[4-Unit] 1-Bit Digital Cluster", provider.getOutputPorts().get(0).name());
     }
 
     @Test
     void testMidiNoteAllocationAndVoiceStealing() throws Exception
     {
-        BeepSynthProvider provider = new BeepSynthProvider(mockAudio, 2, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 2, 1.0, 1.1, 32, "dsd", "fm");
         provider.sendMessage(new byte[] { (byte)0x90, 60, 100 });
         provider.sendMessage(new byte[] { (byte)0x90, 64, 100 });
         provider.sendMessage(new byte[] { (byte)0x90, 67, 100 });
@@ -98,7 +98,7 @@ class BeepSynthProviderTest
     @Test
     void testMidiPitchBend() throws Exception
     {
-        BeepSynthProvider provider = new BeepSynthProvider(mockAudio, 2, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 2, 1.0, 1.1, 32, "dsd", "fm");
         provider.sendMessage(new byte[] { (byte)0x90, 60, 100 });
         provider.sendMessage(new byte[] { (byte)0xE0, 0x00, 0x7F });
         provider.sendMessage(new byte[] { (byte)0xE0, 0x00, 0x00 });
@@ -108,7 +108,7 @@ class BeepSynthProviderTest
     @Test
     void testMidiControlChanges() throws Exception
     {
-        BeepSynthProvider provider = new BeepSynthProvider(mockAudio, 2, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 2, 1.0, 1.1, 32, "dsd", "fm");
         provider.sendMessage(new byte[] { (byte)0x90, 60, 100 }); 
         provider.sendMessage(new byte[] { (byte)0xB0, 123, 0 });
         provider.sendMessage(new byte[] { (byte)0x90, 60, 100 }); 
@@ -118,7 +118,7 @@ class BeepSynthProviderTest
     @Test
     void testInvalidMidiMessages()
     {
-        BeepSynthProvider provider = new BeepSynthProvider(mockAudio, 2, 1.0, 1.1, 32, "dsd", "fm");
+        BeepSynthProvider provider = new BeepSynthProvider(new com.midiraja.dsp.FloatToShortSink(mockAudio, 1), 2, 1.0, 1.1, 32, "dsd", "fm");
         assertDoesNotThrow(() -> provider.sendMessage(new byte[] {}));
         assertDoesNotThrow(() -> provider.sendMessage(new byte[] { (byte)0x90, 60 }));
         assertDoesNotThrow(() -> provider.sendMessage(new byte[] { (byte)0xFF, 0, 0 }));

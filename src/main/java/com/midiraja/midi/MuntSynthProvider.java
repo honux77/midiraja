@@ -12,7 +12,7 @@ import java.util.List;
 @SuppressWarnings("ThreadPriorityCheck") public class MuntSynthProvider implements SoftSynthProvider
 {
     private final MuntNativeBridge bridge;
-    private final @org.jspecify.annotations.Nullable AudioEngine audio;
+    private final com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
     private @org.jspecify.annotations.Nullable Thread renderThread;
     private volatile boolean running = false;
     // Set to true while prepareForNewTrack() is cycling the Munt synth context.
@@ -21,10 +21,10 @@ import java.util.List;
     private volatile boolean renderPaused = false;
 
     public MuntSynthProvider(
-        MuntNativeBridge bridge, @org.jspecify.annotations.Nullable AudioEngine audio)
+        MuntNativeBridge bridge, com.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut)
     {
         this.bridge = bridge;
-        this.audio = audio;
+        this.audioOut = audioOut;
     }
 
     // Munt renders at 32000 Hz. Latency = queued samples / 32000 converted to nanoseconds.
@@ -37,10 +37,7 @@ import java.util.List;
 
     @Override public long getAudioLatencyNanos()
     {
-        if (audio == null)
-            return 0L;
-        // Ring buffer capacity + miniaudio pipeline + CoreAudio hardware latency
-        long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES + audio.getDeviceLatencyFrames();
+        long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES;
         return totalFrames * 1_000_000_000L / MUNT_SAMPLE_RATE;
     }
 
@@ -90,22 +87,13 @@ import java.util.List;
 
                 // Push it to the miniaudio ring buffer.
                 // This call will safely block if the buffer is full, pacing the thread.
-                if (audio != null)
+                if (audioOut != null)
                 {
-                    audio.push(pcmBuffer);
+                    audioOut.processInterleaved(pcmBuffer, framesToRender, 2);
                 }
                 else
                 {
-                    // If no audio engine, just sleep to simulate time passing
-                    try
-                    {
-                        Thread.sleep(16);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
+                    try { Thread.sleep(16); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
                 }
             }
         });
@@ -142,9 +130,9 @@ import java.util.List;
         // No sleep needed: note-offs have future timestamps and are processed by the render
         // thread asynchronously. Flushing the ring buffer immediately discards any old audio;
         // the note-off decay will be rendered fresh into the now-empty ring buffer.
-        if (audio != null)
+        if (audioOut != null)
         {
-            audio.flush();
+            audioOut.reset();
         }
     }
 
@@ -153,31 +141,20 @@ import java.util.List;
         bridge.loadRoms(path);
         bridge.openSynth();
 
-        if (audio != null)
+        if (audioOut != null)
         {
-            audio.init(32000, 2, RING_BUFFER_CAPACITY_FRAMES); // Munt renders at 32000Hz natively
             startRenderThread();
         }
     }
 
     @Override @SuppressWarnings("EmptyCatch") public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
     {
-        if (audio == null)
-            return;
-
         // Step 1: Pause the render thread so we can call renderAudio() directly below.
-        // The 20ms sleep guarantees any in-progress renderAudio() call has completed.
         renderPaused = true;
-        try
-        {
-            Thread.sleep(20);
-        }
-        catch (InterruptedException ignored)
-        {
-        }
+        try { Thread.sleep(20); } catch (InterruptedException ignored) {}
 
         // Step 2: Flush the ring buffer to discard audio from the previous song.
-        audio.flush();
+        if (audioOut != null) audioOut.reset();
 
         // Step 3: Fast-drain the MT-32 reverb tail WITHOUT pushing to the ring buffer.
         //
@@ -275,9 +252,6 @@ import java.util.List;
         }
 
         bridge.close();
-        if (audio != null)
-        {
-            audio.close();
-        }
+
     }
 }

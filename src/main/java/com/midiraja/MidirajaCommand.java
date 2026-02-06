@@ -243,7 +243,9 @@ public class MidirajaCommand implements Callable<Integer>
       String audioLib = AudioLibResolver.resolve();
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMMuntNativeBridge();
-      resolvedProvider = new com.midiraja.midi.MuntSynthProvider(bridge, audio);
+      audio.init(32000, 2, 4096);
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
+        resolvedProvider = new com.midiraja.midi.MuntSynthProvider(bridge, pipeline);
       soundbankArg = legacyMunt;
     } else if (legacyOpl.isPresent())
     {
@@ -267,8 +269,10 @@ public class MidirajaCommand implements Callable<Integer>
       String audioLib = AudioLibResolver.resolve();
       var audio = new com.midiraja.midi.NativeAudioEngine(audioLib);
       var bridge = new com.midiraja.midi.FFMOpnMidiNativeBridge();
-      resolvedProvider = new com.midiraja.midi.OpnMidiSynthProvider(
-          bridge, audio, legacyOpnEmulator, legacyOpnChips, null);
+      audio.init(44100, 2, 4096);
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
+        resolvedProvider = new com.midiraja.midi.OpnMidiSynthProvider(
+          bridge, pipeline, legacyOpnEmulator, legacyOpnChips, null);
       soundbankArg = Optional.of(legacyOpn.get());
     } else if (legacyFluid.isPresent())
     {

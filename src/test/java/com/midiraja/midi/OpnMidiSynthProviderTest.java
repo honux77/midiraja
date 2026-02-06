@@ -94,7 +94,7 @@ class OpnMidiSynthProviderTest
     @Test void testLifecycleAndMidiRouting() throws Exception
     {
         MockOpnBridge mockBridge = new MockOpnBridge();
-        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null);
+        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null, 0, 4, null);
 
         // 1. Lifecycle: openPort → init, setNumChips
         provider.openPort(0);
@@ -108,7 +108,7 @@ class OpnMidiSynthProviderTest
 
         // 3. loadSoundbank with empty string should load the bundled default bank via loadBankData
         MockOpnBridge bridge2 = new MockOpnBridge();
-        OpnMidiSynthProvider provider2 = new OpnMidiSynthProvider(bridge2, null);
+        OpnMidiSynthProvider provider2 = new OpnMidiSynthProvider(bridge2, null, 0, 4, null);
         provider2.openPort(0);
         provider2.loadSoundbank("");
         assertNull(bridge2.bankFileLoaded, "Empty path should not call bridge.loadBankFile");
@@ -155,7 +155,7 @@ class OpnMidiSynthProviderTest
     @Test void testPanic() throws Exception
     {
         MockOpnBridge mockBridge = new MockOpnBridge();
-        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null);
+        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null, 0, 4, null);
 
         provider.panic();
 
@@ -178,7 +178,7 @@ class OpnMidiSynthProviderTest
     @Test void testPrepareForNewTrack() throws Exception
     {
         MockOpnBridge mockBridge = new MockOpnBridge();
-        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null);
+        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null, 0, 4, null);
 
         // Queue some stale events
         provider.sendMessage(new byte[] {(byte) 0x90, 60, 100});
@@ -201,7 +201,7 @@ class OpnMidiSynthProviderTest
         MockOpnBridge mockBridge = new MockOpnBridge();
 
         // Default: emulator 0 = MAME YM2612, 4 chips
-        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null);
+        OpnMidiSynthProvider provider = new OpnMidiSynthProvider(mockBridge, null, 0, 4, null);
         var ports = provider.getOutputPorts();
         assertEquals(1, ports.size());
         assertTrue(

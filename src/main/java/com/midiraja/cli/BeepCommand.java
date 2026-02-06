@@ -19,6 +19,7 @@ import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 
 import com.midiraja.midi.NativeAudioEngine;
+import com.midiraja.cli.AudioLibResolver;
 import java.util.Optional;
 
 /**
@@ -73,13 +74,15 @@ public class BeepCommand implements Callable<Integer>
         var p = java.util.Objects.requireNonNull(parent);
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
+        audio.init(44100, 1, 4096);
+        com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio, 1);
         
         
         // Map user's 1~6 quality level exponentially (1 -> 1x, 2 -> 2x, 3 -> 4x, ..., 6 -> 32x)
         int clampedLevel = Math.max(1, Math.min(6, qualityLevel));
         int actualOversample = 1 << (clampedLevel - 1);
         
-        var provider = new com.midiraja.midi.beep.BeepSynthProvider(audio, voices, fmRatio, fmIndex, actualOversample, mux.toLowerCase(java.util.Locale.ROOT), synth.toLowerCase(java.util.Locale.ROOT));
+        var provider = new com.midiraja.midi.beep.BeepSynthProvider(pipeline, voices, fmRatio, fmIndex, actualOversample, mux.toLowerCase(java.util.Locale.ROOT), synth.toLowerCase(java.util.Locale.ROOT));
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                         p.isInTestMode());
