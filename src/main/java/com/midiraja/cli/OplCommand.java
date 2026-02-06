@@ -46,7 +46,19 @@ public class OplCommand implements Callable<Integer>
 
     @Mixin private FmSynthOptions fmOptions = new FmSynthOptions();
 
-    @Option(names = {"--tube"}, description = "Apply analog vacuum tube saturation. Adds warm odd-harmonics to digital FM synths. (Range: 1.0 to 10.0, Recommended for warmth: 1.5 - 2.0, for punch: 3.0 - 4.0).")
+        @Option(names = {"--bass"}, defaultValue = "100", description = "Adjust bass gain (0-200%%). Default: 100.")
+    private float eqBass = 100;
+
+    @Option(names = {"--mid"}, defaultValue = "100", description = "Adjust mid gain (0-200%%). Default: 100.")
+    private float eqMid = 100;
+
+    @Option(names = {"--treble"}, defaultValue = "100", description = "Adjust treble gain (0-200%%). Default: 100.")
+    private float eqTreble = 100;
+
+    @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
+    private Optional<String> reverb = Optional.empty();
+
+    @Option(names = {"--tube"}, description = "Apply analog vacuum tube saturation. (Range: 0-100%%, Recommended for warmth: 10-20, for punch: 30-50).")
     private Optional<Float> tubeDrive = Optional.empty();
 
     @Mixin private CommonOptions common = new CommonOptions();
@@ -61,22 +73,31 @@ public class OplCommand implements Callable<Integer>
         
         com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
         
-        // 1. Global Tube Saturation
+        if (eqBass != 100 || eqMid != 100 || eqTreble != 100) {
+            var eq = new com.midiraja.dsp.EqFilter(pipeline);
+            eq.setParams(eqBass, eqMid, eqTreble);
+            pipeline = eq;
+        }
         if (tubeDrive.isPresent()) {
-            pipeline = new com.midiraja.dsp.TubeSaturationFilter(pipeline, tubeDrive.get());
+            pipeline = new com.midiraja.dsp.TubeSaturationFilter(pipeline, 1.0f + (tubeDrive.get() / 100.0f * 9.0f));
+        }
+        if (reverb.isPresent()) {
+            
+            try {
+                var preset = com.midiraja.dsp.ReverbFilter.Preset.valueOf(reverb.get().toUpperCase(java.util.Locale.ROOT));
+                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, preset);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Warning: Unknown reverb preset '" + reverb.get() + "'. Using HALL.");
+                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, com.midiraja.dsp.ReverbFilter.Preset.HALL);
+            }
         }
         
-        // 2. Format conversion if any float filter is applied
-        if (tubeDrive.isPresent() || fmOptions.oneBitMode != null) {
+        if (eqBass != 100 || eqMid != 100 || eqTreble != 100 || tubeDrive.isPresent() || reverb.isPresent() || fmOptions.oneBitMode != null) {
             if (fmOptions.oneBitMode != null) {
-                pipeline = new com.midiraja.dsp.ShortToFloatFilter(
-                    new com.midiraja.dsp.LegacyProcessorSink(pipeline, 
-                        java.util.List.of(new com.midiraja.dsp.OneBitAcousticSimulator(44100, fmOptions.oneBitMode))));
-            } else {
-                pipeline = new com.midiraja.dsp.ShortToFloatFilter(pipeline);
+                pipeline = new com.midiraja.dsp.LegacyProcessorSink(pipeline, 
+                    java.util.List.of(new com.midiraja.dsp.OneBitAcousticSimulator(44100, fmOptions.oneBitMode)));
             }
-        } else {
-            // If no Float processing is needed, FloatToShortSink acts as a passthrough for interleaved shorts
+            pipeline = new com.midiraja.dsp.ShortToFloatFilter(pipeline);
         }
         
         var bridge = new com.midiraja.midi.FFMAdlMidiNativeBridge();

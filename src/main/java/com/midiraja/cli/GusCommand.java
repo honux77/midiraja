@@ -39,7 +39,19 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --1bit pwm).")
   private boolean realSound = false;
 
-  @Option(names = {"--tube"}, description = "Apply analog vacuum tube saturation. (Recommended: 1.5 - 2.0).")
+      @Option(names = {"--bass"}, defaultValue = "100", description = "Adjust bass gain (0-200%%). Default: 100.")
+    private float eqBass = 100;
+
+    @Option(names = {"--mid"}, defaultValue = "100", description = "Adjust mid gain (0-200%%). Default: 100.")
+    private float eqMid = 100;
+
+    @Option(names = {"--treble"}, defaultValue = "100", description = "Adjust treble gain (0-200%%). Default: 100.")
+    private float eqTreble = 100;
+
+    @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
+    private Optional<String> reverb = Optional.empty();
+
+    @Option(names = {"--tube"}, description = "Apply analog vacuum tube saturation. (Range: 0-100%%, Recommended: 10-20).")
   private Optional<Float> tubeDrive = Optional.empty();
 
   @Parameters(paramLabel = "<file>",
@@ -53,11 +65,29 @@ public class GusCommand implements Callable<Integer> {
     String audioLib = AudioLibResolver.resolve();
     NativeAudioEngine audio = new NativeAudioEngine(audioLib);
     audio.init(44100, 2, 4096);
+    
     com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
     
-    // Global Tube Saturation
+    if (eqBass != 100 || eqMid != 100 || eqTreble != 100) {
+        var eq = new com.midiraja.dsp.EqFilter(pipeline);
+        eq.setParams(eqBass, eqMid, eqTreble);
+        pipeline = eq;
+    }
     if (tubeDrive.isPresent()) {
-        pipeline = new com.midiraja.dsp.TubeSaturationFilter(pipeline, tubeDrive.get());
+        pipeline = new com.midiraja.dsp.TubeSaturationFilter(pipeline, 1.0f + (tubeDrive.get() / 100.0f * 9.0f));
+    }
+    if (reverb.isPresent()) {
+        
+            try {
+                var preset = com.midiraja.dsp.ReverbFilter.Preset.valueOf(reverb.get().toUpperCase(java.util.Locale.ROOT));
+                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, preset);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Warning: Unknown reverb preset '" + reverb.get() + "'. Using HALL.");
+                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, com.midiraja.dsp.ReverbFilter.Preset.HALL);
+            }
+    }
+    
+    if (eqBass != 100 || eqMid != 100 || eqTreble != 100 || tubeDrive.isPresent() || reverb.isPresent()) {
         pipeline = new com.midiraja.dsp.ShortToFloatFilter(pipeline);
     }
     
