@@ -51,8 +51,11 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
     @Option(names = {"--treble"}, defaultValue = "100", description = "Adjust treble gain (0-200%%). Default: 100.")
     private float eqTreble = 100;
 
-    @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
+        @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
     private Optional<String> reverb = Optional.empty();
+
+    @Option(names = {"--reverb-level"}, defaultValue = "100", description = "Reverb wet level intensity (0-200%%). Default: 100.")
+    private float reverbLevel = 100;
 
     @Option(names = {"--tube"}, description = "Apply analog vacuum tube saturation. (Range: 0-100%%, Recommended: 10-20).")
     private Optional<Float> tubeDrive = Optional.empty();
@@ -84,12 +87,13 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         }
         if (reverb.isPresent()) {
             
+            float levelScale = reverbLevel / 100.0f;
             try {
                 var preset = com.midiraja.dsp.ReverbFilter.Preset.valueOf(reverb.get().toUpperCase(java.util.Locale.ROOT));
-                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, preset);
+                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, preset, levelScale);
             } catch (IllegalArgumentException e) {
                 System.err.println("Warning: Unknown reverb preset '" + reverb.get() + "'. Using HALL.");
-                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, com.midiraja.dsp.ReverbFilter.Preset.HALL);
+                pipeline = new com.midiraja.dsp.ReverbFilter(pipeline, com.midiraja.dsp.ReverbFilter.Preset.HALL, levelScale);
             }
         }
         

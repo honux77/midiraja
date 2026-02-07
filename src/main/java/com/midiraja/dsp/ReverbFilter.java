@@ -104,7 +104,7 @@ public class ReverbFilter extends AudioFilter {
      * @param next Pipeline destination.
      * @param preset The tuned environment preset.
      */
-    public ReverbFilter(AudioProcessor next, Preset preset) {
+    public ReverbFilter(AudioProcessor next, Preset preset, float levelScale) {
         super(next);
         
         for (int i = 0; i < numCombs; i++) {
@@ -116,14 +116,22 @@ public class ReverbFilter extends AudioFilter {
             allpassesR[i] = new Allpass(allpassTuningR[i]);
         }
 
-        setPreset(preset);
+        setPreset(preset, levelScale);
+    }
+    
+    public ReverbFilter(AudioProcessor next, Preset preset) {
+        this(next, preset, 1.0f);
     }
 
-    public void setPreset(Preset preset) {
+    public void setPreset(Preset preset, float levelScale) {
         this.scaleRoom = (preset.roomSize * 0.28f) + 0.7f;
         this.scaleDamp = preset.damp * 0.4f;
-        this.scaleWet = preset.wet;
-        this.scaleDry = 1.0f - (preset.wet * 0.5f);
+        
+        // Scale the wet volume (clamped to a reasonable max to prevent blowing out speakers)
+        this.scaleWet = Math.min(1.0f, preset.wet * levelScale);
+        
+        // If wet is boosted heavily, we reduce the dry signal slightly more to keep the overall volume balanced.
+        this.scaleDry = Math.max(0.1f, 1.0f - (this.scaleWet * 0.6f));
 
         for (int i = 0; i < numCombs; i++) {
             combsL[i].setFeedback(scaleRoom);
