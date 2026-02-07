@@ -57,6 +57,9 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
     @Option(names = {"--hpf"}, description = "High-Pass Filter cutoff frequency in Hz (e.g. 500). Cuts off low frequencies.")
     private Optional<Float> hpfFreq = Optional.empty();
 
+    @Option(names = {"--chorus"}, description = "Apply classic stereo chorus effect for thick, swirling 80s synth sounds.")
+    private boolean chorus = false;
+
     @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
     private Optional<String> reverb = Optional.empty();
 
@@ -93,6 +96,9 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         if (tubeDrive.isPresent()) {
             pipeline = new com.midiraja.dsp.TubeSaturationFilter(pipeline, 1.0f + (tubeDrive.get() / 100.0f * 9.0f));
         }
+        if (chorus) {
+            pipeline = new com.midiraja.dsp.ChorusFilter(pipeline);
+        }
         if (reverb.isPresent()) {
             
             float levelScale = reverbLevel / 100.0f;
@@ -105,7 +111,7 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
             }
         }
         
-        if (eqBass != 100 || eqMid != 100 || eqTreble != 100 || tubeDrive.isPresent() || reverb.isPresent()) {
+        if (eqBass != 100 || eqMid != 100 || eqTreble != 100 || tubeDrive.isPresent() || chorus || reverb.isPresent()) {
             pipeline = new com.midiraja.dsp.ShortToFloatFilter(pipeline);
         }
         
