@@ -56,7 +56,13 @@ public class OpnCommand implements Callable<Integer>
     @Option(names = {"--treble"}, defaultValue = "100", description = "Adjust treble gain (0-200%%). Default: 100.")
     private float eqTreble = 100;
 
-        @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
+        @Option(names = {"--lpf"}, description = "Low-Pass Filter cutoff frequency in Hz (e.g. 2000). Cuts off high frequencies.")
+    private Optional<Float> lpfFreq = Optional.empty();
+
+    @Option(names = {"--hpf"}, description = "High-Pass Filter cutoff frequency in Hz (e.g. 500). Cuts off low frequencies.")
+    private Optional<Float> hpfFreq = Optional.empty();
+
+    @Option(names = {"--reverb"}, description = "Apply algorithmic reverb preset. (Options: room, chamber, hall, plate, spring, cave).")
     private Optional<String> reverb = Optional.empty();
 
     @Option(names = {"--reverb-level"}, defaultValue = "100", description = "Reverb wet level intensity (0-200%%). Default: 100.")
@@ -75,9 +81,11 @@ public class OpnCommand implements Callable<Integer>
         
         com.midiraja.dsp.AudioProcessor pipeline = new com.midiraja.dsp.FloatToShortSink(audio);
         
-        if (eqBass != 100 || eqMid != 100 || eqTreble != 100) {
+        if (eqBass != 100 || eqMid != 100 || eqTreble != 100 || lpfFreq.isPresent() || hpfFreq.isPresent()) {
             var eq = new com.midiraja.dsp.EqFilter(pipeline);
             eq.setParams(eqBass, eqMid, eqTreble);
+            if (lpfFreq.isPresent()) eq.setLpf(lpfFreq.get());
+            if (hpfFreq.isPresent()) eq.setHpf(hpfFreq.get());
             pipeline = eq;
         }
         if (tubeDrive.isPresent()) {
