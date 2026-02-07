@@ -13,25 +13,35 @@ public class ChorusFilter extends AudioFilter {
     private final float[] delayBufferR;
     private int writeIndex = 0;
 
-    // Chorus Parameters (Tuned for a classic 80s synth chorus)
-    private final float baseDelayMs = 20.0f; // 20 milliseconds base delay
-    private final float depthMs = 5.0f;      // +/- 5 milliseconds of LFO sweep
-    private final float rateHz = 0.8f;       // LFO speed (0.8 wobbles per second)
-    private final float mixWet = 0.5f;       // 50% Dry / 50% Wet
+    // Chorus Parameters
+    private final float baseDelayMs = 20.0f; 
+    private final float rateHz = 0.8f;       
+
+    private float depthMs;
+    private float mixWet;
 
     private float lfoPhase = 0.0f;
     private final float lfoStep;
 
     private volatile boolean enabled = true;
 
-    public ChorusFilter(AudioProcessor next) {
+    public ChorusFilter(AudioProcessor next, float intensityPct) {
         super(next);
-        // Allocate 100ms of delay buffer (plenty for chorus)
         int bufferSize = (int) (sampleRate * 0.1f);
         delayBufferL = new float[bufferSize];
         delayBufferR = new float[bufferSize];
 
         lfoStep = (float) ((2.0 * Math.PI * rateHz) / sampleRate);
+        setIntensity(intensityPct);
+    }
+
+    public void setIntensity(float pct) {
+        float normalized = Math.max(0.0f, Math.min(200.0f, pct)) / 100.0f;
+        
+        // At 100%, we want the classic aggressive sound: 50/50 mix, 6ms depth
+        // At 50%, we want a subtle thickener: 25% wet, 3ms depth
+        this.mixWet = Math.min(0.8f, 0.5f * normalized); 
+        this.depthMs = 6.0f * normalized;
     }
 
     public void setEnabled(boolean enabled) {
