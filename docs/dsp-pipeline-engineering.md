@@ -63,7 +63,19 @@ Instead of exposing complex mathematical damping coefficients to the user, we ex
 * `CHAMBER`: High damping, yielding a warm, dense, thick tail characteristic of 1960s studio echo chambers.
 * `PLATE`: Extremely low damping resulting in bright, metallic reflections.
 * `SPRING`: Short, bouncy delay times simulating physical spring tanks found in vintage synthesizers.
-* `CAVE`: Massive feedback, highly washed out for ambient soundscapes.
+**Acoustic Presets and Internal Tuning:**
+To provide a variety of acoustic environments, the `ReverbFilter` utilizes a set of internal factors that scale the feedback loops and damping filters. The following table illustrates how each preset maps to the internal Schroeder-Moorer parameters:
+
+| Preset | Room Size factor | Damping factor | Wet Mix factor | Characteristics |
+| :--- | :---: | :---: | :---: | :--- |
+| **ROOM** | 0.50 | 0.40 | 0.25 | Short, punchy reflections; simulates a small studio with carpeted walls. |
+| **CHAMBER** | 0.75 | 0.70 | 0.30 | Dense, warm, and dark tail; simulates a medium-large tiled echo chamber. |
+| **HALL** | 0.85 | 0.50 | 0.35 | Lush, long decay with natural high-frequency roll-off for orchestral music. |
+| **PLATE** | 0.70 | 0.10 | 0.30 | Bright, metallic, and shimmery; simulates an analog metal plate vibrator. |
+| **SPRING** | 0.60 | 0.20 | 0.35 | Bouncy and metallic with moderate length; simulates a guitar amp spring tank. |
+| **CAVE** | 0.98 | 0.60 | 0.45 | Extreme decay time and deep wash; for 몽환적인(dreamy) ambient soundscapes. |
+
+*Note: The actual internal feedback (Room Size) is calculated as `(factor * 0.28) + 0.7` to ensure stability between 0.7 and 0.98.*
 
 ### 2.4 3-Band EQ & Cutoffs (RBJ Biquad Filters)
 For frequency sculpting, we utilize industry-standard Robert Bristow-Johnson (RBJ) Biquad IIR (Infinite Impulse Response) filters.
@@ -73,10 +85,14 @@ A biquad filter calculates the current output sample based on the current input,
 `y[n] = (b0/a0)*x[n] + (b1/a0)*x[n-1] + (b2/a0)*x[n-2] - (a1/a0)*y[n-1] - (a2/a0)*y[n-2]`
 
 We implemented five distinct mathematical biquad configurations to create a full mastering rack:
-1. **Low-Shelf:** Boosts or cuts everything below 250Hz (Bass weight).
-2. **Peaking:** Boosts or cuts a bell-shaped curve around 1kHz (Mid presence).
-3. **High-Shelf:** Boosts or cuts everything above 4kHz (Treble air/clarity).
-4. **Low-Pass (LPF):** Completely attenuates frequencies above the cutoff point (useful for Lo-Fi or muffled sounds).
-5. **High-Pass (HPF):** Completely attenuates frequencies below the cutoff point (useful for "telephone" style EQ).
+1. **Low-Shelf (Bass, < 250Hz):** Instead of a sharp cutoff, this applies a smooth, S-shaped (Sigmoid) curve. It broadly boosts or cuts all frequencies below 250Hz into a flat "shelf", providing foundational weight without resonant ringing.
+2. **Peaking (Mid, ~ 1kHz):** Uses a bell-shaped (Band-pass) curve. It surgically adjusts the "presence" of the sound around 1kHz while leaving the extremes untouched, preventing the mix from becoming muddy.
+3. **High-Shelf (Treble, > 4kHz):** Similar to the Low-Shelf, this applies a smooth, sweeping curve to all frequencies above 4kHz, controlling the "air" and brightness of the sound.
+4. **Low-Pass (LPF):** Slices off high frequencies above the user-defined cutoff using a smooth roll-off. Perfect for creating a muffled, "underwater", or vintage Lo-Fi sound.
+5. **High-Pass (HPF):** Slices off low frequencies below the cutoff. Excellent for removing unwanted bass rumble or simulating a cheap "telephone" or "tin can" speaker.
+
+
+**Filter Smoothness & Q-Factor:**
+To prevent phase distortion and harsh digital ringing artifacts, our Biquad implementation utilizes a carefully tuned Quality Factor (`Q = 1.0` or `0.707` for cutoffs). This guarantees that all frequency adjustments follow mathematically smooth, musically pleasing analog-style curves rather than brutal linear brick-walls.
 
 By chaining these lightweight mathematical filters together within the zero-allocation pipeline, Midiraja provides a zero-latency, mastering-grade equalizer tailored specifically for retro audio enhancement.
