@@ -45,7 +45,7 @@ A chorus effect fakes the sound of multiple instruments playing the same note si
 **Implementation:**
 1. **Delay Line:** A circular buffer holding ~100ms of audio history.
 2. **LFO (Low Frequency Oscillator):** A `Math.sin()` wave oscillating at a slow rate (0.8Hz).
-3. **Modulation:** The read-head of the delay buffer constantly sweeps back and forth between 15ms and 25ms, driven by the LFO. This changing delay time causes the pitch to slightly shift up and down (the Doppler effect).
+3. **Modulation:** The read-head of the delay buffer constantly sweeps back and forth around a base delay of 20ms, driven by the LFO. The depth of this sweep scales linearly with the user's intensity input (up to ±6ms at 100%). This dynamically changing delay time causes the pitch to slightly shift up and down via the Doppler effect.
 4. **Fractional Interpolation:** Because the LFO asks for delay times that fall *between* discrete sample indices (e.g., 14.5 samples ago), we use Linear Interpolation to calculate the exact amplitude, preventing digital aliasing noise.
 5. **Stereo Spread:** The true magic of our chorus is the stereo width. The Right channel's LFO is phase-shifted by 90 degrees (`Math.PI / 2.0`) relative to the Left channel. This out-of-phase wobbling pushes the sound completely outside the center, creating a massive, swirling stereo image out of a mono synthesizer.
 
@@ -58,11 +58,6 @@ We implemented the legendary Schroeder/Moorer algorithmic reverb model, commonly
 
 **Acoustic Presets:**
 Instead of exposing complex mathematical damping coefficients to the user, we expose highly tuned architectural presets:
-* `ROOM`: Short decay, punchy response.
-* `HALL`: Long decay, medium damping for natural orchestral spaces.
-* `CHAMBER`: High damping, yielding a warm, dense, thick tail characteristic of 1960s studio echo chambers.
-* `PLATE`: Extremely low damping resulting in bright, metallic reflections.
-* `SPRING`: Short, bouncy delay times simulating physical spring tanks found in vintage synthesizers.
 **Acoustic Presets and Internal Tuning:**
 To provide a variety of acoustic environments, the `ReverbFilter` utilizes a set of internal factors that scale the feedback loops and damping filters. The following table illustrates how each preset maps to the internal Schroeder-Moorer parameters:
 
@@ -73,7 +68,7 @@ To provide a variety of acoustic environments, the `ReverbFilter` utilizes a set
 | **HALL** | 0.85 | 0.50 | 0.35 | Lush, long decay with natural high-frequency roll-off for orchestral music. |
 | **PLATE** | 0.70 | 0.10 | 0.30 | Bright, metallic, and shimmery; simulates an analog metal plate vibrator. |
 | **SPRING** | 0.60 | 0.20 | 0.35 | Bouncy and metallic with moderate length; simulates a guitar amp spring tank. |
-| **CAVE** | 0.98 | 0.60 | 0.45 | Extreme decay time and deep wash; for 몽환적인(dreamy) ambient soundscapes. |
+| **CAVE** | 0.98 | 0.60 | 0.45 | Extreme decay time and deep wash; for dreamy, ambient soundscapes. |
 
 *Note: The actual internal feedback (Room Size) is calculated as `(factor * 0.28) + 0.7` to ensure stability between 0.7 and 0.98.*
 
