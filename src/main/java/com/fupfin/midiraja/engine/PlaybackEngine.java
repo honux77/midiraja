@@ -13,6 +13,10 @@ import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.ui.PlaybackEventListener;
 import java.util.*;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.StructuredTaskScope;
@@ -35,22 +39,22 @@ public class PlaybackEngine {
   private final com.fupfin.midiraja.midi.VolumeFilter volumeFilter;
   private final com.fupfin.midiraja.midi.SysexFilter sysexFilter;
 
-  private volatile long currentMicroseconds = 0;
-  private volatile long seekTarget = -1;
-  private volatile float currentBpm = 120.0f;
-  private volatile double currentSpeed = 1.0;
+  private final AtomicLong currentMicroseconds = new AtomicLong(0);
+  private final AtomicLong seekTarget = new AtomicLong(-1);
+  private final AtomicReference<Float> currentBpm = new AtomicReference<>(120.0f);
+  private final AtomicReference<Double> currentSpeed = new AtomicReference<>(1.0);
   
   
-  private volatile boolean isPlaying = false;
-  private volatile boolean isPaused = false;
+  private final AtomicBoolean isPlaying = new AtomicBoolean(false);
+  private final AtomicBoolean isPaused = new AtomicBoolean(false);
   
-  private volatile boolean holdAtEnd = false;
-  private volatile PlaybackStatus endStatus = PlaybackStatus.FINISHED;
-  private volatile boolean playbackActuallyStarted = false;
+  private final AtomicBoolean holdAtEnd = new AtomicBoolean(false);
+  private final AtomicReference<PlaybackStatus> endStatus = new AtomicReference<>(PlaybackStatus.FINISHED);
+  private final AtomicBoolean playbackActuallyStarted = new AtomicBoolean(false);
   private Optional<String> initialResetType = Optional.empty();
 
   public void setInitiallyPaused() {
-      this.isPaused = true;
+      this.isPaused.set(true);
   }
 
   public void setIgnoreSysex(boolean ignoreSysex) {
@@ -62,7 +66,7 @@ public class PlaybackEngine {
   }
   
   public void setHoldAtEnd(boolean hold) {
-    this.holdAtEnd = hold;
+    this.holdAtEnd.set(hold);
   }
 
   private final double[] channelLevels = new double[16];
@@ -87,7 +91,7 @@ public class PlaybackEngine {
     this.sequence = sequence;
     this.provider = provider;
     
-    this.currentSpeed = initialSpeed;
+    this.currentSpeed.set(initialSpeed);
     double initVol = Math.max(0, Math.min(100, initialVolumePercent)) / 100.0;
       this.sysexFilter = new com.fupfin.midiraja.midi.SysexFilter(provider, false);
       this.volumeFilter = new com.fupfin.midiraja.midi.VolumeFilter(this.sysexFilter, initVol);
@@ -104,8 +108,8 @@ public class PlaybackEngine {
             .toList();
 
     if (startTimeStr.isPresent() && !startTimeStr.get().isBlank()) {
-      this.seekTarget =
-          getTickForTime(parseTimeToMicroseconds(startTimeStr.get()));
+      this.seekTarget.set(
+          getTickForTime(parseTimeToMicroseconds(startTimeStr.get())));
     }
   }
 
@@ -123,9 +127,9 @@ public class PlaybackEngine {
    */
   @SuppressWarnings({"ThreadPriorityCheck", "NonAtomicVolatileUpdate"})
   public PlaybackStatus start(com.fupfin.midiraja.ui.PlaybackUI ui) throws Exception {
-    isPlaying = true;
-    playbackActuallyStarted = false;
-    endStatus = PlaybackStatus.FINISHED;
+    isPlaying.set(true);
+    playbackActuallyStarted.set(false);
+    endStatus.set(PlaybackStatus.FINISHED);
 
     try (var scope = StructuredTaskScope.open()) {
       scope.fork(() -> {
@@ -140,8 +144,8 @@ public class PlaybackEngine {
       try {
         playLoop();
       } finally {
-        isPlaying = false;
-        if (playbackActuallyStarted) {
+        isPlaying.set(false);
+        if (playbackActuallyStarted.get()) {
             provider.panic(); // Prevent dangling notes
         }
       }
@@ -150,7 +154,7 @@ public class PlaybackEngine {
     }
 
     notificationScheduler.shutdown();
-    return endStatus;
+    PlaybackStatus status = endStatus.get(); return status != null ? status : PlaybackStatus.FINISHED;
   }
 
   private long parseTimeToMicroseconds(String timeStr) {
@@ -173,7 +177,8 @@ public class PlaybackEngine {
     long currentNanos = 0;
     long lastTick = 0;
     float bpm = 120.0f;
-    double ticksToNanos =
+    @SuppressWarnings("NullAway")
+      double ticksToNanos =
         (60000000000.0 / (bpm * resolution)); // Absolute time logic ignores
                                               // speed multiplier
 
@@ -260,14 +265,14 @@ public class PlaybackEngine {
     // without triggering heavy audio initialization and unwanted noise.
     long startupWaitEnd = System.currentTimeMillis() + 500;
     while (System.currentTimeMillis() < startupWaitEnd) {
-        if (!isPlaying) {
+        if (!isPlaying.get()) {
             // User hit next/prev/quit during the delay. Abort immediately.
             return;
         }
         Thread.sleep(10);
     }
     
-    playbackActuallyStarted = true;
+    playbackActuallyStarted.set(true);
 
     // Clear any reverb tail / queued audio from a previous song before
     // starting. No-op for hardware MIDI ports; Munt overrides this to flush the
@@ -286,19 +291,20 @@ public class PlaybackEngine {
     int eventIndex = 0;
     long elapsedNanos = 0;
     long startTimeNanos = System.nanoTime();
-    double ticksToNanos =
-        (60000000000.0 / (currentBpm * currentSpeed * resolution));
+    @SuppressWarnings("NullAway")
+      double ticksToNanos =
+        (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
 
     boolean endReached = false;
-    while (isPlaying && (eventIndex < sortedEvents.size() || holdAtEnd)) {
+    while (isPlaying.get() && (eventIndex < sortedEvents.size() || holdAtEnd.get())) {
       // Check if an external seek was requested
-      if (seekTarget != -1) {
-        long target = seekTarget;
-        seekTarget = -1;
+      if (seekTarget.get() != -1) {
+        long target = seekTarget.get();
+        seekTarget.set(-1);
 
         provider.panic(); // Silence lingering notes
 
-        currentBpm = 120.0f;
+        currentBpm.set(120.0f);
         Arrays.fill(channelLevels, 0.0);
 
         // Fast-forward silently to accumulate correct program/control state up
@@ -307,7 +313,7 @@ public class PlaybackEngine {
         long chaseNanos = 0;
         long chaseLastTick = 0;
         double chaseTicksToNanos =
-            (60000000000.0 / (currentBpm * currentSpeed * resolution));
+            (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
 
         for (MidiEvent ev : sortedEvents) {
           if (ev.getTick() >= target)
@@ -319,7 +325,7 @@ public class PlaybackEngine {
           processChaseEvent(ev);
 
           chaseTicksToNanos =
-              (60000000000.0 / (currentBpm * currentSpeed * resolution));
+              (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
           newIndex++;
         }
 
@@ -330,44 +336,45 @@ public class PlaybackEngine {
         lastTick = target;
         eventIndex = newIndex;
         elapsedNanos = chaseNanos;
-        currentMicroseconds = elapsedNanos / 1000;
+        currentMicroseconds.set(elapsedNanos / 1000);
 
         // Reset timing reference after seek
         ticksToNanos =
-            (60000000000.0 / (currentBpm * currentSpeed * resolution));
+            (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
         startTimeNanos = System.nanoTime() - elapsedNanos;
+        try { provider.onPlaybackStarted(); } catch (Exception ignored) {}
         continue;
       }
 
       if (eventIndex >= sortedEvents.size()) {
         if (!endReached) {
           endReached = true;
-          isPaused = true;
-          currentMicroseconds = getTotalMicroseconds();
-          listeners.forEach(l -> l.onTick(currentMicroseconds));
+          isPaused.set(true);
+          currentMicroseconds.set(getTotalMicroseconds());
+          listeners.forEach(l -> l.onTick(currentMicroseconds.get()));
           provider.panic(); // Silence the output
         }
         
         // Wait for seek or quit
-        while (isPlaying && seekTarget == -1 && endStatus == PlaybackStatus.FINISHED) {
+        while (isPlaying.get() && seekTarget.get() == -1 && endStatus.get() == PlaybackStatus.FINISHED) {
             Thread.sleep(50);
-            // If the user presses next/prev, the UI might change endStatus and set isPlaying=false.
-            // But actually the UI calls next() which sets endStatus = NEXT, isPlaying = false.
+            // If the user presses next/prev, the UI might change endStatus.get() and set isPlaying.get()=false.
+            // But actually the UI calls next() which sets endStatus.get() = NEXT, isPlaying.get() = false.
         }
         
-        if (seekTarget != -1) {
+        if (seekTarget.get() != -1) {
             endReached = false; // Reset so we can seek backward and play again
             continue;
         }
         
-        // If we break out, it means isPlaying became false or endStatus changed
+        // If we break out, it means isPlaying.get() became false or endStatus.get() changed
         break;
       }
 
-      while (isPaused && isPlaying) {
+      while (isPaused.get() && isPlaying.get()) {
         Thread.sleep(50); // Hold the playback thread
         // If user seeks while paused, break out to let the seek logic run
-        if (seekTarget != -1)
+        if (seekTarget.get() != -1)
           break;
         // Keep pushing the startTime forward so we don't instantly "catch up"
         // when unpaused!
@@ -385,7 +392,7 @@ public class PlaybackEngine {
         // are detected within 50ms regardless of the gap between MIDI events.
         long currentNanos = System.nanoTime();
         while (currentNanos < targetNanos) {
-          if (seekTarget != -1 || !isPlaying)
+          if (seekTarget.get() != -1 || !isPlaying.get())
             break;
           long remainingMs = (targetNanos - currentNanos) / 1_000_000L;
           if (remainingMs > 1) {
@@ -400,27 +407,27 @@ public class PlaybackEngine {
 
       // If seek or stop was triggered mid-wait, skip this event and re-check at
       // loop top.
-      if (seekTarget != -1 || !isPlaying)
+      if (seekTarget.get() != -1 || !isPlaying.get())
         continue;
 
       processEvent(event);
       lastTick = tick;
 
-      currentMicroseconds = elapsedNanos / 1000;
+      currentMicroseconds.set(elapsedNanos / 1000);
 
-      long finalMicros = currentMicroseconds;
+      long finalMicros = currentMicroseconds.get();
       listeners.forEach(l -> l.onTick(finalMicros));
 
       eventIndex++;
 
       // Recalculate timing ratio if BPM changed during processEvent
-      ticksToNanos = (60000000000.0 / (currentBpm * currentSpeed * resolution));
+      ticksToNanos = (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
     }
 
     // Force broadcast 100% completion state before natural exit
-    if (isPlaying && endStatus == PlaybackStatus.FINISHED) {
-      currentMicroseconds = getTotalMicroseconds();
-      listeners.forEach(l -> l.onTick(currentMicroseconds));
+    if (isPlaying.get() && endStatus.get() == PlaybackStatus.FINISHED) {
+      currentMicroseconds.set(getTotalMicroseconds());
+      listeners.forEach(l -> l.onTick(currentMicroseconds.get()));
       try {
         Thread.sleep(20);
       } catch (Exception ignored) { /* Allow UI to render 100% frame */
@@ -440,8 +447,10 @@ public class PlaybackEngine {
       int mspqn =
           ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
       if (mspqn > 0) {
-        currentBpm = 60000000.0f / mspqn;
-        listeners.forEach(l -> l.onTempoChanged(currentBpm));
+        currentBpm.set(60000000.0f / mspqn);
+        @SuppressWarnings("NullAway")
+        float bpm = currentBpm.get();
+        listeners.forEach(l -> l.onTempoChanged(bpm));
       }
       return;
     }
@@ -485,8 +494,10 @@ public class PlaybackEngine {
       int mspqn =
           ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
       if (mspqn > 0) {
-        currentBpm = 60000000.0f / mspqn;
-        listeners.forEach(l -> l.onTempoChanged(currentBpm));
+        currentBpm.set(60000000.0f / mspqn);
+        @SuppressWarnings("NullAway")
+        float bpm = currentBpm.get();
+        listeners.forEach(l -> l.onTempoChanged(bpm));
       }
       return;
     }
@@ -546,7 +557,7 @@ public class PlaybackEngine {
   public PlaylistContext getContext() { return context; }
   public Sequence getSequence() { return sequence; }
 
-  public long getCurrentMicroseconds() { return currentMicroseconds; }
+  public long getCurrentMicroseconds() { return currentMicroseconds.get(); }
 
   public long getTotalMicroseconds() { return sequence.getMicrosecondLength(); }
 
@@ -554,19 +565,21 @@ public class PlaybackEngine {
 
   public int[] getChannelPrograms() { return channelPrograms; }
 
-  public float getCurrentBpm() { return currentBpm; }
+  @SuppressWarnings("NullAway")
+  public float getCurrentBpm() { return currentBpm.get(); }
 
-  public double getCurrentSpeed() { return currentSpeed; }
+  @SuppressWarnings("NullAway")
+  public double getCurrentSpeed() { return currentSpeed.get(); }
 
   public int getCurrentTranspose() { return transposeFilter.getSemitones(); }
 
   public double getVolumeScale() { return volumeFilter.getVolumeScale(); }
 
-  public boolean isPlaying() { return isPlaying; }
+  public boolean isPlaying() { return isPlaying.get(); }
 
   public void requestStop(PlaybackStatus status) {
-    this.isPlaying = false;
-    this.endStatus = status;
+    this.isPlaying.set(false);
+    this.endStatus.set(status);
   }
 
   public void adjustVolume(double delta) {
@@ -582,13 +595,14 @@ public class PlaybackEngine {
   }
 
   public void adjustSpeed(double delta) {
-    currentSpeed = Math.max(0.5, Math.min(2.0, currentSpeed + delta));
+    Double cs = currentSpeed.get();
+    currentSpeed.set(Math.max(0.5, Math.min(2.0, (cs != null ? cs : 1.0) + delta)));
     listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
   }
 
   public void togglePause() {
-    isPaused = !isPaused;
-    if (isPaused) {
+    isPaused.set(!isPaused.get());
+    if (isPaused.get()) {
       try {
         provider.panic();
       } catch (Exception ignored) { /* Ignore */
@@ -602,7 +616,7 @@ public class PlaybackEngine {
     listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
   }
 
-  public boolean isPaused() { return isPaused; }
+  public boolean isPaused() { return isPaused.get(); }
 
   public synchronized void adjustTranspose(int delta) {
     transposeFilter.adjust(delta);
@@ -614,9 +628,9 @@ public class PlaybackEngine {
   }
 
   public void seekRelative(long microsecondsDelta) {
-    if (seekTarget == -1) {
-      seekTarget =
-          getTickForTime(Math.max(0, currentMicroseconds + microsecondsDelta));
+    if (seekTarget.get() == -1) {
+      seekTarget.set(
+          getTickForTime(Math.max(0, currentMicroseconds.get() + microsecondsDelta)));
     }
   }
 
