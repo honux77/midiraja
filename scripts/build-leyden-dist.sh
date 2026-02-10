@@ -64,7 +64,7 @@ CLASS_PATH="${APP_DIR}/*"
 # 1. First run to generate the shared archive
 "${JRE_DIR}/bin/java" -XX:ArchiveClassesAtExit="${JSA_FILE}" \
     --enable-native-access=ALL-UNNAMED --enable-preview \
-    -cp "${CLASS_PATH}" com.midiraja.MidirajaCommand --help > /dev/null
+    -cp "${CLASS_PATH}" com.fupfin.midiraja.MidirajaCommand --help > /dev/null
 
 echo "✅ AppCDS Archive generated at ${JSA_FILE} ($(du -h "${JSA_FILE}" | cut -f1))"
 
@@ -86,7 +86,7 @@ fi
 
 exec "$JRE/bin/java" -Xlog:cds=off -XX:SharedArchiveFile="$APP/midra.jsa" -Xshare:auto \
      --enable-native-access=ALL-UNNAMED --enable-preview \
-     -cp "$APP/*" com.midiraja.MidirajaCommand "$@"
+     -cp "$APP/*" com.fupfin.midiraja.MidirajaCommand "$@"
 EOF
 
 chmod +x "${BIN_DIR}/midrac"

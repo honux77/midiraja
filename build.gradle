@@ -16,7 +16,7 @@ task generateVersionClass {
     doLast {
         def pkgDir = new File(outputDir, "com/midiraja")
         pkgDir.mkdirs()
-        new File(pkgDir, "Version.java").text = """package com.midiraja;
+        new File(pkgDir, "Version.java").text = """package com.fupfin.midiraja;
 
 public final class Version {
     public static final String VERSION = "${projVersion}";
@@ -115,7 +115,7 @@ tasks.withType(JavaCompile).configureEach {
     if (!name.toLowerCase().contains("test")) {
         options.errorprone {
             check("NullAway", CheckSeverity.ERROR)
-            option("NullAway:AnnotatedPackages", "com.midiraja")
+            option("NullAway:AnnotatedPackages", "com.fupfin.midiraja")
             option("NullAway:JSpecifyMode", "true")
         }
     }
@@ -129,7 +129,7 @@ test {
 }
 
 application {
-    mainClass = 'com.midiraja.MidirajaCommand'
+    mainClass = 'com.fupfin.midiraja.MidirajaCommand'
     applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED', '--enable-preview']
 }
 
