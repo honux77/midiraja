@@ -240,52 +240,10 @@ CMakeFiles/OPNMIDI_shared.dir/src/models/model_w9x.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/OPNMIDI_shared.dir/src/models/model_w9x.c.s"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/models/model_w9x.c -o CMakeFiles/OPNMIDI_shared.dir/src/models/model_w9x.c.s
 
-CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
-CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_sequencer.cpp
-CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_sequencer.cpp
-
-CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_sequencer.cpp > CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.i
-
-CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_sequencer.cpp -o CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.s
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens_opn2.cpp
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens_opn2.cpp
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens_opn2.cpp > CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.i
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens_opn2.cpp -o CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.s
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens/Ym2612.cpp
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens/Ym2612.cpp
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens/Ym2612.cpp > CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.i
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens/Ym2612.cpp -o CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.s
-
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opn2.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_13) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opn2.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.i: cmake_force
@@ -299,7 +257,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame/mame_ym2612fm.c
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building C object CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_14) "Building C object CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame/mame_ym2612fm.c
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.i: cmake_force
@@ -313,7 +271,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/nuked_opn2.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_15) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/nuked_opn2.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.i: cmake_force
@@ -327,7 +285,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/nuked/ym3438.c
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building C object CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_16) "Building C object CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/nuked/ym3438.c
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.i: cmake_force
@@ -341,7 +299,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked/ym3438.c.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2_opna.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_17) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2_opna.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.i: cmake_force
@@ -355,7 +313,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/np2_opna.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_opna.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_18) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_opna.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.i: cmake_force
@@ -369,7 +327,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_opna.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_file.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_19) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_file.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.i: cmake_force
@@ -383,7 +341,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_file.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_fmgen.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_20) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_fmgen.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.i: cmake_force
@@ -397,7 +355,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmgen.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_fmtimer.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_21) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_fmtimer.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.i: cmake_force
@@ -411,7 +369,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_fmtimer.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_psg.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_22) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_psg.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.i: cmake_force
@@ -425,7 +383,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/np2/fmgen_psg.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opna.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_23) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opna.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.i: cmake_force
@@ -439,7 +397,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opna.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/fm.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_24) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/fm.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.i: cmake_force
@@ -453,7 +411,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/ymdeltat.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_25) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/ymdeltat.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.i: cmake_force
@@ -467,7 +425,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/emu2149.c
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building C object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_26) "Building C object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o"
 	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/emu2149.c
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.i: cmake_force
@@ -481,7 +439,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/resampler.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_27) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/resampler.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.i: cmake_force
@@ -492,24 +450,10 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/resampler.cpp -o CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.s
 
-CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
-CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/vgm_file_dumper.cpp
-CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/vgm_file_dumper.cpp
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.i: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.i"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/vgm_file_dumper.cpp > CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.i
-
-CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.s: cmake_force
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.s"
-	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/vgm_file_dumper.cpp -o CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.s
-
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opn2.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_28) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opn2.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.i: cmake_force
@@ -523,7 +467,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opna.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_29) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opna.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.i: cmake_force
@@ -537,7 +481,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_opn.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_30) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_opn.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.i: cmake_force
@@ -551,7 +495,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_misc.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_31) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_misc.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.i: cmake_force
@@ -565,7 +509,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_misc.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_pcm.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_36) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_32) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_pcm.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.i: cmake_force
@@ -579,7 +523,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_pcm.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_adpcm.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_37) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_33) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_adpcm.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.i: cmake_force
@@ -593,7 +537,7 @@ CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.cpp.s: cmake_force
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o: CMakeFiles/OPNMIDI_shared.dir/flags.make
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o: /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_ssg.cpp
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o: CMakeFiles/OPNMIDI_shared.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_38) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_34) "Building CXX object CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -std=c++14 -MD -MT CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o -MF CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o.d -o CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_ssg.cpp
 
 CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.i: cmake_force
@@ -618,9 +562,6 @@ OPNMIDI_shared_OBJECTS = \
 "CMakeFiles/OPNMIDI_shared.dir/src/models/model_dmx.c.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/models/model_apogee.c.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/models/model_w9x.c.o" \
-"CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o" \
-"CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o" \
-"CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o" \
@@ -636,7 +577,6 @@ OPNMIDI_shared_OBJECTS = \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o" \
-"CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o" \
 "CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o" \
@@ -660,9 +600,6 @@ libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/models/model_freq_opna
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/models/model_dmx.c.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/models/model_apogee.c.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/models/model_w9x.c.o
-libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o
-libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o
-libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/mame_opn2.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/mame/mame_ym2612fm.c.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.o
@@ -678,7 +615,6 @@ libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/fm.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/ymdeltat.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/emu2149.c.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/mamefm/resampler.cpp.o
-libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opn2.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm_opna.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_opn.cpp.o
@@ -688,7 +624,7 @@ libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_adpcm.
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/src/chips/ymfm/ymfm_ssg.cpp.o
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/build.make
 libOPNMIDI.1.6.1.dylib: CMakeFiles/OPNMIDI_shared.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_39) "Linking CXX shared library libOPNMIDI.dylib"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/sungchulpark/Documents/projects/midiraja/src/main/c/opnmidi/CMakeFiles --progress-num=$(CMAKE_PROGRESS_35) "Linking CXX shared library libOPNMIDI.dylib"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/OPNMIDI_shared.dir/link.txt --verbose=$(VERBOSE)
 	$(CMAKE_COMMAND) -E cmake_symlink_library libOPNMIDI.1.6.1.dylib libOPNMIDI.1.dylib libOPNMIDI.dylib
 

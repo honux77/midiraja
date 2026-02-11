@@ -286,7 +286,7 @@ CMAKE_VERBOSE_MAKEFILE:BOOL=FALSE
 ENABLE_FPIC:BOOL=ON
 
 //Use GENS 2.10 emulator (fastest, very outdated, inaccurate)
-USE_GENS_EMULATOR:BOOL=ON
+USE_GENS_EMULATOR:BOOL=OFF
 
 //Use MAME YM2608 emulator
 USE_MAME_2608_EMULATOR:BOOL=ON
@@ -307,7 +307,7 @@ USE_NUKED_OPN2_LLE_EMULATOR:BOOL=OFF
 USE_NUKED_OPNA_LLE_EMULATOR:BOOL=OFF
 
 //Use VGM File Dumper (required to build the MIDI2VGM tool)
-USE_VGM_FILE_DUMPER:BOOL=ON
+USE_VGM_FILE_DUMPER:BOOL=OFF
 
 //Use YMFM emulator (requires C++14 support)
 USE_YMFM_EMULATOR:BOOL=ON
@@ -332,7 +332,7 @@ WITH_MIDIPLAY:BOOL=OFF
 
 //Build with embedded MIDI sequencer. Disable this if you want
 // use library in real-time MIDI drivers or plugins.)
-WITH_MIDI_SEQUENCER:BOOL=ON
+WITH_MIDI_SEQUENCER:BOOL=OFF
 
 //No help, variable specified on the command line.
 WITH_MUS_SUPPORT:UNINITIALIZED=OFF

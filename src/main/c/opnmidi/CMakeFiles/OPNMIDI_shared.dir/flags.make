@@ -3,7 +3,7 @@
 
 # compile C with /usr/bin/cc
 # compile CXX with /usr/bin/c++
-C_DEFINES = -DBWMIDI_DISABLE_XMI_SUPPORT -DENABLE_END_SILENCE_SKIPPING -DOPNMIDI_MIDI2VGM -DOPNMIDI_shared_EXPORTS
+C_DEFINES = -DBWMIDI_DISABLE_XMI_SUPPORT -DOPNMIDI_DISABLE_GENS_EMULATOR -DOPNMIDI_DISABLE_MIDI_SEQUENCER -DOPNMIDI_shared_EXPORTS
 
 C_INCLUDES = -I/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/include -I/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src
 
@@ -11,7 +11,7 @@ C_FLAGSarm64 =  -Wall -Wextra -O3 -DNDEBUG -fno-omit-frame-pointer -std=gnu90 -a
 
 C_FLAGS =  -Wall -Wextra -O3 -DNDEBUG -fno-omit-frame-pointer -std=gnu90 -arch arm64 -fPIC
 
-CXX_DEFINES = -DBWMIDI_DISABLE_XMI_SUPPORT -DENABLE_END_SILENCE_SKIPPING -DOPNMIDI_MIDI2VGM -DOPNMIDI_shared_EXPORTS
+CXX_DEFINES = -DBWMIDI_DISABLE_XMI_SUPPORT -DOPNMIDI_DISABLE_GENS_EMULATOR -DOPNMIDI_DISABLE_MIDI_SEQUENCER -DOPNMIDI_shared_EXPORTS
 
 CXX_INCLUDES = -I/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/include -I/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src
 

@@ -3,16 +3,15 @@
 
 // A simple ring buffer structure to hold PCM data produced by Munt
 // until miniaudio's data callback is ready to consume it.
+#include <stdatomic.h>
+
 typedef struct
 {
     short* buffer;
     int capacity;
-    int head;
-    int tail;
-    int count;
-    ma_mutex lock;
-    ma_event spaceAvailableEvent;
-} RingBuffer;
+    atomic_int head;
+    atomic_int tail;
+    } RingBuffer;
 
 typedef struct
 {
@@ -29,28 +28,26 @@ void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uin
     short* out = (short*)pOutput;
     int numSamplesRequested = frameCount * ctx->channels;
 
-    ma_mutex_lock(&ctx->rb.lock);
+    int head = atomic_load_explicit(&ctx->rb.head, memory_order_acquire);
+    int tail = atomic_load_explicit(&ctx->rb.tail, memory_order_relaxed);
+    
+    int availableSamples = head - tail;
+    if (availableSamples < 0) {
+        availableSamples += ctx->rb.capacity;
+    }
 
-    // Copy data from ring buffer to output
-    int samplesToRead = (ctx->rb.count < numSamplesRequested) ? ctx->rb.count : numSamplesRequested;
+    int samplesToRead = (availableSamples < numSamplesRequested) ? availableSamples : numSamplesRequested;
 
     for (int i = 0; i < samplesToRead; i++)
     {
-        out[i] = ctx->rb.buffer[ctx->rb.tail];
-        ctx->rb.tail = (ctx->rb.tail + 1) % ctx->rb.capacity;
+        out[i] = ctx->rb.buffer[tail];
+        tail = (tail + 1) % ctx->rb.capacity;
     }
-    ctx->rb.count -= samplesToRead;
+    
+    atomic_store_explicit(&ctx->rb.tail, tail, memory_order_release);
 
-    ma_mutex_unlock(&ctx->rb.lock);
+    // Removed ma_event_signal to avoid mutex lock in real-time audio callback
 
-    // Signal that space is available
-    if (samplesToRead > 0)
-    {
-        ma_event_signal(&ctx->rb.spaceAvailableEvent);
-    }
-
-    // If we didn't have enough data in the ring buffer, pad the rest with silence (0)
-    // to prevent audio glitches/stuttering.
     if (samplesToRead < numSamplesRequested)
     {
         for (int i = samplesToRead; i < numSamplesRequested; i++)
@@ -85,28 +82,13 @@ extern "C"
         ctx->channels = channels;
 
         // Initialize Ring Buffer (capable of holding bufferSizeInFrames)
-        ctx->rb.capacity = bufferSizeInFrames * channels;
+        // Add 1 to capacity since head == tail means empty, so we can only store capacity - 1 elements.
+        ctx->rb.capacity = (bufferSizeInFrames * channels) + 1; 
         ctx->rb.buffer = (short*)malloc(sizeof(short) * ctx->rb.capacity);
-        ctx->rb.head = 0;
-        ctx->rb.tail = 0;
-        ctx->rb.count = 0;
+        atomic_init(&ctx->rb.head, 0);
+        atomic_init(&ctx->rb.tail, 0);
 
-        if (ma_mutex_init(&ctx->rb.lock) != MA_SUCCESS)
-        {
-            free(ctx->rb.buffer);
-            free(ctx);
-            return NULL;
-        }
-
-        if (ma_event_init(&ctx->rb.spaceAvailableEvent) != MA_SUCCESS)
-        {
-            ma_mutex_uninit(&ctx->rb.lock);
-            free(ctx->rb.buffer);
-            free(ctx);
-            return NULL;
-        }
-
-        // Initialize Miniaudio Device
+                // Initialize Miniaudio Device
         ma_device_config deviceConfig = ma_device_config_init(ma_device_type_playback);
         deviceConfig.playback.format = ma_format_s16;  // Short (16-bit)
         deviceConfig.playback.channels = channels;
@@ -117,9 +99,7 @@ extern "C"
         if (ma_device_init(NULL, &deviceConfig, &ctx->device) != MA_SUCCESS)
         {
             printf("[NativeAudio] Failed to init miniaudio device.\n");
-            ma_event_uninit(&ctx->rb.spaceAvailableEvent);
-            ma_mutex_uninit(&ctx->rb.lock);
-            free(ctx->rb.buffer);
+                        free(ctx->rb.buffer);
             free(ctx);
             return NULL;
         }
@@ -128,9 +108,7 @@ extern "C"
         {
             printf("[NativeAudio] Failed to start miniaudio device.\n");
             ma_device_uninit(&ctx->device);
-            ma_event_uninit(&ctx->rb.spaceAvailableEvent);
-            ma_mutex_uninit(&ctx->rb.lock);
-            free(ctx->rb.buffer);
+                        free(ctx->rb.buffer);
             free(ctx);
             return NULL;
         }
@@ -143,11 +121,16 @@ extern "C"
     EXPORT int midiraja_audio_get_queued_frames(AudioEngineContext* ctx)
     {
         if (!ctx) return 0;
-        int frames = 0;
-        ma_mutex_lock(&ctx->rb.lock);
-        frames = ctx->rb.count / ctx->channels;
-        ma_mutex_unlock(&ctx->rb.lock);
-        return frames;
+        
+        int head = atomic_load_explicit(&ctx->rb.head, memory_order_acquire);
+        int tail = atomic_load_explicit(&ctx->rb.tail, memory_order_acquire);
+        
+        int count = head - tail;
+        if (count < 0) {
+            count += ctx->rb.capacity;
+        }
+        
+        return count / ctx->channels;
     }
 
     // Returns the total device-side latency in frames at ctx->sampleRate (32kHz).
@@ -242,57 +225,59 @@ extern "C"
         return miniaudioFrames;
     }
 
-    EXPORT void midiraja_audio_push(AudioEngineContext* ctx, const short* data, int numSamples)
+    EXPORT int midiraja_audio_push(AudioEngineContext* ctx, const short* data, int numSamples)
     {
-        if (!ctx || !data || numSamples <= 0) return;
+        if (!ctx || !data || numSamples <= 0) return 0;
 
-        while (1)
-        {
-            ma_mutex_lock(&ctx->rb.lock);
-
-            int availableSpace = ctx->rb.capacity - ctx->rb.count;
-            if (availableSpace >= numSamples)
-            {
-                // Write data to the ring buffer
-                for (int i = 0; i < numSamples; i++)
-                {
-                    ctx->rb.buffer[ctx->rb.head] = data[i];
-                    ctx->rb.head = (ctx->rb.head + 1) % ctx->rb.capacity;
-                    ctx->rb.count++;
-                }
-                ma_mutex_unlock(&ctx->rb.lock);
-                break;  // Done pushing
-            }
-
-            // Not enough space, wait for data_callback to consume
-            ma_mutex_unlock(&ctx->rb.lock);
-            ma_event_wait(&ctx->rb.spaceAvailableEvent);
+        int head = atomic_load_explicit(&ctx->rb.head, memory_order_relaxed);
+        int tail = atomic_load_explicit(&ctx->rb.tail, memory_order_acquire);
+        
+        int count = head - tail;
+        if (count < 0) {
+            count += ctx->rb.capacity;
         }
+        
+        int availableSpace = (ctx->rb.capacity - 1) - count;
+        int samplesToWrite = (availableSpace < numSamples) ? availableSpace : numSamples;
+
+        if (samplesToWrite > 0)
+        {
+            for (int i = 0; i < samplesToWrite; i++)
+            {
+                ctx->rb.buffer[head] = data[i];
+                head = (head + 1) % ctx->rb.capacity;
+            }
+            atomic_store_explicit(&ctx->rb.head, head, memory_order_release);
+        }
+        
+        return samplesToWrite;
     }
 
     // Atomically discards all queued frames from the ring buffer and wakes the render
     // thread if it is blocked waiting for space. Call this after sending a reverb-off
     // SysEx and waiting for Munt to process it, so the next song starts with a silent buffer.
+    
+    EXPORT int midiraja_audio_get_buffer_capacity_frames(AudioEngineContext* ctx)
+    {
+        if (!ctx) return 0;
+        return (ctx->rb.capacity - 1) / ctx->channels;
+    }
+
     EXPORT void midiraja_audio_flush(AudioEngineContext* ctx)
     {
         if (!ctx) return;
-        ma_mutex_lock(&ctx->rb.lock);
-        ctx->rb.head = 0;
-        ctx->rb.tail = 0;
-        ctx->rb.count = 0;
-        ma_mutex_unlock(&ctx->rb.lock);
+        atomic_store_explicit(&ctx->rb.head, 0, memory_order_relaxed);
+        atomic_store_explicit(&ctx->rb.tail, 0, memory_order_release);
+        
         // Wake the render thread if it is blocked in midiraja_audio_push() waiting for space.
-        ma_event_signal(&ctx->rb.spaceAvailableEvent);
-    }
+            }
 
     EXPORT void midiraja_audio_close(AudioEngineContext* ctx)
     {
         if (!ctx) return;
 
         ma_device_uninit(&ctx->device);
-        ma_event_uninit(&ctx->rb.spaceAvailableEvent);
-        ma_mutex_uninit(&ctx->rb.lock);
-        free(ctx->rb.buffer);
+                free(ctx->rb.buffer);
         free(ctx);
     }
 

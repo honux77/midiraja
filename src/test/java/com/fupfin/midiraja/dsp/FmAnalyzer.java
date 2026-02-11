@@ -13,13 +13,14 @@ public class FmAnalyzer {
         NativeAudioEngine engine = new NativeAudioEngine(dummyLib.getAbsolutePath()) {
             FileOutputStream fos = new FileOutputStream("fm_test.raw");
             @Override public void init(int rate, int ch, int buf) {}
-            @Override public void push(short[] pcm) {
+            @Override public int push(short[] pcm) {
                 try {
                     for (short s : pcm) {
                         fos.write(s & 0xFF);
                         fos.write((s >> 8) & 0xFF);
                     }
                 } catch(Exception e) {}
+                return pcm.length;
             }
             @Override public void close() {}
         };

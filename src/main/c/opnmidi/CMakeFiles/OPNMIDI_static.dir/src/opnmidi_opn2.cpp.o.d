@@ -786,9 +786,7 @@ CMakeFiles/OPNMIDI_static.dir/src/opnmidi_opn2.cpp.o: \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/opn_chip_base.h \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/opn_chip_base.tcc \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opn2.h \
-  /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens_opn2.h \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2_opna.h \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opna.h \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opn2.h \
-  /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opna.h \
-  /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/vgm_file_dumper.h
+  /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm_opna.h

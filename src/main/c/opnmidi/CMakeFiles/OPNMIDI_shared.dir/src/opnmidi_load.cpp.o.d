@@ -786,6 +786,4 @@ CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_load.cpp.o: \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/opn_chip_family.h \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_cvt.hpp \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/midiseq/file_reader.hpp \
-  /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/midiseq/midi_sequencer.hpp \
-  /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/midiseq/midi_sequencer.h \
   /Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/wopn/wopn_file.h

@@ -11,13 +11,13 @@ import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import org.jspecify.annotations.Nullable;
 
-@SuppressWarnings("EmptyCatch") public class NativeAudioEngine implements AudioEngine
+@SuppressWarnings("EmptyCatch") public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
 {
-    private final Arena arena;
     private MemorySegment ctx = MemorySegment.NULL;
 
     private final MethodHandle midiraja_audio_init;
     private final MethodHandle midiraja_audio_push;
+    private final MethodHandle midiraja_audio_get_buffer_capacity_frames;
     private final MethodHandle midiraja_audio_get_queued_frames;
     private final MethodHandle midiraja_audio_get_device_latency_frames;
     private final MethodHandle midiraja_audio_flush;
@@ -25,35 +25,36 @@ import org.jspecify.annotations.Nullable;
 
     public NativeAudioEngine(String libPath) throws Exception
     {
-        arena = Arena.ofShared();
+        this(Arena.ofShared(), libPath);
+    }
 
-        System.load(new java.io.File(libPath).getAbsolutePath());
-        SymbolLookup lib = SymbolLookup.loaderLookup();
-        Linker linker = Linker.nativeLinker();
+    private NativeAudioEngine(Arena arena, String libPath) throws Exception
+    {
+        super(arena, loadLib(libPath));
 
-        midiraja_audio_init = linker.downcallHandle(lib.find("midiraja_audio_init").orElseThrow(),
+        midiraja_audio_init = downcall("midiraja_audio_init",
             FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT,
                 ValueLayout.JAVA_INT));
 
-        midiraja_audio_push = linker.downcallHandle(lib.find("midiraja_audio_push").orElseThrow(),
-            FunctionDescriptor.ofVoid(
+        midiraja_audio_get_buffer_capacity_frames = downcall("midiraja_audio_get_buffer_capacity_frames", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+        midiraja_audio_push = downcall("midiraja_audio_push", FunctionDescriptor.of(ValueLayout.JAVA_INT,
                 ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
         midiraja_audio_get_queued_frames =
-            linker.downcallHandle(lib.find("midiraja_audio_get_queued_frames").orElseThrow(),
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+            downcall("midiraja_audio_get_queued_frames", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-        midiraja_audio_get_device_latency_frames = linker.downcallHandle(
-            lib.find("midiraja_audio_get_device_latency_frames").orElseThrow(),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+        midiraja_audio_get_device_latency_frames = downcall("midiraja_audio_get_device_latency_frames", FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
-        midiraja_audio_flush = linker.downcallHandle(lib.find("midiraja_audio_flush").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        midiraja_audio_flush = downcall("midiraja_audio_flush", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
-        midiraja_audio_close = linker.downcallHandle(lib.find("midiraja_audio_close").orElseThrow(),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        midiraja_audio_close = downcall("midiraja_audio_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
+
+    private static SymbolLookup loadLib(String libPath) {
+        System.load(new java.io.File(libPath).getAbsolutePath());
+        return SymbolLookup.loaderLookup();
+    }
     @Override public void init(int sampleRate, int channels, int bufferFrames) throws Exception
     {
         try
@@ -65,8 +66,8 @@ import org.jspecify.annotations.Nullable;
                 throw new Exception("Failed to initialize miniaudio engine.");
             }
         }
-        catch (Throwable t)
-        {
+        catch (Throwable t) {
+            System.err.println("[NativeBridge Error] " + t.getMessage());
             throw new Exception("Error invoking midiraja_audio_init", t);
         }
     }
@@ -82,8 +83,8 @@ import org.jspecify.annotations.Nullable;
         {
             return (int) midiraja_audio_get_queued_frames.invokeExact(ctx);
         }
-        catch (Throwable ignored)
-        {
+        catch (Throwable ignored) {
+            System.err.println("[NativeBridge Error] " + ignored.getMessage());
             return 0;
         }
     }
@@ -96,16 +97,16 @@ import org.jspecify.annotations.Nullable;
         {
             return (int) midiraja_audio_get_device_latency_frames.invokeExact(ctx);
         }
-        catch (Throwable ignored)
-        {
+        catch (Throwable ignored) {
+            System.err.println("[NativeBridge Error] " + ignored.getMessage());
             return 0;
         }
     }
 
-    @Override public void push(short[] pcmData)
+    @Override public int push(short[] pcmData)
     {
         if (ctx.equals(MemorySegment.NULL) || pcmData == null || pcmData.length == 0)
-            return;
+            return 0;
 
         try
         {
@@ -116,12 +117,20 @@ import org.jspecify.annotations.Nullable;
                 currentPushBufferSize = requiredBytes;
             }
             MemorySegment.copy(pcmData, 0, pushBuffer, ValueLayout.JAVA_SHORT, 0, pcmData.length);
-            midiraja_audio_push.invokeExact(ctx, pushBuffer, pcmData.length);
+            return (int) midiraja_audio_push.invokeExact(ctx, pushBuffer, pcmData.length);
         }
-        catch (Throwable ignored)
-        {
-            // Intentionally ignored to prevent tearing down the audio thread on a single dropped
-            // frame
+        catch (Throwable ignored) {
+            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            return 0;
+        }
+    }
+    
+    @Override public int getBufferCapacityFrames() {
+        if (ctx.equals(MemorySegment.NULL)) return 0;
+        try {
+            return (int) midiraja_audio_get_buffer_capacity_frames.invokeExact(ctx);
+        } catch (Throwable ignored) {
+            return 0;
         }
     }
 
@@ -133,8 +142,8 @@ import org.jspecify.annotations.Nullable;
         {
             midiraja_audio_flush.invokeExact(ctx);
         }
-        catch (Throwable ignored)
-        {
+        catch (Throwable ignored) {
+            System.err.println("[NativeBridge Error] " + ignored.getMessage());
         }
     }
 
@@ -146,14 +155,12 @@ import org.jspecify.annotations.Nullable;
             {
                 midiraja_audio_close.invokeExact(ctx);
             }
-            catch (Throwable ignored)
-            {
+            catch (Throwable ignored) {
+            System.err.println("[NativeBridge Error] " + ignored.getMessage());
             }
             ctx = MemorySegment.NULL;
         }
-        if (arena.scope().isAlive())
-        {
-            arena.close();
-        }
+        try { super.close(); } catch(Exception e) {
+            System.err.println("[NativeBridge Error] " + e.getMessage());}
     }
 }

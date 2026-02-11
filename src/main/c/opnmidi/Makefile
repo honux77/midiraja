@@ -200,60 +200,6 @@ OPNMIDI_version_check/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_version_check.dir/build.make CMakeFiles/OPNMIDI_version_check.dir/build
 .PHONY : OPNMIDI_version_check/fast
 
-src/chips/gens/Ym2612.o: src/chips/gens/Ym2612.cpp.o
-.PHONY : src/chips/gens/Ym2612.o
-
-# target to build an object file
-src/chips/gens/Ym2612.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/gens/Ym2612.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.o
-.PHONY : src/chips/gens/Ym2612.cpp.o
-
-src/chips/gens/Ym2612.i: src/chips/gens/Ym2612.cpp.i
-.PHONY : src/chips/gens/Ym2612.i
-
-# target to preprocess a source file
-src/chips/gens/Ym2612.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/gens/Ym2612.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.i
-.PHONY : src/chips/gens/Ym2612.cpp.i
-
-src/chips/gens/Ym2612.s: src/chips/gens/Ym2612.cpp.s
-.PHONY : src/chips/gens/Ym2612.s
-
-# target to generate assembly for a file
-src/chips/gens/Ym2612.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/gens/Ym2612.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/gens/Ym2612.cpp.s
-.PHONY : src/chips/gens/Ym2612.cpp.s
-
-src/chips/gens_opn2.o: src/chips/gens_opn2.cpp.o
-.PHONY : src/chips/gens_opn2.o
-
-# target to build an object file
-src/chips/gens_opn2.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/gens_opn2.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.o
-.PHONY : src/chips/gens_opn2.cpp.o
-
-src/chips/gens_opn2.i: src/chips/gens_opn2.cpp.i
-.PHONY : src/chips/gens_opn2.i
-
-# target to preprocess a source file
-src/chips/gens_opn2.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/gens_opn2.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.i
-.PHONY : src/chips/gens_opn2.cpp.i
-
-src/chips/gens_opn2.s: src/chips/gens_opn2.cpp.s
-.PHONY : src/chips/gens_opn2.s
-
-# target to generate assembly for a file
-src/chips/gens_opn2.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/gens_opn2.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/gens_opn2.cpp.s
-.PHONY : src/chips/gens_opn2.cpp.s
-
 src/chips/mame/mame_ym2612fm.o: src/chips/mame/mame_ym2612fm.c.o
 .PHONY : src/chips/mame/mame_ym2612fm.o
 
@@ -658,33 +604,6 @@ src/chips/nuked_opn2.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/nuked_opn2.cpp.s
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/nuked_opn2.cpp.s
 .PHONY : src/chips/nuked_opn2.cpp.s
-
-src/chips/vgm_file_dumper.o: src/chips/vgm_file_dumper.cpp.o
-.PHONY : src/chips/vgm_file_dumper.o
-
-# target to build an object file
-src/chips/vgm_file_dumper.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/vgm_file_dumper.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.o
-.PHONY : src/chips/vgm_file_dumper.cpp.o
-
-src/chips/vgm_file_dumper.i: src/chips/vgm_file_dumper.cpp.i
-.PHONY : src/chips/vgm_file_dumper.i
-
-# target to preprocess a source file
-src/chips/vgm_file_dumper.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/vgm_file_dumper.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.i
-.PHONY : src/chips/vgm_file_dumper.cpp.i
-
-src/chips/vgm_file_dumper.s: src/chips/vgm_file_dumper.cpp.s
-.PHONY : src/chips/vgm_file_dumper.s
-
-# target to generate assembly for a file
-src/chips/vgm_file_dumper.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/chips/vgm_file_dumper.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/chips/vgm_file_dumper.cpp.s
-.PHONY : src/chips/vgm_file_dumper.cpp.s
 
 src/chips/ymfm/ymfm_adpcm.o: src/chips/ymfm/ymfm_adpcm.cpp.o
 .PHONY : src/chips/ymfm/ymfm_adpcm.o
@@ -1172,33 +1091,6 @@ src/opnmidi_private.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_private.cpp.s
 .PHONY : src/opnmidi_private.cpp.s
 
-src/opnmidi_sequencer.o: src/opnmidi_sequencer.cpp.o
-.PHONY : src/opnmidi_sequencer.o
-
-# target to build an object file
-src/opnmidi_sequencer.cpp.o:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/opnmidi_sequencer.cpp.o
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.o
-.PHONY : src/opnmidi_sequencer.cpp.o
-
-src/opnmidi_sequencer.i: src/opnmidi_sequencer.cpp.i
-.PHONY : src/opnmidi_sequencer.i
-
-# target to preprocess a source file
-src/opnmidi_sequencer.cpp.i:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/opnmidi_sequencer.cpp.i
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.i
-.PHONY : src/opnmidi_sequencer.cpp.i
-
-src/opnmidi_sequencer.s: src/opnmidi_sequencer.cpp.s
-.PHONY : src/opnmidi_sequencer.s
-
-# target to generate assembly for a file
-src/opnmidi_sequencer.cpp.s:
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_static.dir/build.make CMakeFiles/OPNMIDI_static.dir/src/opnmidi_sequencer.cpp.s
-	$(MAKE) $(MAKESILENT) -f CMakeFiles/OPNMIDI_shared.dir/build.make CMakeFiles/OPNMIDI_shared.dir/src/opnmidi_sequencer.cpp.s
-.PHONY : src/opnmidi_sequencer.cpp.s
-
 src/wopn/wopn_file.o: src/wopn/wopn_file.c.o
 .PHONY : src/wopn/wopn_file.o
 
@@ -1265,12 +1157,6 @@ help:
 	@echo "... OPNMIDI_shared"
 	@echo "... OPNMIDI_static"
 	@echo "... OPNMIDI_version_check"
-	@echo "... src/chips/gens/Ym2612.o"
-	@echo "... src/chips/gens/Ym2612.i"
-	@echo "... src/chips/gens/Ym2612.s"
-	@echo "... src/chips/gens_opn2.o"
-	@echo "... src/chips/gens_opn2.i"
-	@echo "... src/chips/gens_opn2.s"
 	@echo "... src/chips/mame/mame_ym2612fm.o"
 	@echo "... src/chips/mame/mame_ym2612fm.i"
 	@echo "... src/chips/mame/mame_ym2612fm.s"
@@ -1316,9 +1202,6 @@ help:
 	@echo "... src/chips/nuked_opn2.o"
 	@echo "... src/chips/nuked_opn2.i"
 	@echo "... src/chips/nuked_opn2.s"
-	@echo "... src/chips/vgm_file_dumper.o"
-	@echo "... src/chips/vgm_file_dumper.i"
-	@echo "... src/chips/vgm_file_dumper.s"
 	@echo "... src/chips/ymfm/ymfm_adpcm.o"
 	@echo "... src/chips/ymfm/ymfm_adpcm.i"
 	@echo "... src/chips/ymfm/ymfm_adpcm.s"
@@ -1373,9 +1256,6 @@ help:
 	@echo "... src/opnmidi_private.o"
 	@echo "... src/opnmidi_private.i"
 	@echo "... src/opnmidi_private.s"
-	@echo "... src/opnmidi_sequencer.o"
-	@echo "... src/opnmidi_sequencer.i"
-	@echo "... src/opnmidi_sequencer.s"
 	@echo "... src/wopn/wopn_file.o"
 	@echo "... src/wopn/wopn_file.i"
 	@echo "... src/wopn/wopn_file.s"

@@ -28,7 +28,7 @@ public class HeadlessRenderer {
             FileOutputStream fos = new FileOutputStream("render_dump.raw");
             int framesWritten = 0;
             @Override public void init(int rate, int ch, int buf) {}
-            @Override public void push(short[] pcm) {
+            @Override public int push(short[] pcm) {
                 try {
                     for (short s : pcm) {
                         fos.write(s & 0xFF);
@@ -41,6 +41,7 @@ public class HeadlessRenderer {
                         System.exit(0);
                     }
                 } catch(Exception e) {}
+                return pcm.length;
             }
             @Override public void close() {}
         };

@@ -24,7 +24,16 @@ public class FloatToShortSink implements AudioSink {
     @Override
     public void processInterleaved(short[] interleavedPcm, int frames, int channels) {
         if (engine != null) {
-            engine.push(interleavedPcm);
+            int totalSamples = frames * channels;
+            int offset = 0;
+            while (offset < totalSamples) {
+                int written = engine.push(java.util.Arrays.copyOfRange(interleavedPcm, offset, totalSamples));
+                if (written > 0) {
+                    offset += written;
+                } else {
+                    java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms backpressure sleep
+                }
+            }
         }
     }
 
@@ -51,7 +60,16 @@ public class FloatToShortSink implements AudioSink {
             }
         }
 
-        engine.push(pcmBuffer);
+        int totalSamples = frames * outputChannels;
+        int offset = 0;
+        while (offset < totalSamples) {
+            int written = engine.push(java.util.Arrays.copyOfRange(pcmBuffer, offset, totalSamples));
+            if (written > 0) {
+                offset += written;
+            } else {
+                java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms backpressure sleep
+            }
+        }
     }
 
     @Override

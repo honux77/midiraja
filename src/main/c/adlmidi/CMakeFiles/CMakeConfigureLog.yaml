@@ -1944,3 +1944,105 @@ events:
         
       exitCode: 0
 ...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "CMakeLists.txt:30 (try_compile)"
+      - "CMakeLists.txt:38 (CheckCPP14Build)"
+    directories:
+      source: "/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp"
+      binary: "/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_OSX_ARCHITECTURES: ""
+      CMAKE_OSX_DEPLOYMENT_TARGET: ""
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "COMPILER_BUILDS_CXX14"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_5e9cf/fast
+        /Library/Developer/CommandLineTools/usr/bin/make  -f CMakeFiles/cmTC_5e9cf.dir/build.make CMakeFiles/cmTC_5e9cf.dir/build
+        Building CXX object CMakeFiles/cmTC_5e9cf.dir/cpp14.cpp.o
+        /usr/bin/c++   -std=gnu++14 -arch arm64 -MD -MT CMakeFiles/cmTC_5e9cf.dir/cpp14.cpp.o -MF CMakeFiles/cmTC_5e9cf.dir/cpp14.cpp.o.d -o CMakeFiles/cmTC_5e9cf.dir/cpp14.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libADLMIDI/cmake/checks/cpp14.cpp
+        Linking CXX executable cmTC_5e9cf
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5e9cf.dir/link.txt --verbose=1
+        /usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_5e9cf.dir/cpp14.cpp.o -o cmTC_5e9cf
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "CMakeLists.txt:30 (try_compile)"
+      - "CMakeLists.txt:38 (CheckCPP14Build)"
+    directories:
+      source: "/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp"
+      binary: "/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_OSX_ARCHITECTURES: ""
+      CMAKE_OSX_DEPLOYMENT_TARGET: ""
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "COMPILER_BUILDS_CXX14"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_75bba/fast
+        /Library/Developer/CommandLineTools/usr/bin/make  -f CMakeFiles/cmTC_75bba.dir/build.make CMakeFiles/cmTC_75bba.dir/build
+        Building CXX object CMakeFiles/cmTC_75bba.dir/cpp14.cpp.o
+        /usr/bin/c++   -std=gnu++14 -arch arm64 -MD -MT CMakeFiles/cmTC_75bba.dir/cpp14.cpp.o -MF CMakeFiles/cmTC_75bba.dir/cpp14.cpp.o.d -o CMakeFiles/cmTC_75bba.dir/cpp14.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libADLMIDI/cmake/checks/cpp14.cpp
+        Linking CXX executable cmTC_75bba
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_75bba.dir/link.txt --verbose=1
+        /usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_75bba.dir/cpp14.cpp.o -o cmTC_75bba
+        
+      exitCode: 0
+...
+
+---
+events:
+  -
+    kind: "try_compile-v1"
+    backtrace:
+      - "CMakeLists.txt:30 (try_compile)"
+      - "CMakeLists.txt:38 (CheckCPP14Build)"
+    directories:
+      source: "/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp"
+      binary: "/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp"
+    cmakeVariables:
+      CMAKE_CXX_FLAGS: ""
+      CMAKE_CXX_FLAGS_DEBUG: "-g"
+      CMAKE_EXE_LINKER_FLAGS: ""
+      CMAKE_OSX_ARCHITECTURES: ""
+      CMAKE_OSX_DEPLOYMENT_TARGET: ""
+      CMAKE_OSX_SYSROOT: ""
+    buildResult:
+      variable: "COMPILER_BUILDS_CXX14"
+      cached: true
+      stdout: |
+        Change Dir: '/Users/sungchulpark/Documents/projects/midiraja/src/main/c/adlmidi/cmake-checks/CMakeFiles/CMakeTmp'
+        
+        Run Build Command(s): /opt/homebrew/bin/cmake -E env VERBOSE=1 /usr/bin/make -f Makefile cmTC_5e9da/fast
+        /Library/Developer/CommandLineTools/usr/bin/make  -f CMakeFiles/cmTC_5e9da.dir/build.make CMakeFiles/cmTC_5e9da.dir/build
+        Building CXX object CMakeFiles/cmTC_5e9da.dir/cpp14.cpp.o
+        /usr/bin/c++   -std=gnu++14 -arch arm64 -MD -MT CMakeFiles/cmTC_5e9da.dir/cpp14.cpp.o -MF CMakeFiles/cmTC_5e9da.dir/cpp14.cpp.o.d -o CMakeFiles/cmTC_5e9da.dir/cpp14.cpp.o -c /Users/sungchulpark/Documents/projects/midiraja/ext/libADLMIDI/cmake/checks/cpp14.cpp
+        Linking CXX executable cmTC_5e9da
+        /opt/homebrew/bin/cmake -E cmake_link_script CMakeFiles/cmTC_5e9da.dir/link.txt --verbose=1
+        /usr/bin/c++  -arch arm64 -Wl,-search_paths_first -Wl,-headerpad_max_install_names CMakeFiles/cmTC_5e9da.dir/cpp14.cpp.o -o cmTC_5e9da
+        
+      exitCode: 0
+...

@@ -18,8 +18,6 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/models/model_generic.c" "CMakeFiles/OPNMIDI_static.dir/src/models/model_generic.c.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/models/model_generic.c.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/models/model_w9x.c" "CMakeFiles/OPNMIDI_static.dir/src/models/model_w9x.c.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/models/model_w9x.c.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/wopn/wopn_file.c" "CMakeFiles/OPNMIDI_static.dir/src/wopn/wopn_file.c.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/wopn/wopn_file.c.o.d"
-  "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens/Ym2612.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/gens/Ym2612.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/gens/Ym2612.cpp.o.d"
-  "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/gens_opn2.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/gens_opn2.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/gens_opn2.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opn2.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/mame_opn2.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/mame_opn2.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mame_opna.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/mame_opna.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/mame_opna.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/mamefm/fm.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/mamefm/fm.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/mamefm/fm.cpp.o.d"
@@ -32,7 +30,6 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2/fmgen_psg.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/np2/fmgen_psg.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/np2/fmgen_psg.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/np2_opna.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/np2_opna.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/np2_opna.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/nuked_opn2.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/nuked_opn2.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/nuked_opn2.cpp.o.d"
-  "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/vgm_file_dumper.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/vgm_file_dumper.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/vgm_file_dumper.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_adpcm.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/ymfm/ymfm_adpcm.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/ymfm/ymfm_adpcm.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_misc.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/ymfm/ymfm_misc.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/ymfm/ymfm_misc.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/chips/ymfm/ymfm_opn.cpp" "CMakeFiles/OPNMIDI_static.dir/src/chips/ymfm/ymfm_opn.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/chips/ymfm/ymfm_opn.cpp.o.d"
@@ -45,7 +42,6 @@ set(CMAKE_DEPENDS_DEPENDENCY_FILES
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_midiplay.cpp" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_midiplay.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_midiplay.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_opn2.cpp" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_opn2.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_opn2.cpp.o.d"
   "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_private.cpp" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_private.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_private.cpp.o.d"
-  "/Users/sungchulpark/Documents/projects/midiraja/ext/libOPNMIDI/src/opnmidi_sequencer.cpp" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_sequencer.cpp.o" "gcc" "CMakeFiles/OPNMIDI_static.dir/src/opnmidi_sequencer.cpp.o.d"
   )
 
 # Targets to which this target links which contain Fortran sources.
