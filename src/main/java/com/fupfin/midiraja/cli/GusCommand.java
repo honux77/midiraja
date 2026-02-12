@@ -111,7 +111,7 @@ public class GusCommand implements Callable<Integer> {
             }
     }
     
-    if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent()) {
+    if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.oneBitMode.isPresent() || common.mac128kMode || common.eightBitMode))) {
         pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
     }
     
