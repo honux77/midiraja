@@ -22,7 +22,7 @@ public class Mac128kSimulatorFilter implements AudioProcessor {
     private boolean holdNext = false;
     private float heldL = 0;
     private float heldR = 0;
-    
+
     // Analog Line-Out circuitry simulation (RC Low-Pass Filter)
     private float lpfL = 0;
     private float lpfR = 0;
@@ -41,25 +41,30 @@ public class Mac128kSimulatorFilter implements AudioProcessor {
             return;
         }
 
-        // To perfectly eliminate fractional phase jitter, we lock the internal Mac
-        // generation rate to exactly 22.05kHz (half of 44.1kHz). 
-        
         for (int i = 0; i < frames; i++) {
             if (!holdNext) {
-                // 1. Fetch exactly on the 22.05kHz grid
-                // 2. 8-bit Quantize (256 discrete levels)
+                // 1. The Mac CPU reads an 8-bit sample from memory exactly at 22.05kHz.
+                // We simulate this by taking the high-res input and strictly quantizing it 
+                // to 256 discrete levels (8-bit). This represents the value stuffed into the PWM chip.
                 heldL = Math.max(-128, Math.min(127, Math.round(left[i] * 127f))) / 127f;
                 heldR = Math.max(-128, Math.min(127, Math.round(right[i] * 127f))) / 127f;
                 holdNext = true;
             } else {
-                holdNext = false; // Zero-Order Hold for the second frame
+                holdNext = false; // Zero-Order Hold for the second frame (making it 22.05kHz)
             }
             
-            // 3. Apply the analog Line-Out RC smoothing filter
-            // This prevents the raw 22.05kHz stair-steps from tearing up modern tweeters
-            // and perfectly matches the frequency profile of original Mac Plus recordings.
+            // 2. The magic of the Macintosh: The PWM output isn't sent to the speaker as a staircase.
+            // It goes through an analog integrating Low-Pass Filter (RC circuit).
+            // This filter smoothly glides between the 8-bit steps, effectively upsampling 
+            // the resolution back to near-continuous analog (infinite bit depth).
+            // This completely eliminates the harsh "broken radio" quantization hiss 
+            // while preserving the 22kHz bandwidth and slightly muffled, warm character.
             lpfL += alpha * (heldL - lpfL);
             lpfR += alpha * (heldR - lpfR);
+            
+            // Prevent subnormal float denormalization
+            if (Math.abs(lpfL) < 1e-6f) lpfL = 0f;
+            if (Math.abs(lpfR) < 1e-6f) lpfR = 0f;
             
             left[i] = lpfL;
             right[i] = lpfR;
