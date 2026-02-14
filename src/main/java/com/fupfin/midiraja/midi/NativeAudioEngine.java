@@ -5,9 +5,12 @@ import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodType;
 import org.jspecify.annotations.Nullable;
+import java.io.IOException;
+
 
 @SuppressWarnings("EmptyCatch") public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
 {
+    private @org.jspecify.annotations.Nullable WavFileWriter wavWriter = null;
     private MemorySegment ctx = MemorySegment.NULL;
     private final MethodHandle midiraja_audio_init;
     private final MethodHandle midiraja_audio_get_device_latency_frames;
@@ -92,8 +95,26 @@ import org.jspecify.annotations.Nullable;
         return samplesFulfilled;
     }
 
+    
+    @Override
+    public void enableDump(String filename) {
+        if (wavWriter != null) {
+            try { wavWriter.close(); } catch (Exception ignored) {}
+        }
+        try {
+            wavWriter = new WavFileWriter(filename, 44100, 2); // default placeholder, init overrides
+            System.out.println("[DEBUG] Dumping audio to " + filename);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override public void init(int sampleRate, int channels, int bufferFrames) throws Exception
     {
+        if (wavWriter != null) {
+            try { wavWriter.close(); } catch (Exception ignored) {}
+            try { wavWriter = new WavFileWriter("dump.wav", sampleRate, channels); } catch (Exception ignored) {}
+        }
         try
         {
             // We slice the total requested capacity into chunks (e.g. 512 samples per block)
@@ -155,6 +176,17 @@ import org.jspecify.annotations.Nullable;
 
     @Override public int push(short[] pcmData, int offset, int length)
     {
+
+        if (wavWriter != null) {
+            try {
+                short[] dumpBuf = new short[length];
+                System.arraycopy(pcmData, offset, dumpBuf, 0, length);
+                wavWriter.write(dumpBuf);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
         if (blocks.length == 0 || length <= 0) return 0;
         
         // Cannot write if we are completely full

@@ -90,4 +90,10 @@ We implemented five distinct mathematical biquad configurations to create a full
 **Filter Smoothness & Q-Factor:**
 To prevent phase distortion and harsh digital ringing artifacts, our Biquad implementation utilizes a carefully tuned Quality Factor (`Q = 1.0` or `0.707` for cutoffs). This guarantees that all frequency adjustments follow mathematically smooth, musically pleasing analog-style curves rather than brutal linear brick-walls.
 
+### 2.5 Acoustic Simulation Filters
+Beyond standard studio effects, Midiraja features physical modeling filters that simulate specific historical computer hardware.
+
+*   **Macintosh 128k Simulation:** A specialized physical model using **Event-Driven Analytical Integration** to simulate the unique 22.25kHz 8-bit PWM circuitry of the original 1984 Mac. It achieves perfect aliasing suppression while maintaining authentic physical switching ripple. 
+    *   *See [Macintosh 128k Audio Hardware Simulation](mac128k-audio-engineering.md) for detailed engineering analysis.*
+
 By chaining these lightweight mathematical filters together within the zero-allocation pipeline, Midiraja provides a zero-latency, mastering-grade equalizer tailored specifically for retro audio enhancement.

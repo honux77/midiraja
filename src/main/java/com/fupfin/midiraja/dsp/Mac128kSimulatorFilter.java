@@ -13,21 +13,26 @@ package com.fupfin.midiraja.dsp;
  * 3. Outputting to the audio line out without an internal speaker EQ.
  */
 public class Mac128kSimulatorFilter implements AudioProcessor {
-    private final boolean enabled;
+private final boolean enabled;
     private final AudioProcessor next;
 
-    // The Macintosh horizontal sync frequency is approx 22,254.5 Hz
-    private static final double MAC_SAMPLE_RATE = 22254.5;
-    
     private boolean holdNext = false;
     private float heldL = 0;
     private float heldR = 0;
 
-    // Analog Line-Out circuitry simulation (RC Low-Pass Filter)
-    private float lpfL = 0;
-    private float lpfR = 0;
-    // An alpha of ~0.35 closely matches the empirical -27dB at 10kHz roll-off found in original Mac recordings.
-    private final float alpha = 0.35f;
+    // Analog Line-Out circuitry simulation
+    // We use a 2-pole Butterworth low-pass filter at ~8kHz.
+    // This represents the combined roll-off of the Mac's RC filter and the cheap internal speaker.
+    // It keeps the 8-bit staircase crunch at lower frequencies but kills the 21kHz "siren" ZOH aliasing.
+    private float x1L = 0, x2L = 0, y1L = 0, y2L = 0;
+    private float x1R = 0, x2R = 0, y1R = 0, y2R = 0;
+
+    // 2-pole LPF coefficients (Fc=8000Hz, Fs=44100Hz)
+    private static final float b0 = 0.20657f;
+    private static final float b1 = 0.41314f;
+    private static final float b2 = 0.20657f;
+    private static final float a1 = -0.36953f;
+    private static final float a2 = 0.19582f;
 
     public Mac128kSimulatorFilter(boolean enabled, AudioProcessor next) {
         this.enabled = enabled;
@@ -43,31 +48,36 @@ public class Mac128kSimulatorFilter implements AudioProcessor {
 
         for (int i = 0; i < frames; i++) {
             if (!holdNext) {
-                // 1. The Mac CPU reads an 8-bit sample from memory exactly at 22.05kHz.
-                // We simulate this by taking the high-res input and strictly quantizing it 
-                // to 256 discrete levels (8-bit). This represents the value stuffed into the PWM chip.
-                heldL = Math.max(-128, Math.min(127, Math.round(left[i] * 127f))) / 127f;
-                heldR = Math.max(-128, Math.min(127, Math.round(right[i] * 127f))) / 127f;
+                // 1. CPU fetches an 8-bit sample exactly at ~22.05kHz
+                // Map to -1.0 to 1.0 range
+                heldL = ((int) (left[i] * 127.0f)) / 127.0f; 
+                heldR = ((int) (right[i] * 127.0f)) / 127.0f;
+                
                 holdNext = true;
             } else {
-                holdNext = false; // Zero-Order Hold for the second frame (making it 22.05kHz)
+                // ZOH: Repeat the exact same value for the second frame (22.05kHz hold)
+                holdNext = false;
             }
             
-            // 2. The magic of the Macintosh: The PWM output isn't sent to the speaker as a staircase.
-            // It goes through an analog integrating Low-Pass Filter (RC circuit).
-            // This filter smoothly glides between the 8-bit steps, effectively upsampling 
-            // the resolution back to near-continuous analog (infinite bit depth).
-            // This completely eliminates the harsh "broken radio" quantization hiss 
-            // while preserving the 22kHz bandwidth and slightly muffled, warm character.
-            lpfL += alpha * (heldL - lpfL);
-            lpfR += alpha * (heldR - lpfR);
+            // 2. Analog Reconstruction Filter (8kHz 2-pole LPF)
+            // This is crucial. Without it, the 22kHz ZOH creates a loud 21kHz "siren" mirror frequency.
+            // The original Mac hardware didn't output 44.1kHz discrete steps to a modern hi-fi DAC; 
+            // it went through an analog RC circuit and a very limited physical speaker.
+            float outL = b0 * heldL + b1 * x1L + b2 * x2L - a1 * y1L - a2 * y2L;
+            float outR = b0 * heldR + b1 * x1R + b2 * x2R - a1 * y1R - a2 * y2R;
             
-            // Prevent subnormal float denormalization
-            if (Math.abs(lpfL) < 1e-6f) lpfL = 0f;
-            if (Math.abs(lpfR) < 1e-6f) lpfR = 0f;
+            x2L = x1L; x1L = heldL;
+            y2L = y1L; y1L = outL;
             
-            left[i] = lpfL;
-            right[i] = lpfR;
+            x2R = x1R; x1R = heldR;
+            y2R = y1R; y1R = outR;
+            
+            // Prevent denormalization
+            if (Math.abs(y1L) < 1e-6f) y1L = 0;
+            if (Math.abs(y1R) < 1e-6f) y1R = 0;
+
+            left[i] = outL;
+            right[i] = outR;
         }
         
         next.process(left, right, frames);

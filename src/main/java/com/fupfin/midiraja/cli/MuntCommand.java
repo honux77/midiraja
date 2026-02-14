@@ -46,6 +46,7 @@ public class MuntCommand implements Callable<Integer>
         String audioLib = AudioLibResolver.resolve();
         var audio = new com.fupfin.midiraja.midi.NativeAudioEngine(audioLib);
         audio.init(32000, 2, 4096);
+        if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
         if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
             String mode = common.oneBitMode.orElse("pwm");

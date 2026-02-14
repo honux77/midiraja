@@ -67,6 +67,10 @@ public class CommonOptions
         @Option(names = {"--mac128k"}, description = "Macintosh 128k audio simulation. Zero-order holds audio to 22.25kHz, applies 8-bit quantization, and simulates the internal speaker acoustics.")
     public boolean mac128kMode;
 
+    @Option(names = {"--dump-wav"}, description = "Dump the real-time audio output to a specified WAV file.")
+    public Optional<String> dumpWav = Optional.empty();
+
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     public UiModeOptions uiOptions = new UiModeOptions();
 }

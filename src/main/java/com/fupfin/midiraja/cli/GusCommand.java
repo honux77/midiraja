@@ -72,6 +72,7 @@ public class GusCommand implements Callable<Integer> {
     String audioLib = AudioLibResolver.resolve();
     NativeAudioEngine audio = new NativeAudioEngine(audioLib);
     audio.init(44100, 2, 4096);
+        if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
     
     com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
         if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {

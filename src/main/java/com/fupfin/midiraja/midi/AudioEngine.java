@@ -24,4 +24,5 @@ public interface AudioEngine extends AutoCloseable
     int getDeviceLatencyFrames();
     void flush();
     @Override void close();
+    void enableDump(String filename);
 }

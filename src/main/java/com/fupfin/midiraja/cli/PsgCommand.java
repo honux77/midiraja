@@ -83,6 +83,7 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         String audioLib = AudioLibResolver.resolve();
         var audio = new NativeAudioEngine(audioLib);
         audio.init(44100, 1, 4096);
+        if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
         
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
         if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {

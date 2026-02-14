@@ -75,6 +75,7 @@ public class BeepCommand implements Callable<Integer>
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
         audio.init(44100, 1, 4096);
+        if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
         if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
             String mode = common.oneBitMode.orElse("pwm");
