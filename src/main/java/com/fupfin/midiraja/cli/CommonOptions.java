@@ -58,6 +58,9 @@ public class CommonOptions
     @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm' or 'dsd'). If omitted, outputs standard 16-bit PCM.")
     public Optional<String> oneBitMode = Optional.empty();
 
+    @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --1bit pwm).")
+    public boolean realSound = false;
+
     @Option(names = {"--8bit"}, description = "8-Bit DAC quantization strategy. Simulates the sound of early Macintosh and Amiga sound chips.")
     public boolean eightBitMode;
 

@@ -47,8 +47,9 @@ public class MuntCommand implements Callable<Integer>
         var audio = new com.fupfin.midiraja.midi.NativeAudioEngine(audioLib);
         audio.init(32000, 2, 4096);
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-        if (common != null && common.oneBitMode.isPresent()) {
-            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, common.oneBitMode.get(), pipeline);
+        if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
+            String mode = common.oneBitMode.orElse("pwm");
+            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, mode, pipeline);
         }
         if (common != null && common.mac128kMode) {
             pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);

@@ -85,8 +85,9 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
         audio.init(44100, 1, 4096);
         
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
-        if (common != null && common.oneBitMode.isPresent()) {
-            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, common.oneBitMode.get(), pipeline);
+        if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
+            String mode = common.oneBitMode.orElse("pwm");
+            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, mode, pipeline);
         }
         if (common != null && common.mac128kMode) {
             pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
@@ -120,7 +121,7 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
             }
         }
         
-        if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.oneBitMode.isPresent() || common.mac128kMode || common.eightBitMode))) {
+        if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.oneBitMode.isPresent() || common.realSound || common.mac128kMode || common.eightBitMode))) {
             pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
         }
         

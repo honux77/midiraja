@@ -10,11 +10,10 @@ package com.fupfin.midiraja.midi.gus;
 import com.fupfin.midiraja.midi.AudioEngine;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.dsp.OneBitAcousticSimulator;
 import com.fupfin.midiraja.midi.MidiPort;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.SoftSynthProvider;
-import java.util.ArrayList;
+import java.util.List;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
@@ -41,8 +39,6 @@ public class GusSynthProvider implements SoftSynthProvider
     private final GusEngine engine;
     private final @Nullable GusBank bank;
     private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
-    private final @Nullable String oneBitMode;
-    private final List<AudioProcessor> dspPipeline = new ArrayList<>();
     
     private @Nullable Thread renderThread;
     private volatile boolean running = false;
@@ -54,22 +50,13 @@ public class GusSynthProvider implements SoftSynthProvider
      * @param patchDir Path to the GUS patch directory.
      * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", or null to disable).
      */
-    public GusSynthProvider(com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, @Nullable String patchDir, @Nullable String oneBitMode)
+
+
+    public GusSynthProvider(com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, @Nullable String patchDir)
     {
         this.audioOut = audioOut;
         this.engine = new GusEngine(44100);
         this.bank = resolveBank(patchDir);
-        this.oneBitMode = oneBitMode != null ? oneBitMode.toLowerCase(java.util.Locale.ROOT) : null;
-        
-        // Assemble the modular DSP pipeline
-        if (this.oneBitMode != null) {
-            dspPipeline.add(new OneBitAcousticSimulator(44100, this.oneBitMode));
-        }
-    }
-
-    public GusSynthProvider(com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, @Nullable String patchDir)
-    {
-        this(audioOut, patchDir, null);
     }
 
     private @Nullable GusBank resolveBank(@Nullable String userPath)
@@ -110,11 +97,7 @@ public class GusSynthProvider implements SoftSynthProvider
     {
         String name = bank != null ? "GUS (" + bank.getPatchSetName() + ")" : "GUS (No patches)";
         
-        if ("pwm".equals(oneBitMode)) {
-            name += " [RealSound]";
-        } else if (oneBitMode != null) {
-            name += " [" + oneBitMode.toUpperCase(java.util.Locale.ROOT) + "]";
-        }
+
         
         return List.of(new MidiPort(0, name));
     }
@@ -178,10 +161,7 @@ public class GusSynthProvider implements SoftSynthProvider
                 for (int i = 0; i < framesToRender; i++) { left[i] = 0; right[i] = 0; }
                 engine.render(left, right, framesToRender);
                 
-                // Pass through modular DSP pipeline
-                for (AudioProcessor proc : dspPipeline) {
-                    proc.process(left, right, framesToRender);
-                }
+
 
                 for (int i = 0; i < framesToRender; i++)
                 {
@@ -283,7 +263,7 @@ public class GusSynthProvider implements SoftSynthProvider
         engine.getActiveVoices().clear(); 
         if (audioOut != null) audioOut.reset();
         renderPaused = true; 
-        for (com.fupfin.midiraja.dsp.AudioProcessor proc : dspPipeline) proc.reset(); 
+         
     }
 
     @SuppressWarnings("EmptyCatch")

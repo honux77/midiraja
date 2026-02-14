@@ -33,8 +33,6 @@ public class GusCommand implements Callable<Integer> {
   @Option(names = {"-p", "--patch-dir"}, description = "Directory containing GUS .pat files and gus.cfg (or timidity.cfg)")
   private Optional<File> patchDir = Optional.empty();
 
-  @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --1bit pwm).")
-  private boolean realSound = false;
 
       @Option(names = {"--bass"}, defaultValue = "50", description = "Adjust bass gain (0-100%%). Default: 50 (neutral).")
     private float eqBass = 100;
@@ -76,8 +74,9 @@ public class GusCommand implements Callable<Integer> {
     audio.init(44100, 2, 4096);
     
     com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-        if (common != null && common.oneBitMode.isPresent()) {
-            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, common.oneBitMode.get(), pipeline);
+        if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
+            String mode = common.oneBitMode.orElse("pwm");
+            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, mode, pipeline);
         }
         if (common != null && common.mac128kMode) {
             pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
@@ -111,14 +110,13 @@ public class GusCommand implements Callable<Integer> {
             }
     }
     
-    if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.oneBitMode.isPresent() || common.mac128kMode || common.eightBitMode))) {
+    if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.oneBitMode.isPresent() || common.realSound || common.mac128kMode || common.eightBitMode))) {
         pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
     }
     
     String dirPath = patchDir.map(File::getAbsolutePath).orElse(null);
 
-    String finalOneBit = realSound ? "pwm" : (common != null && common.oneBitMode.isPresent() ? common.oneBitMode.get() : "pwm"); 
-    var provider = new GusSynthProvider(pipeline, dirPath, finalOneBit);
+    var provider = new GusSynthProvider(pipeline, dirPath);
 
     var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(),
                                     p.isInTestMode());

@@ -76,8 +76,9 @@ public class BeepCommand implements Callable<Integer>
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
         audio.init(44100, 1, 4096);
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
-        if (common != null && common.oneBitMode.isPresent()) {
-            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, common.oneBitMode.get(), pipeline);
+        if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
+            String mode = common.oneBitMode.orElse("pwm");
+            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, mode, pipeline);
         }
         if (common != null && common.mac128kMode) {
             pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);

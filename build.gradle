@@ -4,6 +4,8 @@ plugins {
     id 'jacoco'
     id 'net.ltgt.errorprone' version '4.1.0'
 }
+apply plugin: 'checkstyle'
+
 
 version = '0.1'
 
@@ -285,4 +287,11 @@ tasks.named('installDist').configure {
 
 tasks.named('test').configure {
     dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib
+}
+
+checkstyle {
+    toolVersion = "10.21.2"
+    configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
+    ignoreFailures = true // 스타일 위반해도 빌드는 통과!
+    showViolations = true
 }

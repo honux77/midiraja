@@ -23,11 +23,13 @@ To ensure our codebase remains maintainable, lightning-fast, and natively compil
 
 ### 1. Coding Style
 We use a specific blend of styles to keep the code readable and consistent across Java and C/C++:
-*   **Brace Style:** We use **Allman style** (opening braces on a new line) for classes, methods, and all control structures (if, for, while, etc.).
+*   **Brace Style:** We use **Allman style** (opening braces on a new line) for classes, methods, and all control structures. However, **braces can be omitted** for single-line code blocks in `if`, `for`, and `while` loops.
 *   **Indentation:** Exactly **4 spaces**. No tabs.
+*   **Imports:** 
+    *   When importing 3 or more classes from the same package, use a **wildcard import** (`*`).
+    *   Prefer **`static import`** for utility classes and frequently used static methods (e.g., `System.out`, `UIUtils.formatTime`) to reduce verbosity.
 *   **Java Base:** Follow [Google Java Style](https://google.github.io/styleguide/javaguide.html) for everything else.
 *   **C/C++ Base:** Follow [Google C++ Style](https://google.github.io/styleguide/cppguide.html) for everything else.
-*   **Static Imports:** Prefer `static import` for frequently used static utility methods (e.g., `UIUtils.formatTime`) and standard streams (`System.out`, `System.err`) to reduce verbosity.
 *   **Modern IO:** Use `static import java.lang.IO.*` for simple console output (Java 25+ feature) where dependency injection of a `PrintStream` is not required.
 
 ### 2. Core Philosophy
@@ -49,10 +51,11 @@ To maximize both performance and compatibility, Midiraja is distributed via thre
 *   **Dependency Inversion:** Concrete implementations depend on abstractions. For example, UI panels must abstract their rendering logic to avoid coupling directly to terminal output streams.
 
 ### 5. Language Style & Testing
-*   **Modern Java:** Prefer declarative and functional expressions. Use lightweight abstractions like Records and sealed interfaces.
-*   **Declarative Style:** Prefer declarative and functional expressions over imperative logic.
+*   **Expression over Statement:** Prefer expressions over statements. Favor `switch` expressions, ternary operators, and functional returns over traditional `if/else` statements or `switch` statements with `break`.
+*   **Single-line Lambdas:** Lambda expressions must be a **single-line expression**. If you need a block with statements or multiple lines of sequential code, extract the logic into a separate method and use a **method reference** (`::`).
+*   **Modern Java:** Use lightweight abstractions like Records and sealed interfaces.
 *   **Null Safety:** Assume parameters are non-null by default. Use `java.util.Optional` for return types where a value might be legitimately absent.
-*   **Immutability:** Prefer `final` for variables, fields, and parameters. Assume parameters are non-null by default, and use `Optional` for absent returns.
+*   **Immutability:** Prefer `final` for variables, fields, and parameters.
 *   **Executable Specs:** Treat JUnit 5 tests as comprehensive, executable documentation. All core logic must have corresponding unit tests.
 *   **Isolate Side Effects:** Use standard or manual mocks (like `MockMidiProvider` or `MockTerminalIO`) to isolate tests from actual audio hardware or terminal output.
 
