@@ -48,15 +48,31 @@ public class MuntCommand implements Callable<Integer>
         audio.init(32000, 2, 4096);
         if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-        if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
-            String mode = common.oneBitMode.orElse("pwm");
-            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, mode, pipeline);
-        }
-        if (common != null && common.mac128kMode) {
-            pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
-        }
-        if (common != null && common.eightBitMode) {
-            pipeline = new com.fupfin.midiraja.dsp.EightBitQuantizerFilter(true, pipeline);
+        if (common != null && common.dacMode.isPresent()) {
+            String mode = common.dacMode.get().toLowerCase(java.util.Locale.ROOT);
+            switch (mode) {
+                case "mac128k":
+                    pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
+                    break;
+                case "realsound":
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline);
+                    break;
+                case "ibmpc":
+                case "1bit":
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline); // TODO: IBM PC Piezo model
+                    break;
+                case "covox":
+                case "disneysound":
+                case "amiga":
+                case "8bit":
+                    pipeline = new com.fupfin.midiraja.dsp.EightBitQuantizerFilter(true, pipeline); // TODO: Specific LPFs
+                    break;
+                case "apple2":
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline); // TODO: Apple II model
+                    break;
+                default:
+                    System.err.println("Warning: Unknown DAC mode '" + mode + "'. Ignoring.");
+            }
         }
         var bridge = new com.fupfin.midiraja.midi.FFMMuntNativeBridge();
         var provider = new com.fupfin.midiraja.midi.MuntSynthProvider(bridge, pipeline);

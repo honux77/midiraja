@@ -42,6 +42,7 @@ class DspPipelineTest {
         @Override public int getBufferCapacityFrames() { return 4096; }
             public int getDeviceLatencyFrames() { return 0; }
             public void flush() {}
+        @Override public void enableDump(String path) {}
             public void close() {}
         }, 2);
 

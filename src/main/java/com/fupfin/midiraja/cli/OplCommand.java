@@ -85,15 +85,31 @@ public class OplCommand implements Callable<Integer>
         if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
         
         com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-        if (common != null && (common.oneBitMode.isPresent() || common.realSound)) {
-            String mode = common.oneBitMode.orElse("pwm");
-            pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, mode, pipeline);
-        }
-        if (common != null && common.mac128kMode) {
-            pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
-        }
-        if (common != null && common.eightBitMode) {
-            pipeline = new com.fupfin.midiraja.dsp.EightBitQuantizerFilter(true, pipeline);
+        if (common != null && common.dacMode.isPresent()) {
+            String mode = common.dacMode.get().toLowerCase(java.util.Locale.ROOT);
+            switch (mode) {
+                case "mac128k":
+                    pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
+                    break;
+                case "realsound":
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline);
+                    break;
+                case "ibmpc":
+                case "1bit":
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline); // TODO: IBM PC Piezo model
+                    break;
+                case "covox":
+                case "disneysound":
+                case "amiga":
+                case "8bit":
+                    pipeline = new com.fupfin.midiraja.dsp.EightBitQuantizerFilter(true, pipeline); // TODO: Specific LPFs
+                    break;
+                case "apple2":
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline); // TODO: Apple II model
+                    break;
+                default:
+                    System.err.println("Warning: Unknown DAC mode '" + mode + "'. Ignoring.");
+            }
         }
         
         if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || lpfFreq.isPresent() || hpfFreq.isPresent()) {
@@ -121,13 +137,13 @@ public class OplCommand implements Callable<Integer>
             }
         }
         
-        if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.oneBitMode.isPresent() || common.realSound || common.mac128kMode || common.eightBitMode))) {
+        if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && common.dacMode.isPresent())) {
             pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
         }
         
         var bridge = new com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge();
         var provider = new com.fupfin.midiraja.midi.AdlMidiSynthProvider(
-            bridge, pipeline, emulator, fmOptions.chips, common.oneBitMode.orElse(common.realSound ? "pwm" : null));
+            bridge, pipeline, emulator, fmOptions.chips, common.dacMode.orElse(null));
 
         // Resolve bank argument: "" → "bank:0", "14" → "bank:14", path → path
         String soundbankArg =

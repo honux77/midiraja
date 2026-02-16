@@ -52,14 +52,14 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
 
     private final int emulatorId;
     private final int numChips;
-    private final @Nullable String oneBitMode;
+    private final @Nullable String dacMode;
     private final com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
 
     /** Uses Nuked OPL3 (emulator 0) and 4 chips by default. */
     
 
     public AdlMidiSynthProvider(AdlMidiNativeBridge bridge,
-        com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, int emulatorId, int numChips, @Nullable String oneBitMode)
+        com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, int emulatorId, int numChips, @Nullable String dacMode)
     {
         this.bridge = bridge;
         this.audioOut = audioOut;
@@ -67,7 +67,7 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
                            // Actually let's just keep audioOut.
         this.emulatorId = emulatorId;
         this.numChips = numChips;
-        this.oneBitMode = oneBitMode;
+        this.dacMode = dacMode;
     }
 
     private static final int SAMPLE_RATE = 44100;
@@ -99,9 +99,9 @@ public class AdlMidiSynthProvider implements SoftSynthProvider
             ? EMULATOR_NAMES[emulatorId]
             : "Emulator " + emulatorId;
         String portName = emuName + " · " + numChips + " chip" + (numChips > 1 ? "s" : "");
-        if (oneBitMode != null)
+        if (dacMode != null)
         {
-            portName += " [" + oneBitMode.toUpperCase(java.util.Locale.ROOT) + "]";
+            portName += " [" + dacMode.toUpperCase(java.util.Locale.ROOT) + "]";
         }
         return List.of(new MidiPort(0, portName));
     }

@@ -54,21 +54,12 @@ public class CommonOptions
                       + "like F0...F7).")
     public Optional<String> resetType = Optional.empty();
 
-    
-    @Option(names = {"--1bit"}, description = "1-Bit acoustic modulation strategy ('pwm' or 'dsd'). If omitted, outputs standard 16-bit PCM.")
-    public Optional<String> oneBitMode = Optional.empty();
-
-    @Option(names = {"--realsound"}, description = "Authentic 1980s PC Speaker macro (Automatically applies --1bit pwm).")
-    public boolean realSound = false;
-
-    @Option(names = {"--8bit"}, description = "8-Bit DAC quantization strategy. Simulates the sound of early Macintosh and Amiga sound chips.")
-    public boolean eightBitMode;
-
-        @Option(names = {"--mac128k"}, description = "Macintosh 128k audio simulation. Zero-order holds audio to 22.25kHz, applies 8-bit quantization, and simulates the internal speaker acoustics.")
-    public boolean mac128kMode;
-
     @Option(names = {"--dump-wav"}, description = "Dump the real-time audio output to a specified WAV file.")
     public Optional<String> dumpWav = Optional.empty();
+
+    @Option(names = {"--dac"}, description = "Retro DAC simulation (mac128k, realsound, ibmpc, apple2, covox, disneysound, amiga)")
+    public Optional<String> dacMode = Optional.empty();
+
 
 
     @ArgGroup(exclusive = true, multiplicity = "0..1")

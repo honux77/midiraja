@@ -19,6 +19,7 @@ class PsgSynthProviderTest {
         @Override public int getBufferCapacityFrames() { return 4096; }
         @Override public int getDeviceLatencyFrames() { return 0; }
         @Override public void flush() {}
+        @Override public void enableDump(String path) {}
         @Override public void close() {}
     }
 
