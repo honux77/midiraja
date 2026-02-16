@@ -60,6 +60,10 @@ public class CommonOptions
     @Option(names = {"--dac"}, description = "Retro DAC simulation (mac128k, realsound, ibmpc, apple2, covox, disneysound, amiga)")
     public Optional<String> dacMode = Optional.empty();
 
+    @Option(names = {"--speaker"}, description = "Vintage speaker acoustic simulation (vintage-pc, mac-internal, none)")
+    public Optional<String> speakerProfile = Optional.empty();
+
+
 
 
     @ArgGroup(exclusive = true, multiplicity = "0..1")

@@ -53,7 +53,7 @@ private final boolean enabled;
     @Override
     public void process(float[] left, float[] right, int frames) {
         if (!enabled) {
-            next.process(left, right, frames);
+    
             return;
         }
 
@@ -110,6 +110,7 @@ private final boolean enabled;
             left[i] = speakerL;
             right[i] = speakerR;
         }
+        next.process(left, right, frames);
         
         if (currentTimeUs > 1000000.0) {
             currentTimeUs -= 1000000.0;
@@ -118,12 +119,12 @@ private final boolean enabled;
             transitionTimeRUs -= 1000000.0;
         }
         
-        next.process(left, right, frames);
+
     }
     
     @Override
     public void processInterleaved(short[] interleavedPcm, int frames, int channels) {
-        next.processInterleaved(interleavedPcm, frames, channels);
+
     }
 
     @Override

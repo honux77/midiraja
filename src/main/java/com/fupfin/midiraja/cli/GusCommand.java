@@ -75,32 +75,57 @@ public class GusCommand implements Callable<Integer> {
         if (common != null && common.dumpWav.isPresent()) { audio.enableDump(common.dumpWav.get()); }
     
     com.fupfin.midiraja.dsp.AudioProcessor pipeline = new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
+        // 1. Acoustic Speaker Simulation (Applied BEFORE final DAC to shape the signal)
+        // Wait, physical speakers come AFTER the DAC.
+        // But our pipeline runs BACKWARDS. The signal flows from the synth (upstream) to the sink.
+        // The FloatToShortSink calls `pipeline.process()`. 
+        // So the outermost wrapper is executed LAST in the physical signal chain.
+        // The physical chain is: Synth -> Filter -> DAC -> Speaker.
+        // Therefore, we must wrap in this order:
+        // pipeline = Speaker(pipeline)
+        // pipeline = DAC(pipeline)
+        
+        if (common != null && common.speakerProfile.isPresent()) {
+            String profileStr = common.speakerProfile.get().toUpperCase(java.util.Locale.ROOT).replace("-", "_");
+            try {
+                com.fupfin.midiraja.dsp.AcousticSpeakerFilter.Profile profile = 
+                    com.fupfin.midiraja.dsp.AcousticSpeakerFilter.Profile.valueOf(profileStr);
+                pipeline = new com.fupfin.midiraja.dsp.AcousticSpeakerFilter(true, profile, pipeline);
+            } catch (IllegalArgumentException e) {
+                System.err.println("Warning: Unknown speaker profile '" + profileStr + "'. Ignoring.");
+            }
+        }
+
+        // 2. Retro DAC Conversion
         if (common != null && common.dacMode.isPresent()) {
             String mode = common.dacMode.get().toLowerCase(java.util.Locale.ROOT);
             switch (mode) {
                 case "mac128k":
+                    // mac128k is a monolithic filter combining DAC and Speaker for now
                     pipeline = new com.fupfin.midiraja.dsp.Mac128kSimulatorFilter(true, pipeline);
-                    break;
-                case "realsound":
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline);
                     break;
                 case "ibmpc":
                 case "1bit":
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline); // TODO: IBM PC Piezo model
+                case "realsound": // legacy mapped to IBM PC
+                    pipeline = new com.fupfin.midiraja.dsp.IbmPcDacFilter(true, "pwm", pipeline);
                     break;
                 case "covox":
-                case "disneysound":
-                case "amiga":
                 case "8bit":
-                    pipeline = new com.fupfin.midiraja.dsp.EightBitQuantizerFilter(true, pipeline); // TODO: Specific LPFs
+                    pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
                     break;
                 case "apple2":
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitAcousticSimulatorFilter(true, "pwm", pipeline); // TODO: Apple II model
+                    pipeline = new com.fupfin.midiraja.dsp.Apple2DacFilter(true, pipeline);
+                    break;
+                case "amiga":
+                case "disneysound":
+                    // Fallbacks for planned features
+                    pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
                     break;
                 default:
                     System.err.println("Warning: Unknown DAC mode '" + mode + "'. Ignoring.");
             }
         }
+
     
     if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || lpfFreq.isPresent() || hpfFreq.isPresent()) {
         var eq = new com.fupfin.midiraja.dsp.EqFilter(pipeline);
@@ -127,7 +152,7 @@ public class GusCommand implements Callable<Integer> {
             }
     }
     
-    if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && common.dacMode.isPresent())) {
+    if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent() || chorus.isPresent() || reverb.isPresent() || (common != null && (common.dacMode.isPresent() || common.speakerProfile.isPresent()))) {
         pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
     }
     
