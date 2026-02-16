@@ -62,5 +62,11 @@ The event-driven model mathematically eliminates the ZOH "mirror" reflections be
 ### 5.2 Texture Authenticity
 The spectrum shows complex harmonics at `-60dB` to `-70dB` (e.g., at 2400Hz, 4450Hz, 7050Hz). These aren't random noise; they are the **physical PWM ripple** riding on the signal. The "grit" now changes dynamically with the volume and frequency of the music, just like the real 1984 Macintosh hardware.
 
+
+### 5.3 The "Whine" in Silence (Carrier Leakage)
+During silence (input = 0.0), the 8-bit register rests at `128` (a 50% duty cycle). This produces a continuous, perfect 22.25kHz square wave. The 1-pole RC filter is not steep enough to completely suppress this carrier frequency. When this continuous analog signal is sampled at 44.1kHz, the 22.25kHz carrier aliases down to `21.85kHz` (44.1 - 22.25), producing an audible high-frequency "whine" at roughly -21dB.
+
+To resolve this, we added a secondary, highly-damped 1-pole LPF immediately after the RC integration. This simulates the **physical inertia of the speaker cone**, which simply cannot vibrate fast enough to reproduce the 22kHz carrier. This completely eliminated the whine during silence without destroying the audible PWM intermodulation texture.
+
 ## 6. Conclusion
 The `--mac128k` filter is no longer a "sound effect." It is a real-time, event-driven physical simulation of an analog RC circuit driven by a 22.25kHz 8-bit PWM source. It achieves perfect aliasing suppression and authentic physical texture without the need for high-latency oversampling.
