@@ -70,3 +70,16 @@ To resolve this, we added a secondary, highly-damped 1-pole LPF immediately afte
 
 ## 6. Conclusion
 The `--mac128k` filter is no longer a "sound effect." It is a real-time, event-driven physical simulation of an analog RC circuit driven by a 22.25kHz 8-bit PWM source. It achieves perfect aliasing suppression and authentic physical texture without the need for high-latency oversampling.
+
+## 7. Other Retro DAC Models
+
+### 7.1 Covox Speech Thing (`--dac covox`)
+The Covox Speech Thing was an 8-bit R-2R resistor ladder DAC connected to the PC's parallel (LPT) port. 
+- **Resistor Tolerance:** Real-world resistors have a tolerance (e.g., +/- 5%). This filter simulates this by applying a randomized Look-Up Table (LUT) with +/- 3% variance, producing authentic even-harmonic distortion.
+- **Effective Sample Rate:** Driven via the LPT port by the CPU, it rarely exceeded 22kHz. We simulate this using a **Zero-Order Hold (ZOH)** at 22.05kHz.
+- **Output Smoothing:** Mimics the simple capacitor-based low-pass filter typically added to the output to tame the 8-bit steps.
+
+### 7.2 IBM PC Speaker (`--dac ibmpc`)
+Simulates the 1-bit PWM/PDM conversion logic of the original Intel 8253 PIT timer.
+- **PWM Carrier:** Utilizes an 18.6kHz carrier frequency, typical for "RealSound" style PWM playback on the PC Speaker.
+- **Physical Constraints:** Best paired with the `--speaker vintage-pc` filter to simulate the resonant metal/plastic enclosure and small speaker cone.
