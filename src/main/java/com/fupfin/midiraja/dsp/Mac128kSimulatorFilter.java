@@ -13,7 +13,7 @@ package com.fupfin.midiraja.dsp;
  * 3. Eliminates ZOH aliasing (the "siren" tone) mathematically without oversampling.
  */
 public class Mac128kSimulatorFilter implements AudioProcessor {
-private final boolean enabled;
+    private final boolean enabled;
     private final AudioProcessor next;
 
     // Timing constants
@@ -57,6 +57,7 @@ private final boolean enabled;
             return;
         }
 
+        // Pull architecture: Fill buffer from upstream first!
         next.process(left, right, frames);
 
         for (int i = 0; i < frames; i++) {
@@ -64,6 +65,9 @@ private final boolean enabled;
             
             while (currentTimeUs < targetOutputTimeUs) {
                 if (currentTimeUs >= nextMacSampleTimeUs) {
+                    // HERE IS THE MAGIC TEXTURE:
+                    // Do NOT use Math.round(). We MUST use (int) truncation to preserve
+                    // the gritty zero-crossing asymmetry that gives the raw PWM texture!
                     int intL = (int) (left[i] * 127.0f);
                     int intR = (int) (right[i] * 127.0f);
                     
@@ -85,7 +89,7 @@ private final boolean enabled;
                 if (isHighR && nextEventUs > transitionTimeRUs) nextEventUs = transitionTimeRUs;
                 
                 double deltaT = nextEventUs - currentTimeUs;
-                if (deltaT > 0) {
+                if (deltaT > 1e-9) {
                     double expDecay = Math.exp(-deltaT / tauUs);
                     
                     double uL = isHighL ? 1.0 : -1.0;
@@ -94,6 +98,8 @@ private final boolean enabled;
                     xL = uL + (xL - uL) * expDecay;
                     xR = uR + (xR - uR) * expDecay;
                     
+                    currentTimeUs = nextEventUs;
+                } else {
                     currentTimeUs = nextEventUs;
                 }
                 
@@ -113,17 +119,92 @@ private final boolean enabled;
             right[i] = speakerR;
         }
         
-        if (currentTimeUs > 1000000.0) {
+        while (currentTimeUs > 1000000.0) {
             currentTimeUs -= 1000000.0;
             nextMacSampleTimeUs -= 1000000.0;
             transitionTimeLUs -= 1000000.0;
             transitionTimeRUs -= 1000000.0;
         }
-        
     }
     
     @Override
     public void processInterleaved(short[] interleavedPcm, int frames, int channels) {
+        if (!enabled) {
+            next.processInterleaved(interleavedPcm, frames, channels);
+            return;
+        }
+        
+        // Pull architecture
+        next.processInterleaved(interleavedPcm, frames, channels);
+        
+        for (int i = 0; i < frames; i++) {
+            int leftIdx = i * channels;
+            int rightIdx = channels > 1 ? leftIdx + 1 : leftIdx;
+            
+            float inL = interleavedPcm[leftIdx] / 32768.0f;
+            float inR = interleavedPcm[rightIdx] / 32768.0f;
+            
+            double targetOutputTimeUs = currentTimeUs + outputSampleTimeUs;
+            
+            while (currentTimeUs < targetOutputTimeUs) {
+                if (currentTimeUs >= nextMacSampleTimeUs) {
+                    int intL = (int) (inL * 127.0f);
+                    int intR = (int) (inR * 127.0f);
+                    
+                    dutyL = (intL + 128) / 255.0; 
+                    dutyR = (intR + 128) / 255.0;
+                    
+                    isHighL = true;
+                    isHighR = true;
+                    
+                    transitionTimeLUs = nextMacSampleTimeUs + (dutyL * macSampleTimeUs);
+                    transitionTimeRUs = nextMacSampleTimeUs + (dutyR * macSampleTimeUs);
+                    
+                    nextMacSampleTimeUs += macSampleTimeUs;
+                }
+                
+                double nextEventUs = targetOutputTimeUs;
+                if (nextEventUs > nextMacSampleTimeUs) nextEventUs = nextMacSampleTimeUs;
+                if (isHighL && nextEventUs > transitionTimeLUs) nextEventUs = transitionTimeLUs;
+                if (isHighR && nextEventUs > transitionTimeRUs) nextEventUs = transitionTimeRUs;
+                
+                double deltaT = nextEventUs - currentTimeUs;
+                if (deltaT > 1e-9) {
+                    double expDecay = Math.exp(-deltaT / tauUs);
+                    
+                    double uL = isHighL ? 1.0 : -1.0;
+                    double uR = isHighR ? 1.0 : -1.0;
+                    
+                    xL = uL + (xL - uL) * expDecay;
+                    xR = uR + (xR - uR) * expDecay;
+                    
+                    currentTimeUs = nextEventUs;
+                } else {
+                    currentTimeUs = nextEventUs;
+                }
+                
+                if (isHighL && currentTimeUs >= transitionTimeLUs) isHighL = false;
+                if (isHighR && currentTimeUs >= transitionTimeRUs) isHighR = false;
+            }
+
+            speakerL += speakerAlpha * ((float) xL - speakerL);
+            speakerR += speakerAlpha * ((float) xR - speakerR);
+            
+            if (Math.abs(speakerL) < 1e-10f) speakerL = 0;
+            if (Math.abs(speakerR) < 1e-10f) speakerR = 0;
+
+            interleavedPcm[leftIdx] = (short) Math.max(-32768, Math.min(32767, speakerL * 32768.0));
+            if (channels > 1) {
+                interleavedPcm[rightIdx] = (short) Math.max(-32768, Math.min(32767, speakerR * 32768.0));
+            }
+        }
+        
+        while (currentTimeUs > 1000000.0) {
+            currentTimeUs -= 1000000.0;
+            nextMacSampleTimeUs -= 1000000.0;
+            transitionTimeLUs -= 1000000.0;
+            transitionTimeRUs -= 1000000.0;
+        }
     }
 
     @Override
@@ -133,7 +214,13 @@ private final boolean enabled;
         nextMacSampleTimeUs = 0.0;
         xL = 0.0;
         xR = 0.0;
+        speakerL = 0.0f;
+        speakerR = 0.0f;
+        dutyL = 0.5;
+        dutyR = 0.5;
         isHighL = false;
         isHighR = false;
+        transitionTimeLUs = 0.0;
+        transitionTimeRUs = 0.0;
     }
 }
