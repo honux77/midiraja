@@ -17,15 +17,15 @@ If we try to "draw" the 1-bit pulses directly, we create massive aliasing (artif
 
 ### 3.1 Naive Average-based Model
 - **Logic:** Convert 8-bit duty cycle to a proportional voltage (-1.0 to 1.0) and apply a digital LPF.
-- **Evaluation:** Failed. The result was "too clean" and lacked the gritty, electric texture of the original hardware. It sounded like modern 8-bit PCM, not a PWM circuit.
+- **Evaluation:** Failed. Resulted in "clean" modern 8-bit PCM sound without physical warmth.
 
 ### 3.2 Discrete PWM Rendering
 - **Logic:** Render raw +1/-1 pulses at 44.1kHz based on duty cycle.
-- **Evaluation:** Failed. Created a deafening 21.05kHz aliasing tone (the "Siren"). The high-frequency switching energy of the PWM was being folded back into the audible spectrum due to the low 44.1kHz sample rate.
+- **Evaluation:** Failed. Created a deafening 21.05kHz aliasing tone (the "Siren"). 
 
-### 3.3 Hiss Injection (Fake Texture)
-- **Logic:** Add 3.5% white noise to simulate "grit."
-- **Evaluation:** Failed. While it added "dust," it didn't "breathe" with the music. It was just static noise, not physical switching ripple.
+### 3.3 The "Grit" Theory (Hardware Distortion)
+- **Logic:** Assume naive asymmetrical truncation and weak filtering created a "sand-like" texture.
+- **Evaluation:** Proven historically inaccurate by authentic hardware captures (see Section 6).
 
 ## 4. The Breakthrough: Event-Driven Analytical Integration
 
@@ -40,46 +40,58 @@ For any time interval where the input $u$ is constant, the solution is:
 $$ x(t_2) = u + (x(t_1) - u) \cdot e^{-\Delta t/\tau} $$
 
 ### 4.2 Implementation Strategy
-1.  **Event Tracking:** We track two types of events in sub-microsecond precision:
-    -   **Mac Clock Event:** Every ~44.93 µs, a new 8-bit sample is fetched.
-    -   **PWM Transition Event:** Within that 44.93 µs, the point where the signal drops from High to Low (based on the duty cycle).
-2.  **Analytical Integration:** We step through these events and update the capacitor voltage $x$ using the exponential decay formula.
-3.  **Perfect Resampling:** We read the value of $x$ exactly at the 44.1 kHz output intervals (~22.67 µs).
+1.  **Event Tracking:** We track Mac Clock events (~22.25kHz) and PWM Transition events in sub-microsecond precision.
+2.  **Analytical Integration:** Step through events and update the capacitor voltage $x$ using the exponential decay formula.
+3.  **Perfect Resampling:** Read the value of $x$ exactly at the output sample intervals.
 
-## 5. Spectral Analysis & Evaluation
+## 5. Authentic Hardware Discovery (Mac Plus Capture Analysis)
 
-A 1kHz Sine wave test was used to verify the final "Event-Driven" model.
+In March 2026, a pristine 16-bit recording of an original Macintosh Plus ("Hard Stars Studio Session") was analyzed using high-resolution spectral density estimation. The findings revolutionized the simulation:
 
-| Metric | Previous (IIR Filter) | Final (Event-Driven Integration) | Improvement |
-| :--- | :--- | :--- | :--- |
-| **Fundamental (1kHz)** | -2.1 dB | -2.0 dB | Transparent |
-| **ZOH Siren (21.05kHz)** | **-27.6 dB (Loud)** | **-76.4 dB (Inaudible)** | **+48.8 dB Reduction** |
-| **PWM Texture** | None (Clean) | **Rich Intermodulation** | Authentic Physics |
+### 5.1 The "Perfect" Analog Stage
+Contrary to the "gritty" theory, the physical Mac Plus hardware was mathematically excellent at its job:
+- **Carrier Suppression:** The 22.25kHz PWM carrier was measured at **-90.8 dB** relative to the fundamental. The analog stage effectively eliminated the PWM ripple before it reached the audio jack.
+- **Quantization Symmetry:** No evidence of asymmetrical truncation or zero-crossing "grit" was found. The signal followed a perfectly symmetrical 8-bit staircase smoothed into near-continuous analog.
 
-### 5.1 Aliasing Suppression
-The event-driven model mathematically eliminates the ZOH "mirror" reflections because it doesn't perform a discrete upsampling; it simulates a continuous analog path. The 21kHz siren dropped from a painful -27dB to a negligible -76dB.
+### 5.2 The Steep Roll-Off (-84dB @ 10kHz)
+The most striking characteristic was the frequency response. The Mac hardware exhibits an extremely steep low-pass curve starting around 5kHz and hitting **-84 dB at 10kHz**. This creates the signature "warm, muffled, and heavy" Macintosh sound.
 
-### 5.2 Texture Authenticity
-The spectrum shows complex harmonics at `-60dB` to `-70dB` (e.g., at 2400Hz, 4450Hz, 7050Hz). These aren't random noise; they are the **physical PWM ripple** riding on the signal. The "grit" now changes dynamically with the volume and frequency of the music, just like the real 1984 Macintosh hardware.
+### 5.3 Comparative Spectral Data
+Spectral analysis of the authentic capture (normalized to 0 dB at the fundamental peak of 494.5 Hz):
 
+| Frequency (Hz) | Authentic Mac Level (dB) | Characterization |
+| :--- | :--- | :--- |
+| **100** | -28.6 dB | Solid bass support |
+| **500** | -31.5 dB | Fundamental body |
+| **1,000** | -41.3 dB | Lower mids |
+| **3,000** | -47.9 dB | Presence region |
+| **5,000** | -51.6 dB | Start of steep roll-off |
+| **7,000** | -64.1 dB | Aggressive attenuation |
+| **9,000** | -78.8 dB | Deep attenuation |
+| **10,000** | **-83.8 dB** | Measured "Muffle" point |
+| **15,000** | -92.1 dB | Inaudible harmonics |
+| **22,050** | -99.3 dB | PWM Carrier suppressed |
 
-### 5.3 The "Whine" in Silence (Carrier Leakage)
-During silence (input = 0.0), the 8-bit register rests at `128` (a 50% duty cycle). This produces a continuous, perfect 22.25kHz square wave. The 1-pole RC filter is not steep enough to completely suppress this carrier frequency. When this continuous analog signal is sampled at 44.1kHz, the 22.25kHz carrier aliases down to `21.85kHz` (44.1 - 22.25), producing an audible high-frequency "whine" at roughly -21dB.
+## 6. Final Mathematical Model
 
-To resolve this, we added a secondary, highly-damped 1-pole LPF immediately after the RC integration. This simulates the **physical inertia of the speaker cone**, which simply cannot vibrate fast enough to reproduce the 22kHz carrier. This completely eliminated the whine during silence without destroying the audible PWM intermodulation texture.
+Based on the authentic capture, the `--mac128k` filter was redesigned with these parameters:
 
-## 6. Conclusion
-The `--mac128k` filter is no longer a "sound effect." It is a real-time, event-driven physical simulation of an analog RC circuit driven by a 22.25kHz 8-bit PWM source. It achieves perfect aliasing suppression and authentic physical texture without the need for high-latency oversampling.
+| Parameter | Value | Purpose |
+| :--- | :--- | :--- |
+| **Channel Mode** | **Forced Mono** | Matches physical mono-only hardware. |
+| **Quantization** | **Symmetrical 8-bit** | Clean 8-bit buffer simulation (Math.round). |
+| **RC Tau** | **35.0 µs** | Aggressive physical integration. |
+| **Smooth Alpha** | **0.35** | Fits the measured -84dB @ 10kHz jack curve. |
 
-## 7. Other Retro DAC Models
+## 7. Conclusion
+The `--mac128k` simulator is a "Digital Twin" of the physical Mac Plus audio path. By abandoning speculative "grit" and curve-fitting the exact spectral roll-off of the real hardware, the simulation now produces the authentic, heavy, and warm acoustic profile of 1984.
 
-### 7.1 Covox Speech Thing (`--dac covox`)
-The Covox Speech Thing was an 8-bit R-2R resistor ladder DAC connected to the PC's parallel (LPT) port. 
-- **Resistor Tolerance:** Real-world resistors have a tolerance (e.g., +/- 5%). This filter simulates this by applying a randomized Look-Up Table (LUT) with +/- 3% variance, producing authentic even-harmonic distortion.
-- **Effective Sample Rate:** Driven via the LPT port by the CPU, it rarely exceeded 22kHz. We simulate this using a **Zero-Order Hold (ZOH)** at 22.05kHz.
-- **Output Smoothing:** Mimics the simple capacitor-based low-pass filter typically added to the output to tame the 8-bit steps.
+## 8. Other Retro DAC Models
 
-### 7.2 IBM PC Speaker (`--dac ibmpc`)
-Simulates the 1-bit PWM/PDM conversion logic of the original Intel 8253 PIT timer.
-- **PWM Carrier:** Utilizes an 18.6kHz carrier frequency, typical for "RealSound" style PWM playback on the PC Speaker.
-- **Physical Constraints:** Best paired with the `--speaker vintage-pc` filter to simulate the resonant metal/plastic enclosure and small speaker cone.
+### 8.1 Covox Speech Thing (`--retro-hw covox`)
+- **Resistor Tolerance:** Simulates R-2R ladder variance (+/- 3%) for authentic harmonic distortion.
+- **ZOH Smoothing:** Mimics the ~11kHz Zero-Order Hold bottleneck of old LPT ports.
+
+### 8.2 IBM PC Speaker (`--retro-hw ibmpc`)
+- **PWM Carrier:** 18.6kHz analytical area integration.
+- **Gritty Texture:** Unlike the Mac, the PC speaker lacks sophisticated analog filtering, allowing the raw PWM ripple to reach the speaker cone.

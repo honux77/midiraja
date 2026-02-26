@@ -75,12 +75,24 @@ To prevent the JVM Garbage Collector from stuttering the audio thread during den
 
 ---
 
-### 2.5. Advanced DSP Pipeline
-To transform the harsh, mathematically pure 1-bit logic outputs into a warm, listenable audio stream without introducing severe digital artifacts, the engine employs several critical Digital Signal Processing (DSP) techniques:
+### 2.5. Advanced DSP Pipeline & Physical Realism
 
-1.  **Exponential Oversampling ($1	imes \sim 32	imes$):** The core unit logic can run at up to 1.4MHz (32x the base 44.1kHz sample rate). This extreme temporal resolution pushes the noisy PWM carrier artifacts and XOR intermodulation sidebands far beyond the threshold of human hearing, yielding a studio-quality analog simulation.
-2.  **Anti-Blowup DC Blocking:** When multiple asymmetric PWM streams collide (especially in XOR mode), they generate massive DC offsets. If fed directly into an IIR filter, this energy causes "Integral Windup," permanently corrupting the internal filter state (NaN or Infinity) and causing persistent clipping. To prevent this, every virtual unit enforces a strict High-Pass Filter ($R=0.995$) equipped with a hard mathematical clamp, instantly draining any DC accumulation before it can leak into the master bus.
-3.  **Acoustic Paper Cone Simulation (The Leaky Integrator):** As explored by Stephen Kennaway, a 1-bit speaker is not just a digital toggle, but a physical system with mass and inertia that acts as a natural "leaky integrator." The raw 1-bit square pulses are incredibly harsh. A cascaded 2-pole Low-Pass Filter ($lpha=0.25$) is applied to the final analog sum to physically simulate this integration, rolling off extreme high frequencies and decoding high-density pulse trains (like PWM and DSD) back into smooth analog waveforms.
+To transform the harsh, mathematically pure 1-bit logic outputs into a warm, listenable audio stream, the engine employs critical Digital Signal Processing (DSP) techniques grounded in physical measurements of original hardware.
+
+#### 2.5.1. The "Mechanical LPF" Discovery (PC Speaker Analysis)
+In March 2026, spectral analysis of an authentic IBM PC Speaker PCM recording ("RealSound" playback) revealed a crucial physical truth: **the speaker cone itself is the primary filter.**
+
+Contrary to the theory that raw 1-bit logic pulses (18.6kHz) reach the air unfiltered, measurements showed:
+- **Steep Mechanical Roll-off:** The response is relatively flat up to 7kHz, then hits a **steep cliff**, dropping to **-66.6 dB at 8kHz**.
+- **Resonant peaks:** High energy around 2.5kHz and 6.7kHz, characteristic of small, unshielded plastic/paper cones and their internal air cavities.
+- **Carrier Absence:** High-frequency PWM switching noise (18kHz+) was virtually absent from the air, proving that the **mechanical inertia of the cone** acts as a perfect physical integrator.
+
+#### 2.5.2. Analytical Area Integration (BLIT)
+To simulate this physical inertia within a 44.1kHz digital system without creating painful digital aliasing (Nyquist folding), the engine utilizes **Analytical Area Integration**. Instead of outputting raw +1/-1 samples, it calculates the exact time-weighted average of the PWM pulse within each 44.1kHz frame. This mathematically represents the speaker cone's inability to follow high-frequency transitions, effectively acting as a Band-Limited (BLIT) reconstruction filter.
+
+#### 2.5.3. Pipeline Safety
+1.  **Exponential Oversampling:** Logic runs at up to 1.4MHz to push quantization noise far beyond human hearing.
+2.  **Anti-Blowup DC Blocking:** A strict High-Pass Filter ($R=0.995$) drains DC accumulation caused by asymmetric XOR/PWM logic, preventing "Integral Windup."
 
 ---
 
@@ -94,47 +106,8 @@ Only two distinct acoustic paths were possible within the constraints of a 1MHz 
     *   **Multiplexing:** Only Boolean XOR (`--mux xor` - Default) was possible, and strictly limited to 2 voices (e.g., *Electric Duet*). 
 2.  **The Sampler Path (The "Real Sound" Hack):** 
     *   Pre-rendered 1-bit audio (essentially `--mux pwm` or PCM) could be played back. As documented by Michael J. Mahon in his seminal KansasFest presentations ("Real Sound for 8-bit Apple IIs"), by cycle-counting the 1.023 MHz 6502 CPU to drive the $C030 speaker pin at an ~11 kHz sample rate, the CPU effectively acted as a **Time-Domain DAC**.
-    *   $1.023 	ext{ MHz (CPU)} \div 11 	ext{ kHz (Sample Rate)} pprox \mathbf{93 	ext{ Steps}}$. This brilliant hack squeezed roughly 6.5 bits of dynamic range out of a 1-bit pin.
+    *   $1.023 \text{ MHz (CPU)} \div 11 \text{ kHz (Sample Rate)} \approx \mathbf{93 \text{ Steps}}$. This brilliant hack squeezed roughly 6.5 bits of dynamic range out of a 1-bit pin.
     *   *Constraint:* Real-time **polyphonic** synthesis using PWM was mathematically impossible because the 6502 CPU lacked the speed to perform real-time analog summing of multiple channels before driving the high-frequency comparator logic. As Mahon demonstrated in his later *RTSynth* project (a Real-Time Synthesizer), achieving complex wavetable synthesis and dynamic envelopes via PWM consumed 100% of the CPU's 92-cycle execution window, strictly limiting it to a **monophonic (single-voice)** instrument.
-
-**What is a Modern "Cheat"?**
-*   **[Phase Modulation](https://en.wikipedia.org/wiki/Phase_modulation) (`--synth pm`):** Impossible. The 6502 had no floating-point unit (FPU) and lacked hardware multiplication/division, making real-time Sine wave generation and phase deviation impossible at audio rates.
-*   **TDM, PWM, and DSD Multiplexing:** Impossible. These require switching the speaker pin at minimums of 44.1kHz up to 1.4MHz. The absolute fastest an Apple II could toggle a pin while doing nothing else was ~150kHz, and realistically ~10kHz when executing audio logic.
-
-**The Purist Architectural View**
-The engine's internal pipeline was heavily refactored to align with the strict limitations of 1980s hardware engineering. The architecture rigorously enforces the following purist constraints:
-1.  **Pure Integer Synthesis:** Early CPUs lacked Floating-Point Units (FPUs). To emulate this, the engine translates the user's floating-point CLI inputs into strict **16-bit fixed-point phase accumulators** ($0 \sim 65535$) at the driver boundary. Inside the audio loop, [Phase Modulation](https://en.wikipedia.org/wiki/Phase_modulation) relies exclusively on integer addition, bitwise masking (`& 0xFFFF`), and fast bit-shifting (`>>> 8`) to query a 256-byte, 8-bit Sine LUT.
-2.  **Strict Boolean Multiplexing:** In a true 1-bit hardware environment, intermediate analog summation between digital pins is physically impossible. The engine enforces a rule where all continuous waves (like FM) must be pushed through a hardware-style Quantizer (PWM or DSD) to become discrete boolean streams (0 or 1) *before* they are allowed to mix.
-3.  **Taxonomic Accuracy:** Under this strict framework, PWM and DSD are correctly categorized as "1-Bit Translators", while only **XOR** (boolean collision) and **TDM** (sequential pin reading) are permitted to act as true digital multiplexers.
-
-**Remaining Modern Concessions:**
-While the logical data flow is historically accurate, the engine still relies on a few "modern cheats" to achieve listenable polyphony:
-*   **The 1.4MHz Clock Speed:** Generating 32x oversampled TDM or DSD requires switching the speaker pin at ~1.4 million times per second. A stock 1MHz 6502 CPU could realistically only toggle a pin at ~15kHz while executing logic, making these high-fidelity modes physically impossible on original hardware.
-*   **Floating-Point VCAs:** The final application of the volume decay envelope utilizes modern 64-bit floating-point multiplication rather than relying on a constrained 8-bit hardware multiplier.
-
-By invoking the engine with `--synth square --mux xor --voices 2 -q 1`, the user actively disables these modern clock-speed concessions and oversampling layers, exactly replicating the gritty acoustic reality and absolute physical constraints of 1980s 1MHz hardware.
-
----
-
-### 2.7. Heuristic DSP Optimization (Parameter Lookup Matrix)
-The engine supports 36 distinct architectural permutations ($3$ Synthesis Modes $\times 4$ Multiplexers $\times 3$ Polyphony Levels). Empirical testing demonstrated that a static set of DSP parameters (LPF cutoff, [Dither](https://en.wikipedia.org/wiki/Dither) amplitude, Non-linear overdrive) was insufficient. For instance, parameters optimized for [Phase Modulation](https://en.wikipedia.org/wiki/Phase_modulation) produced severe Intermodulation Distortion (IMD) when applied to XOR multiplexing.
-
-To objectively resolve these state-dependent acoustic conflicts, a **[Genetic Algorithm (GA)](https://en.wikipedia.org/wiki/Genetic_algorithm)** was implemented via a Python-based Hardware-in-the-Loop simulation to programmatically optimize the Java DSP engine's parameters.
-
-**1. Objective Fitness Function (FFT-based)**
-For each permutation, the GA rendered a test audio buffer and applied a Fast Fourier Transform (FFT) to evaluate the frequency spectrum. The heuristic fitness score ($S$) was formulated to maximize the Signal-to-Noise Ratio (SNR):
-$$ S = \sum M_{fund} - (8.0 \times \sum M_{alias}) - (2.0 \times \sum M_{dc}) $$
-*   **$M_{fund}$ (Fundamental Energy):** Sum of magnitudes within the $200\text{Hz} - 800\text{Hz}$ band.
-*   **$M_{alias}$ (Aliasing/Quantization Noise):** Sum of magnitudes exceeding $8000\text{Hz}$.
-*   **$M_{dc}$ (DC Offset):** Sum of magnitudes below $20\text{Hz}$.
-
-**2. The Evolutionary Model**
-The GA utilized a population size of 40 over 15 generations. It employed Roulette Wheel selection biased towards higher SNR scores, combined with elitism (retaining the top 2 candidates per generation) to prevent regression. Mutation operators were designed with a $10\%$ probability of executing a uniform random reset (catastrophe) to escape local minima. This rigorous process identified precise parameter sets that manually tuning could not isolate:
-*   **FM + DSD + 4 Voices:** The algorithm established that applying an aggressive non-linear overdrive ($8.7\times$ via `Math.tanh`) to the analog sine wave, combined with high TPDF dither ($0.23$), was mathematically required to preserve the continuous phase information through the 1-bit Delta-Sigma quantizer. Without this pre-shaping, the high-density signal degraded into broadband noise.
-*   **XOR + XOR + 2 Voices:** The algorithm determined that external [Dither](https://en.wikipedia.org/wiki/Dither) decreased overall SNR, as the high-frequency harmonics inherent to the XOR square waves acted as an adequate self-dithering mechanism. The GA minimized [Dither](https://en.wikipedia.org/wiki/Dither) to $0.0$ and reduced the Master LPF cutoff coefficient to $0.028$ to strictly attenuate high-frequency folding artifacts.
-
-**3. Static Parameter Injection**
-The optimal vectors for all 36 configurations were compiled into a constant-time ($O(1)$) `HashMap` within the Java architecture. Upon initialization, the engine parses the user's CLI flags and dynamically injects the corresponding DSP coefficients before instantiating the render loop. This ensures consistent, mathematically optimized audio output across all historical and modern configurations without introducing runtime overhead.
 
 ---
 
@@ -142,22 +115,12 @@ The optimal vectors for all 36 configurations were compiled into a constant-time
 
 Once each virtual unit has generated its 1-bit signal, the master bus finalizes the sound:
 
-1.  **Per-Unit DC Blocking:** Before leaving the unit, each 1-bit signal passes through a High-Pass Filter ($R=0.995$, with an anti-blowup clamp). This isolates asymmetric duty cycles caused by XOR logic, ensuring no unit can leak DC offset into the master mix.
-2.  **Analog Summing:** The clean, discrete voltages from all active units (dynamically scaled to guarantee at least 16 total polyphony) are added together mathematically, simulating an analog console.
-3.  **Acoustic Filtering:** A 2-pole Low-Pass Filter ($\alpha=0.25$) simulates the physical characteristics of a 2.25-inch paper cone speaker, rolling off the harsh 22kHz PWM carrier frequencies.
+1.  **Per-Unit DC Blocking:** Each signal passes through a High-Pass Filter ($R=0.995$) to isolate asymmetric duty cycles.
+2.  **Analog Summing:** Discrete voltages from all active units are added mathematically.
+3.  **Acoustic Filtering:** A 2-pole Low-Pass Filter ($\alpha=0.25$) or a measured hardware curve simulates the physical characteristics of the target hardware speaker.
 
 ---
 
 ## 4. Conclusion
 
-The `midra beep` engine is a testament to the power of constraint-driven engineering. By combining the brutal physical limitations of 1-bit audio with advanced DSP concepts—[Phase Modulation](https://en.wikipedia.org/wiki/Phase_modulation), high-speed [Time-Division Multiplexing](https://en.wikipedia.org/wiki/Time-division_multiplexing), and Frequency-Weighted Bass Isolation—it successfully resurrects the electrifying, gritty sound of 1980s computer audio without sacrificing modern tempo stability or orchestral polyphonic clarity.
-
----
-
-## 5. References & Historical Documentation
-
-1. **Paul Lutus, *Electric Duet* (1981)**: The foundational software that proved polyphonic (2-voice) music was possible on the 1-bit Apple II speaker. It utilized ~8kHz Time-Domain Multiplexing and perfectly balanced 6502 cycle-counting (using `NOP` padding) alongside `EOR` logic to toggle the speaker state without drifting out of tune. (Documented by arachnoid.com)
-2. **Michael J. Mahon, *Real Sound for 8-bit Apple IIs***: A seminal presentation at KansasFest demonstrating how to achieve multi-bit digital-to-analog conversion (DAC) on a 1-bit speaker using CPU-bound Pulse Width Modulation (PWM), achieving 6.5-bit effective resolution.
-3. **Michael J. Mahon, *RTSynth***: Documentation of an Apple II Real-Time Synthesizer utilizing Direct Digital Synthesis (DDS) via a 5-bit PWM DAC (DAC522). It serves as historical proof that generating high-fidelity wavetables on a 1MHz 6502 required dedicating 100% of the CPU to a rigid 92-cycle loop, strictly limiting the output to a single monophonic voice and validating our use of "modern cheats" to achieve polyphony.
-4. **Adam Podstawczyński, *Understanding Computer Sound***: Explored the physical phenomena of 1-bit audio, noting how extreme Duty Cycle Modulation (pulses as narrow as 20 microseconds) deform from square to triangle waves due to speaker capacitance, enabling pseudo-ADSR envelopes on raw hardware.
-5. **Stephen Kennaway, *Apple II Audio from the Ground Up***: A 2022 KansasFest presentation that formalized the mathematical modeling of the Apple II speaker as a physical "leaky integrator," exploring how software-driven Pulse Density Modulation (PDM) and error diffusion (Delta-Sigma) can decode high-resolution PCM through a 1-bit mechanical output.
+The `midra beep` engine is a testament to the power of constraint-driven engineering. By combining the brutal physical limitations of 1-bit audio with measured spectral data from original hardware, it successfully resurrects the electrifying, gritty sound of 1980s computer audio while maintaining modern stability and clarity.

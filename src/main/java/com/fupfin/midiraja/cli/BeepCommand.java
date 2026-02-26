@@ -99,8 +99,8 @@ public class BeepCommand implements Callable<Integer>
         }
 
         // 2. Retro DAC Conversion
-        if (common != null && common.dacMode.isPresent()) {
-            String mode = common.dacMode.get().toLowerCase(java.util.Locale.ROOT);
+        if (common != null && common.retroHw.isPresent()) {
+            String mode = common.retroHw.get().toLowerCase(java.util.Locale.ROOT);
             switch (mode) {
                 case "mac128k":
                     // mac128k is a monolithic filter combining DAC and Speaker for now
