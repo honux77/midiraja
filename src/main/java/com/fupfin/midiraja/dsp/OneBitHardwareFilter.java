@@ -1,22 +1,37 @@
 package com.fupfin.midiraja.dsp;
+import java.util.Random;
 
-public class Apple2DacFilter implements AudioProcessor {
+public class OneBitHardwareFilter implements AudioProcessor {
     private final boolean enabled;
     private final AudioProcessor next;
-
-    private double carrierPhase = 0.0;
-    private final double carrierStep = 11025.0 / 44100.0;
+    private final String mode; 
     
-    // Apple II 11kHz carrier is extremely piercing. 
-    // We use a Biquad LPF to heavily suppress the 11kHz whine while keeping the crunch.
+    private double carrierPhase = 0.0;
+    private final double carrierStep;
+    
+    private double dsdErr = 0.0;
+    private final Random rand = new Random();
+    
+    // Physical speaker cone inertia acts as a steep low-pass filter.
+    // A 2-pole Biquad LPF provides the steep roll-off (-12dB/octave) needed to kill the 18.6kHz PWM carrier whine
+    // without completely destroying the mid-range tone.
+    // PC Speaker acts as a heavy mechanical LPF (8kHz cliff).
+    // We cascade two 1-pole filters to get a steeper -12dB/octave roll-off
+    // which effectively kills the 18.6kHz whine without muffling the sound too much.
     private float smoothL1 = 0.0f, smoothL2 = 0.0f;
-    private final float smoothAlpha = 0.35f; // Heavy smoothing for 11kHz
+    private final float smoothAlpha;
 
 
-    public Apple2DacFilter(boolean enabled, AudioProcessor next) {
+    public OneBitHardwareFilter(boolean enabled, String mode, double carrierHz, float smoothAlpha, AudioProcessor next) {
+        this.smoothAlpha = smoothAlpha;
+        this.carrierStep = carrierHz / 44100.0;
+
         this.enabled = enabled;
         this.next = next;
-        // The Apple II speaker was very muffled. Suppress strongly above 4.5kHz.
+        this.mode = mode != null ? mode.toLowerCase(java.util.Locale.ROOT) : "pwm";
+         
+        
+        // PC speaker has a steep drop-off after 7-8kHz
 
     }
 
@@ -29,25 +44,30 @@ public class Apple2DacFilter implements AudioProcessor {
         
         for (int i = 0; i < frames; i++) {
             double monoIn = (left[i] + right[i]) * 0.5;
-            double duty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+            double out;
             
-            float out;
             if (Math.abs(monoIn) < 1e-4) {
-                out = 0.0f;
+                out = 0.0;
+            } else if ("dsd".equals(mode)) {
+                dsdErr += monoIn + (rand.nextDouble() - 0.5) * 0.1;
+                out = dsdErr > 0.0 ? 1.0 : -1.0;
+                dsdErr -= out;
             } else {
-                out = (float) integratePwm(carrierPhase, carrierStep, duty);
+                double duty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+                out = integratePwm(carrierPhase, carrierStep, duty);
                 carrierPhase = (carrierPhase + carrierStep) % 1.0;
             }
             
-            smoothL1 += smoothAlpha * (out - smoothL1);
+            smoothL1 += smoothAlpha * ((float) out - smoothL1);
             smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
             if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
             if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
-            float smoothOut = smoothL2;
+            float smoothOut = smoothL2; 
             
             left[i] = smoothOut;
             right[i] = smoothOut;
         }
+        
         next.process(left, right, frames);
     }
 
@@ -64,26 +84,31 @@ public class Apple2DacFilter implements AudioProcessor {
             float r = channels > 1 ? interleavedPcm[lIdx + 1] / 32768.0f : l;
             
             double monoIn = (l + r) * 0.5;
-            double duty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+            double out;
             
-            float out;
             if (Math.abs(monoIn) < 1e-4) {
-                out = 0.0f;
+                out = 0.0;
+            } else if ("dsd".equals(mode)) {
+                dsdErr += monoIn + (rand.nextDouble() - 0.5) * 0.1;
+                out = dsdErr > 0.0 ? 1.0 : -1.0;
+                dsdErr -= out;
             } else {
-                out = (float) integratePwm(carrierPhase, carrierStep, duty);
+                double duty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+                out = integratePwm(carrierPhase, carrierStep, duty);
                 carrierPhase = (carrierPhase + carrierStep) % 1.0;
             }
             
-            smoothL1 += smoothAlpha * (out - smoothL1);
+            smoothL1 += smoothAlpha * ((float) out - smoothL1);
             smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
             if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
             if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
-            float smoothOut = smoothL2;
+            float smoothOut = smoothL2; 
             
             short outPcm = (short) Math.max(-32768, Math.min(32767, smoothOut * 32768.0));
             interleavedPcm[lIdx] = outPcm;
             if (channels > 1) interleavedPcm[lIdx + 1] = outPcm;
         }
+        
         next.processInterleaved(interleavedPcm, frames, channels);
     }
 
@@ -106,6 +131,7 @@ public class Apple2DacFilter implements AudioProcessor {
     @Override
     public void reset() {
         carrierPhase = 0.0;
+        dsdErr = 0;
         smoothL1 = 0; smoothL2 = 0;
         next.reset();
     }

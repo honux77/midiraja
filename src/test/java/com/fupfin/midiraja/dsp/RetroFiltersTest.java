@@ -61,7 +61,7 @@ class RetroFiltersTest {
 
     @Test
     void testIbmPcDacBoundary() {
-        IbmPcDacFilter filter = new IbmPcDacFilter(true, "pwm", mock);
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(true, "pwm", 18600.0, 0.45f, mock);
         float[] left = new float[512];
         float[] right = new float[512];
         
@@ -76,7 +76,7 @@ class RetroFiltersTest {
 
     @Test
     void testApple2DacToggle() {
-        Apple2DacFilter filter = new Apple2DacFilter(true, mock);
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(true, "pwm", 11025.0, 0.35f, mock);
         float[] left = {0.5f, 0.5f, -0.5f, -0.5f};
         float[] right = {0.5f, 0.5f, -0.5f, -0.5f};
         
