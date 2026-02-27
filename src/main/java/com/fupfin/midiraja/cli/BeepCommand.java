@@ -109,14 +109,14 @@ public class BeepCommand implements Callable<Integer>
                 case "ibmpc":
                 case "1bit":
                 case "realsound": // legacy mapped to IBM PC
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm", 18600.0, 0.45f, pipeline);
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm", 18600.0, 64.0, 0.45f, pipeline);
                     break;
                 case "covox":
                 case "8bit":
                     pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
                     break;
                 case "apple2":
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm", 11025.0, 0.35f, pipeline);
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm", 11025.0, 93.0, 0.35f, pipeline);
                     break;
                 case "amiga":
                 case "disneysound":

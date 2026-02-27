@@ -12,27 +12,19 @@ public class OneBitHardwareFilter implements AudioProcessor {
     private double dsdErr = 0.0;
     private final Random rand = new Random();
     
-    // Physical speaker cone inertia acts as a steep low-pass filter.
-    // A 2-pole Biquad LPF provides the steep roll-off (-12dB/octave) needed to kill the 18.6kHz PWM carrier whine
-    // without completely destroying the mid-range tone.
-    // PC Speaker acts as a heavy mechanical LPF (8kHz cliff).
-    // We cascade two 1-pole filters to get a steeper -12dB/octave roll-off
-    // which effectively kills the 18.6kHz whine without muffling the sound too much.
     private float smoothL1 = 0.0f, smoothL2 = 0.0f;
     private final float smoothAlpha;
+    
+    // Duty cycle resolution (number of discrete levels)
+    private final double levels;
 
-
-    public OneBitHardwareFilter(boolean enabled, String mode, double carrierHz, float smoothAlpha, AudioProcessor next) {
-        this.smoothAlpha = smoothAlpha;
-        this.carrierStep = carrierHz / 44100.0;
-
+    public OneBitHardwareFilter(boolean enabled, String mode, double carrierHz, double levels, float smoothAlpha, AudioProcessor next) {
         this.enabled = enabled;
         this.next = next;
         this.mode = mode != null ? mode.toLowerCase(java.util.Locale.ROOT) : "pwm";
-         
-        
-        // PC speaker has a steep drop-off after 7-8kHz
-
+        this.carrierStep = carrierHz / 44100.0; 
+        this.levels = levels;
+        this.smoothAlpha = smoothAlpha;
     }
 
     @Override
@@ -53,7 +45,9 @@ public class OneBitHardwareFilter implements AudioProcessor {
                 out = dsdErr > 0.0 ? 1.0 : -1.0;
                 dsdErr -= out;
             } else {
-                double duty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+                double rawDuty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+                // Discretize the duty cycle based on hardware clock limitations!
+                double duty = Math.round(rawDuty * levels) / levels;
                 out = integratePwm(carrierPhase, carrierStep, duty);
                 carrierPhase = (carrierPhase + carrierStep) % 1.0;
             }
@@ -62,10 +56,9 @@ public class OneBitHardwareFilter implements AudioProcessor {
             smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
             if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
             if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
-            float smoothOut = smoothL2; 
             
-            left[i] = smoothOut;
-            right[i] = smoothOut;
+            left[i] = smoothL2;
+            right[i] = smoothL2;
         }
         
         next.process(left, right, frames);
@@ -93,7 +86,8 @@ public class OneBitHardwareFilter implements AudioProcessor {
                 out = dsdErr > 0.0 ? 1.0 : -1.0;
                 dsdErr -= out;
             } else {
-                double duty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+                double rawDuty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+                double duty = Math.round(rawDuty * levels) / levels;
                 out = integratePwm(carrierPhase, carrierStep, duty);
                 carrierPhase = (carrierPhase + carrierStep) % 1.0;
             }
@@ -102,9 +96,8 @@ public class OneBitHardwareFilter implements AudioProcessor {
             smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
             if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
             if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
-            float smoothOut = smoothL2; 
             
-            short outPcm = (short) Math.max(-32768, Math.min(32767, smoothOut * 32768.0));
+            short outPcm = (short) Math.max(-32768, Math.min(32767, smoothL2 * 32768.0));
             interleavedPcm[lIdx] = outPcm;
             if (channels > 1) interleavedPcm[lIdx + 1] = outPcm;
         }
