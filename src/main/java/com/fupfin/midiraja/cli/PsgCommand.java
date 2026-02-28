@@ -127,6 +127,11 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
                 case "apple2":
                     pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm", 11025.0, 93.0, 0.35f, pipeline);
                     break;
+                case "spectrum":
+                    // ZX Spectrum Z80 at 3.5MHz allows high carrier (17.5kHz) and high precision (200 levels).
+                    // Its speaker was tiny and piercing, so we use a lighter filter (alpha 0.50)
+                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm", 17500.0, 200.0, 0.50f, pipeline);
+                    break;
                 case "amiga":
                 case "disneysound":
                     // Fallbacks for planned features
