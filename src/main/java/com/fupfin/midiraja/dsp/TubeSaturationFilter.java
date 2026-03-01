@@ -7,7 +7,7 @@ package com.fupfin.midiraja.dsp;
  * It uses a mathematically optimized waveshaping curve to add warmth, 
  * thickness, and punch to digital synthesizers like OPL and PSG.
  */
-public class TubeSaturationFilter extends AudioFilter {
+public final class TubeSaturationFilter extends AudioFilter {
     private volatile float drive;      // Input gain multiplier (1.0 = clean)
     private volatile float outLevel;   // Output volume makeup
     private volatile boolean enabled = true;

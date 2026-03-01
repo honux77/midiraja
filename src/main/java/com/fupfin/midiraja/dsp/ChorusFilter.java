@@ -6,7 +6,7 @@ package com.fupfin.midiraja.dsp;
  * to create a detuned copy of the signal. When mixed with the original dry signal,
  * it creates a thick, swirling, "multiple voices" effect.
  */
-public class ChorusFilter extends AudioFilter {
+public final class ChorusFilter extends AudioFilter {
 
     private final float sampleRate = 44100.0f;
     private final float[] delayBufferL;

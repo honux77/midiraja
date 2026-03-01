@@ -4,7 +4,7 @@ package com.fupfin.midiraja.dsp;
  * A classic Schroeder/Moorer algorithmic reverb based on the Freeverb model.
  * Includes highly tuned presets for different musical spaces.
  */
-public class ReverbFilter extends AudioFilter {
+public final class ReverbFilter extends AudioFilter {
 
     public enum Preset {
         ROOM(0.5f, 0.4f, 0.25f, 1.0f),       // Small, punchy, low damping

@@ -4,7 +4,7 @@ package com.fupfin.midiraja.dsp;
  * A 3-band Equalizer (Bass, Mid, Treble) using Biquad IIR filters.
  * Each band can be boosted or cut using percentage values (0-200%).
  */
-public class EqFilter extends AudioFilter {
+public final class EqFilter extends AudioFilter {
 
     private final Biquad bassFilterL, bassFilterR;
     private final Biquad midFilterL, midFilterR;
