@@ -192,13 +192,13 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
             device = (MemorySegment) opn2_init.invokeExact((long) sampleRate);
             if (device.equals(MemorySegment.NULL))
             {
-                throw new Exception(
+                throw new IllegalStateException(
                     "opn2_init returned NULL (out of memory or invalid sample rate)");
             }
         }
         catch (Throwable t) {
             System.err.println("[NativeBridge Error] " + t.getMessage());
-            throw new Exception("Error initializing libOPNMIDI", t);
+            throw new IllegalStateException("Error initializing libOPNMIDI", t);
         }
     }
 
@@ -212,7 +212,7 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
             int rc = (int) opn2_openBankFile.invokeExact(device, pathSeg);
             if (rc != 0)
             {
-                throw new Exception("opn2_openBankFile failed (rc=" + rc + "): " + path);
+                throw new IllegalStateException("opn2_openBankFile failed (rc=" + rc + "): " + path);
             }
         }
         catch (Exception e) {
@@ -221,7 +221,7 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         }
         catch (Throwable t) {
             System.err.println("[NativeBridge Error] " + t.getMessage());
-            throw new Exception("Error loading WOPN bank file: " + path, t);
+            throw new IllegalStateException("Error loading WOPN bank file: " + path, t);
         }
     }
 
@@ -235,7 +235,7 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
             int rc = (int) opn2_openBankData.invokeExact(device, seg, (long) data.length);
             if (rc != 0)
             {
-                throw new Exception("opn2_openBankData failed (rc=" + rc + ")");
+                throw new IllegalStateException("opn2_openBankData failed (rc=" + rc + ")");
             }
         }
         catch (Exception e) {
@@ -244,7 +244,7 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         }
         catch (Throwable t) {
             System.err.println("[NativeBridge Error] " + t.getMessage());
-            throw new Exception("Error loading WOPN bank data", t);
+            throw new IllegalStateException("Error loading WOPN bank data", t);
         }
     }
 

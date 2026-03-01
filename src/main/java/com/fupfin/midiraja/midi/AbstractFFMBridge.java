@@ -24,7 +24,7 @@ public abstract class AbstractFFMBridge implements AutoCloseable {
         return linker.downcallHandle(lib.find(symbol).orElseThrow(() -> new IllegalArgumentException("Symbol not found: " + symbol)), descriptor);
     }
 
-    public static SymbolLookup tryLoadLibrary(Arena arena, String fallbackDevDir, String... paths) throws Exception {
+    public static SymbolLookup tryLoadLibrary(Arena arena, String fallbackDevDir, String... paths) throws RuntimeException {
         if (paths.length == 0) throw new IllegalArgumentException("No library paths provided");
         List<String> failedPaths = new ArrayList<>();
         String projectRoot = new File("").getAbsolutePath();
@@ -54,11 +54,11 @@ public abstract class AbstractFFMBridge implements AutoCloseable {
             }
         }
 
-        throw new Exception("Failed to load native library. Paths tried:\n  - " + String.join("\n  - ", failedPaths));
+        throw new RuntimeException("Failed to load native library. Paths tried:\n  - " + String.join("\n  - ", failedPaths));
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws RuntimeException {
         if (arena != null && arena.scope().isAlive()) {
             arena.close();
         }

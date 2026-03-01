@@ -190,13 +190,13 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
             device = (MemorySegment) adl_init.invokeExact((long) sampleRate);
             if (device.equals(MemorySegment.NULL))
             {
-                throw new Exception(
+                throw new IllegalStateException(
                     "adl_init returned NULL (out of memory or invalid sample rate)");
             }
         }
         catch (Throwable t) {
             System.err.println("[NativeBridge Error] " + t.getMessage());
-            throw new Exception("Error initializing libADLMIDI", t);
+            throw new IllegalStateException("Error initializing libADLMIDI", t);
         }
     }
 
@@ -223,7 +223,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
             int rc = (int) adl_openBankFile.invokeExact(device, pathSeg);
             if (rc != 0)
             {
-                throw new Exception("adl_openBankFile failed (rc=" + rc + "): " + path);
+                throw new IllegalStateException("adl_openBankFile failed (rc=" + rc + "): " + path);
             }
         }
         catch (Exception e) {
@@ -232,7 +232,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable t) {
             System.err.println("[NativeBridge Error] " + t.getMessage());
-            throw new Exception("Error loading WOPL bank file: " + path, t);
+            throw new IllegalStateException("Error loading WOPL bank file: " + path, t);
         }
     }
 

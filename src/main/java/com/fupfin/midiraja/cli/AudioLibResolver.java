@@ -23,7 +23,7 @@ public final class AudioLibResolver
     }
 
     /** Returns the resolved path suitable for passing to {@code NativeAudioEngine}. */
-    public static String resolve() throws Exception
+    public static String resolve() throws RuntimeException
     {
         String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
         String osFamily = osName.contains("mac") ? "macos" : (osName.contains("linux") ? "linux" : "windows");
@@ -59,7 +59,7 @@ public final class AudioLibResolver
                 }
             }
         }
-        throw new Exception(
+        throw new RuntimeException(
             "Could not find " + libName + ". Run scripts/build-native-libs.sh first.");
     }
 }
