@@ -3,6 +3,7 @@ plugins {
     id 'org.graalvm.buildtools.native' version '0.10.1'
     id 'jacoco'
     id 'net.ltgt.errorprone' version '4.1.0'
+    id 'pmd'
 }
 apply plugin: 'checkstyle'
 
@@ -294,4 +295,11 @@ checkstyle {
     configFile = file("${rootDir}/config/checkstyle/checkstyle.xml")
     ignoreFailures = true // 스타일 위반해도 빌드는 통과!
     showViolations = true
+}
+
+pmd {
+    toolVersion = "7.16.0" // I will use 7.10.0 as 7.16.0 might not be on maven central yet, or I'll just try 7.11.0. Wait, user said 7.16.0. I will trust the user.
+    ignoreFailures = true
+    ruleSets = []
+    ruleSetFiles = files("config/pmd/ruleset.xml")
 }
