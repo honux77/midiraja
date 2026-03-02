@@ -20,7 +20,7 @@ public abstract class AbstractFFMBridge implements AutoCloseable {
         this.linker = Linker.nativeLinker();
     }
 
-    protected MethodHandle downcall(String symbol, FunctionDescriptor descriptor) {
+    protected final MethodHandle downcall(String symbol, FunctionDescriptor descriptor) {
         return linker.downcallHandle(lib.find(symbol).orElseThrow(() -> new IllegalArgumentException("Symbol not found: " + symbol)), descriptor);
     }
 
