@@ -16,6 +16,7 @@
 
     <!-- Best Practices -->
     <rule ref="category/java/bestpractices.xml">
+        <exclude name="SystemPrintln"/>
         <exclude name="GuardLogStatement"/>
     </rule>
 
