@@ -28,6 +28,7 @@
 
     <!-- Error Prone -->
     <rule ref="category/java/errorprone.xml">
+        <exclude name="AvoidLiteralsInIfCondition"/>
         
         <exclude name="NullAssignment"/>
     </rule>
