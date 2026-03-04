@@ -343,7 +343,7 @@ public class PlaybackEngine {
             (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
         startTimeNanos = System.nanoTime() - elapsedNanos;
         System.err.println("[Diagnostic] Calling provider.onPlaybackStarted() to unpause render thread");
-        try { provider.onPlaybackStarted(); } catch (Exception ignored) {}
+        try { provider.onPlaybackStarted(); } catch (Exception ignored) { /* Safe to ignore: optional listener */ }
         continue;
       }
 
@@ -612,7 +612,7 @@ public class PlaybackEngine {
         // Wake up audio engine ring buffers after a long pause
         try {
             provider.onPlaybackStarted();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) { /* Safe to ignore: optional listener */ }
     }
     listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
   }
