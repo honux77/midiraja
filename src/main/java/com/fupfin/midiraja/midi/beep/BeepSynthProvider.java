@@ -231,6 +231,87 @@ public class BeepSynthProvider implements SoftSynthProvider
          * @param assignedNotes The list of active notes assigned to this unit.
          * @return The resulting 1-bit signal normalized to [-1.0, 1.0].
          */
+
+
+        private double renderDrumOut(ActiveNote note, double time, double trueSampleRate) {
+            int noteNum = note.note;
+            double out = 0.0;
+            if (noteNum == 35 || noteNum == 36) {
+                if (time < 0.2) {
+                    double pitchDrop = 150.0 * Math.exp(-time * 30.0);
+                    note.phase += (50.0 + pitchDrop) / trueSampleRate;
+                    note.phase = note.phase - Math.floor(note.phase);
+                    out = fastSin(note.phase);
+                }
+            } else if (noteNum == 38 || noteNum == 40) {
+                if (time < 0.15) {
+                    double noiseEnv = Math.exp(-time * 20.0);
+                    note.phase += 200.0 / trueSampleRate;
+                    note.phase = note.phase - Math.floor(note.phase);
+                    double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
+                    double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
+                    out = Math.max(-1.0, Math.min(1.0, tone + noise));
+                }
+            } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49) {
+                double duration = (noteNum >= 49) ? 0.3 : 0.05;
+                if (time < duration) {
+                    double env = Math.exp(-time * (1.0 / duration) * 5.0);
+                    out = (fastRandom() > 0.5 ? 1.5 : -1.5) * env;
+                }
+            } else {
+                if (time < 0.25) {
+                    double pitchDrop = 300.0 * Math.exp(-time * 15.0);
+                    note.phase += (80.0 + pitchDrop) / trueSampleRate;
+                    note.phase = note.phase - Math.floor(note.phase);
+                    out = fastSin(note.phase);
+                }
+            }
+            return out;
+        }
+
+        private boolean renderXorSynth(ActiveNote note) {
+            note.phase16 = (note.phase16 + note.phaseStep16) & 0xFFFF;
+            note.modPhase16 = (note.modPhase16 + note.modPhaseStep16) & 0xFFFF;
+            boolean carrierBit = note.phase16 > 32767;
+            boolean modBit = note.modPhase16 > 32767;
+            return (fmIndex < 0.1) ? carrierBit : (carrierBit ^ modBit);
+        }
+
+        private boolean renderSquareSynth(ActiveNote note, double trueSampleRate) {
+            note.lfoPhase += 1.0 / trueSampleRate;
+            double vibratoLfo = fastSin(note.lfoPhase * 6.0 - Math.floor(note.lfoPhase * 6.0));
+            double sweepLfo = fastSin(note.lfoPhase * 1.5 - Math.floor(note.lfoPhase * 1.5));
+            double wobbledFreq = note.frequency * (1.0 + (0.015 * vibratoLfo));
+            int step16 = (int) ((wobbledFreq * 65536.0) / trueSampleRate);
+            note.phase16 = (note.phase16 + step16) & 0xFFFF;
+            int dutyCycle16 = (int) (65535.0 * (0.5 + (0.4 * sweepLfo)));
+            return note.phase16 > dutyCycle16;
+        }
+
+        private double renderFMSynth(ActiveNote note, double time, double trueSampleRate) {
+            double decay = Math.max(0.0, 1.0 - (time / 0.5));
+            double keyScale = 1.0;
+            if (note.frequency > 261.63) {
+                keyScale = 261.63 / note.frequency; 
+            }
+            double scaledFmIndex = fmIndex * keyScale;
+            double envIndex = (scaledFmIndex * 0.1) + (scaledFmIndex * decay); 
+            
+            double modFreq = note.frequency * fmRatio;
+            note.modPhase += modFreq / trueSampleRate;
+            note.modPhase = note.modPhase - Math.floor(note.modPhase);
+            double modulator = fastSin(note.modPhase);
+            
+            note.phase += note.frequency / trueSampleRate;
+            note.phase = note.phase - Math.floor(note.phase);
+            
+            double finalPhase = note.phase + (modulator * (envIndex / (2.0 * Math.PI)));
+            finalPhase = finalPhase - Math.floor(finalPhase);
+            
+            double rawSine = fastSin(finalPhase);
+            return (pmOverdrive > 0.0) ? Math.tanh(rawSine * pmOverdrive) * decay : rawSine * decay;
+        }
+
         double render(List<ActiveNote> assignedNotes)
         {
             if (assignedNotes.isEmpty()) return 0.0;
@@ -262,46 +343,7 @@ public class BeepSynthProvider implements SoftSynthProvider
                     
                     if (note.isDrum)
                     {
-                        int noteNum = note.note;
-                        double out = 0.0;
-                        if (noteNum == 35 || noteNum == 36)
-                        {
-                            if (time < 0.2)
-                            {
-                                double pitchDrop = 150.0 * Math.exp(-time * 30.0);
-                                note.phase += (50.0 + pitchDrop) / trueSampleRate;
-                                note.phase = note.phase - Math.floor(note.phase);
-                                out = fastSin(note.phase);
-                            }
-                        } else if (noteNum == 38 || noteNum == 40)
-                        {
-                            if (time < 0.15)
-                            {
-                                double noiseEnv = Math.exp(-time * 20.0);
-                                note.phase += 200.0 / trueSampleRate;
-                                note.phase = note.phase - Math.floor(note.phase);
-                                double tone = fastSin(note.phase) * Math.exp(-time * 10.0) * 0.4;
-                                double noise = (fastRandom() * 2.0 - 1.0) * noiseEnv * 1.5;
-                                out = Math.max(-1.0, Math.min(1.0, tone + noise));
-                            }
-                        } else if (noteNum == 42 || noteNum == 44 || noteNum == 46 || noteNum >= 49)
-                        {
-                            double duration = (noteNum >= 49) ? 0.3 : 0.05;
-                            if (time < duration)
-                            {
-                                double env = Math.exp(-time * (1.0 / duration) * 5.0);
-                                out = (fastRandom() > 0.5 ? 1.5 : -1.5) * env;
-                            }
-                        } else
-                        {
-                            if (time < 0.25)
-                            {
-                                double pitchDrop = 300.0 * Math.exp(-time * 15.0);
-                                note.phase += (80.0 + pitchDrop) / trueSampleRate;
-                                note.phase = note.phase - Math.floor(note.phase);
-                                out = fastSin(note.phase);
-                            }
-                        }
+                        double out = renderDrumOut(note, time, trueSampleRate);
                         // Quantize drums using PWM
                         synthBit = out > internalPwmCarrier;
                         if (Math.abs(out) > 0.05) hasActiveNotes = true;
@@ -310,72 +352,24 @@ public class BeepSynthProvider implements SoftSynthProvider
                     {
                         if ("xor".equals(synthMode))
                         {
-                            // --- PURE 16-BIT INTEGER TIMBRAL XOR ---
-                            note.phase16 = (note.phase16 + note.phaseStep16) & 0xFFFF;
-                            note.modPhase16 = (note.modPhase16 + note.modPhaseStep16) & 0xFFFF;
-                            
-                            // A 16-bit phase is > 32767 for the second half of its cycle
-                            boolean carrierBit = note.phase16 > 32767;
-                            boolean modBit = note.modPhase16 > 32767;
-                            synthBit = (fmIndex < 0.1) ? carrierBit : (carrierBit ^ modBit);
-                            
+                            synthBit = renderXorSynth(note);
                             double decay = Math.max(0.0, 1.0 - (time / 0.5));
                             if (decay > 0.01) hasActiveNotes = true;
                             else synthBit = false;
                             
                         } else if ("square".equals(synthMode))
                         {
-                            // --- PURE 16-BIT INTEGER SQUARE WAVE ---
                             double decay = Math.max(0.0, 1.0 - (time / 1.5));
-                            note.lfoPhase += 1.0 / trueSampleRate;
-                            double vibratoLfo = fastSin(note.lfoPhase * 6.0 - Math.floor(note.lfoPhase * 6.0));
-                            double sweepLfo = fastSin(note.lfoPhase * 1.5 - Math.floor(note.lfoPhase * 1.5));
-                            
-                            // Calculate instantaneous phase step for vibrato
-                            double wobbledFreq = note.frequency * (1.0 + (0.015 * vibratoLfo));
-                            int step16 = (int) ((wobbledFreq * 65536.0) / trueSampleRate);
-                            note.phase16 = (note.phase16 + step16) & 0xFFFF;
-                            
-                            // 16-bit duty cycle comparison (0 to 65535)
-                            int dutyCycle16 = (int) (65535.0 * (0.5 + (0.4 * sweepLfo)));
-                            synthBit = note.phase16 > dutyCycle16;
-                            
+                            synthBit = renderSquareSynth(note, trueSampleRate);
                             if (decay > 0.01) hasActiveNotes = true;
                             else synthBit = false;
                             
                         } else
                         {
-                            // FM (Phase Modulation logic)
-                            double decay = Math.max(0.0, 1.0 - (time / 0.5));
-                            double keyScale = 1.0;
-                            if (note.frequency > 261.63)
-                            {
-                                keyScale = 261.63 / note.frequency; 
-                            }
-                            double scaledFmIndex = fmIndex * keyScale;
-                            double envIndex = (scaledFmIndex * 0.1) + (scaledFmIndex * decay); 
-                            
-                            double modFreq = note.frequency * fmRatio;
-                            note.modPhase += modFreq / trueSampleRate;
-                            note.modPhase = note.modPhase - Math.floor(note.modPhase);
-                            double modulator = fastSin(note.modPhase);
-                            
-                            note.phase += note.frequency / trueSampleRate;
-                            note.phase = note.phase - Math.floor(note.phase);
-                            
-                            double finalPhase = note.phase + (modulator * (envIndex / (2.0 * Math.PI)));
-                            finalPhase = finalPhase - Math.floor(finalPhase);
-                            
-                            double rawSine = fastSin(finalPhase);
-                            double out = (pmOverdrive > 0.0) ? Math.tanh(rawSine * pmOverdrive) * decay : rawSine * decay;
-                            
-                            // LAYER 2: THE QUANTIZER
-                            // Purist rule: Analog sine wave MUST be converted to a discrete boolean 
-                            // via an internal PWM comparator before entering the multiplexer!
+                            double out = renderFMSynth(note, time, trueSampleRate);
                             synthBit = out > internalPwmCarrier;
-                            
                             if (Math.abs(out) > 0.05) hasActiveNotes = true;
-                            else synthBit = false; // Noise gate
+                            else synthBit = false;
                         }
                     }
                     
