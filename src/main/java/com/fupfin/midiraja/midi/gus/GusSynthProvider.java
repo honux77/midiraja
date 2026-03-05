@@ -7,15 +7,10 @@
 
 package com.fupfin.midiraja.midi.gus;
 
-import com.fupfin.midiraja.midi.AudioEngine;
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.SoftSynthProvider;
 import java.util.List;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -29,9 +24,10 @@ import org.jspecify.annotations.Nullable;
 @SuppressWarnings("ThreadPriorityCheck")
 /**
  * A Gravis Ultrasound (GUS) soft-synth provider.
- * 
- * <p>This engine emulates the classic GF1 wavetable synthesis and supports
- * authentic retro audio features like RealSound (6-bit PWM) and modular DSP filters.
+ *
+ * <p>
+ * This engine emulates the classic GF1 wavetable synthesis and supports authentic retro audio
+ * features like RealSound (6-bit PWM) and modular DSP filters.
  */
 public class GusSynthProvider implements SoftSynthProvider
 {
@@ -39,20 +35,23 @@ public class GusSynthProvider implements SoftSynthProvider
     private final GusEngine engine;
     private final @Nullable GusBank bank;
     private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
-    
+
     private @Nullable Thread renderThread;
     private volatile boolean running = false;
     private volatile boolean renderPaused = false;
 
     /**
      * Constructs a customizable GUS provider with 1-Bit acoustic options.
+     *
      * @param audioOut The audio processor pipeline.
      * @param patchDir Path to the GUS patch directory.
      * @param oneBitMode 1-Bit acoustic simulation mode ("pwm", "dsd", or null to disable).
      */
 
 
-    public GusSynthProvider(com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, @Nullable String patchDir)
+    public GusSynthProvider(
+            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut,
+            @Nullable String patchDir)
     {
         this.audioOut = audioOut;
         this.engine = new GusEngine(44100);
@@ -64,11 +63,10 @@ public class GusSynthProvider implements SoftSynthProvider
         if (userPath != null) return new GusBank(Path.of(userPath));
 
         String homeDir = System.getProperty("user.home");
-        String[] baseDirs = {
-            ".", homeDir + "/.midiraja", homeDir + "/.config/midiraja", homeDir + "/.local/share/midiraja",
-            "/opt/homebrew/share/midra", "/opt/homebrew/share/midiraja", "/usr/local/share/midra",
-            "/usr/local/share/midiraja", "/usr/share/midra", "/usr/share/midiraja"
-        };
+        String[] baseDirs = {".", homeDir + "/.midiraja", homeDir + "/.config/midiraja",
+                homeDir + "/.local/share/midiraja", "/opt/homebrew/share/midra",
+                "/opt/homebrew/share/midiraja", "/usr/local/share/midra",
+                "/usr/local/share/midiraja", "/usr/share/midra", "/usr/share/midiraja"};
         String[] patchSetNames = {"eawpats", "dgguspat", "freepats", "gus", ""};
 
         for (String baseDir : baseDirs)
@@ -76,7 +74,8 @@ public class GusSynthProvider implements SoftSynthProvider
             for (String patchName : patchSetNames)
             {
                 Path p = patchName.isEmpty() ? Path.of(baseDir) : Path.of(baseDir, patchName);
-                if (Files.isDirectory(p) && (Files.exists(p.resolve("gus.cfg")) || Files.exists(p.resolve("timidity.cfg"))))
+                if (Files.isDirectory(p) && (Files.exists(p.resolve("gus.cfg"))
+                        || Files.exists(p.resolve("timidity.cfg"))))
                 {
                     return new GusBank(p);
                 }
@@ -86,7 +85,13 @@ public class GusSynthProvider implements SoftSynthProvider
         InputStream embeddedCfg = getClass().getResourceAsStream("/gus/freepats/timidity.cfg");
         if (embeddedCfg != null)
         {
-            try { embeddedCfg.close(); } catch (IOException e) { /* ignored */ }
+            try
+            {
+                embeddedCfg.close();
+            }
+            catch (IOException e)
+            {
+                /* ignored */ }
             return new GusBank(getClass().getClassLoader(), "gus/freepats");
         }
         return null;
@@ -96,9 +101,9 @@ public class GusSynthProvider implements SoftSynthProvider
     public List<MidiPort> getOutputPorts()
     {
         String name = bank != null ? "GUS (" + bank.getPatchSetName() + ")" : "GUS (No patches)";
-        
 
-        
+
+
         return List.of(new MidiPort(0, name));
     }
 
@@ -111,7 +116,8 @@ public class GusSynthProvider implements SoftSynthProvider
             {
                 Path cfgPath = bank.getRootDir().resolve("gus.cfg");
                 if (!Files.exists(cfgPath)) cfgPath = bank.getRootDir().resolve("timidity.cfg");
-                if (Files.exists(cfgPath)) bank.loadConfig(Files.readString(cfgPath, StandardCharsets.US_ASCII));
+                if (Files.exists(cfgPath))
+                    bank.loadConfig(Files.readString(cfgPath, StandardCharsets.US_ASCII));
             }
             else
             {
@@ -134,12 +140,16 @@ public class GusSynthProvider implements SoftSynthProvider
             {
                 if (in != null) engine.loadPatch(engineId, GusPatchReader.read(in));
             }
-            catch (Exception e) {
-            System.err.println("[NativeBridge Error] " + e.getMessage()); /* ignored */ }
+            catch (Exception e)
+            {
+                System.err.println("[NativeBridge Error] " + e.getMessage());
+                /* ignored */ }
         });
     }
 
-    @Override public void loadSoundbank(String path) throws Exception { /* not used directly */ }
+    @Override
+    public void loadSoundbank(String path) throws Exception
+    { /* not used directly */ }
 
     private void startRenderThread()
     {
@@ -154,18 +164,30 @@ public class GusSynthProvider implements SoftSynthProvider
             {
                 if (renderPaused)
                 {
-                    try { Thread.sleep(1); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    try
+                    {
+                        Thread.sleep(1);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                     continue;
                 }
 
-                for (int i = 0; i < framesToRender; i++) { left[i] = 0; right[i] = 0; }
+                for (int i = 0; i < framesToRender; i++)
+                {
+                    left[i] = 0;
+                    right[i] = 0;
+                }
                 engine.render(left, right, framesToRender);
-                
+
 
 
                 for (int i = 0; i < framesToRender; i++)
                 {
-                    // GUS is already loud, no additional gain needed. 
+                    // GUS is already loud, no additional gain needed.
                     // Tanh ensures we never clip if polyphony gets crazy.
                     pcmBuffer[i * 2] = (short) (Math.tanh(left[i]) * 32767);
                     pcmBuffer[i * 2 + 1] = (short) (Math.tanh(right[i]) * 32767);
@@ -177,7 +199,7 @@ public class GusSynthProvider implements SoftSynthProvider
         renderThread.setDaemon(true);
         renderThread.start();
     }
-    
+
     @SuppressWarnings("EmptyCatch")
     @Override
     public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
@@ -197,24 +219,42 @@ public class GusSynthProvider implements SoftSynthProvider
                     {
                         int ch = status & 0x0F;
                         int prog = data[1] & 0xFF;
-                        if (ch != 9 && !loadedPrograms[prog]) { loadedPrograms[prog] = true; loadPatchOnDemand(0, prog); }
+                        if (ch != 9 && !loadedPrograms[prog])
+                        {
+                            loadedPrograms[prog] = true;
+                            loadPatchOnDemand(0, prog);
+                        }
                     }
                     else if ((status & 0xF0) == 0x90 && data.length >= 3 && (status & 0x0F) == 9)
                     {
                         int note = data[1] & 0xFF;
-                        if (!loadedDrums[note]) { loadedDrums[note] = true; loadPatchOnDemand(128, note); }
+                        if (!loadedDrums[note])
+                        {
+                            loadedDrums[note] = true;
+                            loadPatchOnDemand(128, note);
+                        }
                     }
                 }
             }
         }
-        
+
         renderPaused = true;
-        try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+        try
+        {
+            Thread.sleep(20);
+        }
+        catch (InterruptedException ignored)
+        {
+        }
         if (audioOut != null) audioOut.reset();
         engine.getActiveVoices().clear();
     }
 
-    @Override public void onPlaybackStarted() { renderPaused = false; }
+    @Override
+    public void onPlaybackStarted()
+    {
+        renderPaused = false;
+    }
 
     @Override
     public void sendMessage(byte[] data)
@@ -229,7 +269,8 @@ public class GusSynthProvider implements SoftSynthProvider
             int note = data[1] & 0xFF;
             int velocity = data[2] & 0xFF;
             if (velocity > 0) engine.noteOn(ch, note, velocity);
-            else engine.noteOff(ch, note);
+            else
+                engine.noteOff(ch, note);
         }
         else if (cmd == 0x80 && data.length >= 3) engine.noteOff(ch, data[1] & 0xFF);
         else if (cmd == 0xC0 && data.length >= 2)
@@ -251,19 +292,25 @@ public class GusSynthProvider implements SoftSynthProvider
                 try (InputStream in = bank.openPatchStream(path).orElse(null))
                 {
                     if (in != null) engine.loadPatch(engineId, GusPatchReader.read(in));
-                    else failedPatches.add(engineId);
+                    else
+                        failedPatches.add(engineId);
                 }
-                catch (Exception e) {
-            System.err.println("[NativeBridge Error] " + e.getMessage()); failedPatches.add(engineId); }
+                catch (Exception e)
+                {
+                    System.err.println("[NativeBridge Error] " + e.getMessage());
+                    failedPatches.add(engineId);
+                }
             }, () -> failedPatches.add(engineId));
         }
     }
 
-    @Override public void panic() { 
-        engine.getActiveVoices().clear(); 
+    @Override
+    public void panic()
+    {
+        engine.getActiveVoices().clear();
         if (audioOut != null) audioOut.reset();
-        renderPaused = true; 
-         
+        renderPaused = true;
+
     }
 
     @SuppressWarnings("EmptyCatch")
@@ -274,9 +321,15 @@ public class GusSynthProvider implements SoftSynthProvider
         if (renderThread != null)
         {
             renderThread.interrupt();
-            try { renderThread.join(500); } catch (InterruptedException ignored) {}
+            try
+            {
+                renderThread.join(500);
+            }
+            catch (InterruptedException ignored)
+            {
+            }
         }
-        
+
         engine.getActiveVoices().clear();
     }
 }

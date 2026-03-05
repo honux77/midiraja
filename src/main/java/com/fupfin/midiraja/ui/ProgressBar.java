@@ -8,8 +8,8 @@
 package com.fupfin.midiraja.ui;
 
 /**
- * Reusable UI component for rendering horizontal bars with a highlighted trail, 
- * a white peak/head, and a customizable background grid.
+ * Reusable UI component for rendering horizontal bars with a highlighted trail, a white peak/head,
+ * and a customizable background grid.
  */
 public class ProgressBar
 {
@@ -32,19 +32,21 @@ public class ProgressBar
 
     /**
      * Renders a progress bar string.
-     * 
+     *
      * @param filledLength The number of active/filled blocks.
-     * @param totalLength  The total width of the bar (excluding brackets).
-     * @param style        The style preset for the background.
+     * @param totalLength The total width of the bar (excluding brackets).
+     * @param style The style preset for the background.
      * @param showBrackets Whether to wrap the output in '[' and ']'.
      * @return An ANSI-colored string representing the bar.
      */
-    public static String render(int filledLength, int totalLength, Style style, boolean showBrackets)
+    public static String render(int filledLength, int totalLength, Style style,
+            boolean showBrackets)
     {
         int clampedFilled = Math.max(0, Math.min(totalLength, filledLength));
         StringBuilder sb = new StringBuilder();
-        
-        if (showBrackets) {
+
+        if (showBrackets)
+        {
             sb.append(Theme.COLOR_RESET).append("[");
         }
 
@@ -53,7 +55,8 @@ public class ProgressBar
             // Amber trail
             if (clampedFilled > 1)
             {
-                sb.append(Theme.COLOR_HIGHLIGHT).append(Theme.CHAR_BLOCK_FULL.repeat(clampedFilled - 1));
+                sb.append(Theme.COLOR_HIGHLIGHT)
+                        .append(Theme.CHAR_BLOCK_FULL.repeat(clampedFilled - 1));
             }
             // White peak
             sb.append(Theme.COLOR_RESET).append(Theme.CHAR_BLOCK_FULL);
@@ -63,10 +66,12 @@ public class ProgressBar
         int bgLength = totalLength - clampedFilled;
         if (bgLength > 0)
         {
-            sb.append(style.bgColorCode).append(style.bgChar.repeat(bgLength)).append(Theme.COLOR_RESET);
+            sb.append(style.bgColorCode).append(style.bgChar.repeat(bgLength))
+                    .append(Theme.COLOR_RESET);
         }
 
-        if (showBrackets) {
+        if (showBrackets)
+        {
             sb.append(Theme.COLOR_RESET).append("]");
         }
 

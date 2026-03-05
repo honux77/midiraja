@@ -12,20 +12,24 @@ import javax.sound.midi.*;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A proof-of-concept provider that uses Java's built-in software synthesizer (Gervill).
- * Does not depend on OS-native FFM integrations.
+ * A proof-of-concept provider that uses Java's built-in software synthesizer (Gervill). Does not
+ * depend on OS-native FFM integrations.
  */
 public class JavaSynthProvider implements MidiOutProvider
 {
-    @Nullable private Synthesizer synth;
-    @Nullable private Receiver receiver;
+    @Nullable
+    private Synthesizer synth;
+    @Nullable
+    private Receiver receiver;
 
-    @Override public List<MidiPort> getOutputPorts()
+    @Override
+    public List<MidiPort> getOutputPorts()
     {
         return List.of(new MidiPort(0, "Java Built-in Synthesizer"));
     }
 
-    @Override public void openPort(int portIndex) throws Exception
+    @Override
+    public void openPort(int portIndex) throws Exception
     {
         synth = MidiSystem.getSynthesizer();
         synth.open();
@@ -39,10 +43,10 @@ public class JavaSynthProvider implements MidiOutProvider
         }
     }
 
-    @Override public void sendMessage(byte[] data) throws Exception
+    @Override
+    public void sendMessage(byte[] data) throws Exception
     {
-        if (receiver == null || data.length == 0)
-            return;
+        if (receiver == null || data.length == 0) return;
 
         int status = data[0] & 0xFF;
 
@@ -74,7 +78,8 @@ public class JavaSynthProvider implements MidiOutProvider
         }
     }
 
-    @Override public void closePort()
+    @Override
+    public void closePort()
     {
         if (synth != null && synth.isOpen())
         {

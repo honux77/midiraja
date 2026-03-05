@@ -1,9 +1,9 @@
 package com.fupfin.midiraja.ui;
 
 /**
- * An abstraction over the raw string building process for terminal UI rendering.
- * Encapsulates the underlying buffer and provides semantic methods for drawing,
- * appending, and formatting ANSI-aware strings.
+ * An abstraction over the raw string building process for terminal UI rendering. Encapsulates the
+ * underlying buffer and provides semantic methods for drawing, appending, and formatting ANSI-aware
+ * strings.
  */
 public class ScreenBuffer
 {
@@ -82,17 +82,18 @@ public class ScreenBuffer
     }
 
     /**
-     * Returns the current raw string representation and clears the internal state if needed,
-     * though typically instances are discarded per frame in simple TUI loops.
+     * Returns the current raw string representation and clears the internal state if needed, though
+     * typically instances are discarded per frame in simple TUI loops.
      */
-    @Override public String toString()
+    @Override
+    public String toString()
     {
         return sb.toString();
     }
 
     /**
-     * Splits the current buffer content into an array of lines.
-     * Useful for layout managers that need to zip columns together.
+     * Splits the current buffer content into an array of lines. Useful for layout managers that
+     * need to zip columns together.
      */
     public String[] toLines()
     {

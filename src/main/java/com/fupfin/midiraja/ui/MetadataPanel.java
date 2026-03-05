@@ -16,40 +16,41 @@ import org.jspecify.annotations.Nullable;
 public class MetadataPanel implements Panel
 {
     private LayoutConstraints constraints = new LayoutConstraints(80, 1, false, false);
-    @Nullable private String title;
+    @Nullable
+    private String title;
 
-    @Override public void onLayoutUpdated(LayoutConstraints bounds)
+    @Override
+    public void onLayoutUpdated(LayoutConstraints bounds)
     {
         this.constraints = bounds;
     }
 
-    @Override public void onPlaybackStateChanged()
-    {
-    }
+    @Override
+    public void onPlaybackStateChanged()
+    {}
 
-    @Override public void onTick(long currentMicroseconds)
-    {
-    }
+    @Override
+    public void onTick(long currentMicroseconds)
+    {}
 
-    @Override public void onTempoChanged(float bpm)
-    {
-    }
+    @Override
+    public void onTempoChanged(float bpm)
+    {}
 
-    @Override public void onChannelActivity(int channel, int velocity)
-    {
-    }
+    @Override
+    public void onChannelActivity(int channel, int velocity)
+    {}
 
     public void updateContext(PlaylistContext context)
     {
-        this.title = context.sequenceTitle() != null
-            ? context.sequenceTitle()
-            : context.files().get(context.currentIndex()).getName();
+        this.title = context.sequenceTitle() != null ? context.sequenceTitle()
+                : context.files().get(context.currentIndex()).getName();
     }
 
-    @Override public void render(ScreenBuffer buffer)
+    @Override
+    public void render(ScreenBuffer buffer)
     {
-        if (constraints.height() <= 0)
-            return;
+        if (constraints.height() <= 0) return;
         String rawTitle = title != null ? title : "Unknown";
 
         if (constraints.height() == 1)
@@ -62,8 +63,8 @@ public class MetadataPanel implements Panel
             String header = " ≡≡≡[ NOW PLAYING ]";
             int padding = Math.max(0, constraints.width() - header.length() - 1);
             buffer.append(header).append("≡".repeat(padding)).append(" \n");
-            buffer.append(
-                String.format("    Title:     %s\n", truncate(rawTitle, constraints.width() - 16)));
+            buffer.append(String.format("    Title:     %s\n",
+                    truncate(rawTitle, constraints.width() - 16)));
         }
     }
 }

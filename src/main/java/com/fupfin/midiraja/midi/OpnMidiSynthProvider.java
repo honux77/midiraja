@@ -8,21 +8,17 @@
 package com.fupfin.midiraja.midi;
 
 import java.util.List;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.dsp.OneBitAcousticSimulator;
-import org.jspecify.annotations.Nullable;
 
 /**
  * SoftSynthProvider backed by libOPNMIDI (OPN2/OPNA FM synthesis).
  *
- * <p>Provides Sega Genesis (YM2612/OPN2) and PC-98 (YM2608/OPNA) sound.
+ * <p>
+ * Provides Sega Genesis (YM2612/OPN2) and PC-98 (YM2608/OPNA) sound.
  *
- * <h3>Thread model</h3>
- * libOPNMIDI is NOT thread-safe and has no timestamped MIDI API.
- * Solution: queue raw MIDI bytes from the playback thread, drain them in the
- * render thread before each {@code opn2_generate()} call.
+ * <h3>Thread model</h3> libOPNMIDI is NOT thread-safe and has no timestamped MIDI API. Solution:
+ * queue raw MIDI bytes from the playback thread, drain them in the render thread before each
+ * {@code opn2_generate()} call.
  *
  * <pre>
  * PlaybackEngine (playback thread)     Render thread
@@ -55,13 +51,14 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
     private final int emulatorId;
     private final int numChips;
     private final @org.jspecify.annotations.Nullable String dacMode;
-    
+
 
     /** Uses MAME YM2612 (emulator 0) and 4 chips by default. */
 
 
     public OpnMidiSynthProvider(OpnMidiNativeBridge bridge,
-        com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut, int emulatorId, int numChips, @org.jspecify.annotations.Nullable String dacMode)
+            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut,
+            int emulatorId, int numChips, @org.jspecify.annotations.Nullable String dacMode)
     {
         this.bridge = bridge;
         this.audioOut = audioOut;
@@ -74,27 +71,28 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
     private static final int FRAMES_PER_RENDER = 512; // ~11.6 ms per chunk
     private static final int RING_BUFFER_CAPACITY_FRAMES = 4096;
 
-    @Override public long getAudioLatencyNanos()
+    @Override
+    public long getAudioLatencyNanos()
     {
         long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES;
         return totalFrames * 1_000_000_000L / SAMPLE_RATE;
     }
 
-    private static final String[] EMULATOR_NAMES = {
-        "MAME YM2612", // 0
-        "Nuked YM3438", // 1
-        "GENS", // 2
-        "YMFM OPN2", // 3
-        "NP2 OPNA", // 4
-        "MAME YM2608", // 5
-        "YMFM OPNA", // 6
+    private static final String[] EMULATOR_NAMES = {"MAME YM2612", // 0
+            "Nuked YM3438", // 1
+            "GENS", // 2
+            "YMFM OPN2", // 3
+            "NP2 OPNA", // 4
+            "MAME YM2608", // 5
+            "YMFM OPNA", // 6
     };
 
-    @Override public List<MidiPort> getOutputPorts()
+    @Override
+    public List<MidiPort> getOutputPorts()
     {
-        String emuName = (emulatorId >= 0 && emulatorId < EMULATOR_NAMES.length)
-            ? EMULATOR_NAMES[emulatorId]
-            : "Emulator " + emulatorId;
+        String emuName =
+                (emulatorId >= 0 && emulatorId < EMULATOR_NAMES.length) ? EMULATOR_NAMES[emulatorId]
+                        : "Emulator " + emulatorId;
         String portName = emuName + " · " + numChips + " chip" + (numChips > 1 ? "s" : "");
         if (dacMode != null)
         {
@@ -103,20 +101,22 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         return List.of(new MidiPort(0, portName));
     }
 
-    @Override public void openPort(int portIndex) throws Exception
+    @Override
+    public void openPort(int portIndex) throws Exception
     {
         bridge.init(SAMPLE_RATE);
         bridge.switchEmulator(emulatorId);
         bridge.setNumChips(numChips);
     }
 
-    @Override public void loadSoundbank(String path) throws Exception
+    @Override
+    public void loadSoundbank(String path) throws Exception
     {
         if (path.isEmpty())
         {
             // Load the bundled default GM bank embedded as a resource
-            try (var stream = OpnMidiSynthProvider.class.getResourceAsStream(
-                     "/com/midiraja/midi/opn-gm.wopn"))
+            try (var stream = OpnMidiSynthProvider.class
+                    .getResourceAsStream("/com/midiraja/midi/opn-gm.wopn"))
             {
                 if (stream == null)
                     throw new Exception("Built-in OPN2 GM bank not found in resources");
@@ -140,17 +140,20 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         renderThread = new Thread(() -> {
             // Buffer: FRAMES_PER_RENDER stereo frames = FRAMES_PER_RENDER * 2 shorts
             short[] pcmBuffer = new short[FRAMES_PER_RENDER * 2];
-            
+
 
             long lastHeartbeat = System.currentTimeMillis();
             while (running)
             {
                 // Spin while prepareForNewTrack() is cycling synth state.
-                if (System.currentTimeMillis() - lastHeartbeat > 5000) {
-                        System.err.println("[Diagnostic] RenderThread heartbeat - Thread is alive. renderPaused=" + renderPaused);
-                        lastHeartbeat = System.currentTimeMillis();
-                    }
-                    if (renderPaused)
+                if (System.currentTimeMillis() - lastHeartbeat > 5000)
+                {
+                    System.err.println(
+                            "[Diagnostic] RenderThread heartbeat - Thread is alive. renderPaused="
+                                    + renderPaused);
+                    lastHeartbeat = System.currentTimeMillis();
+                }
+                if (renderPaused)
                 {
                     try
                     {
@@ -173,16 +176,29 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
 
                 // Pull rendered PCM from libOPNMIDI
                 long t0 = System.nanoTime();
-                    bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
-                    long durationMs = (System.nanoTime() - t0) / 1_000_000;
-                    if (durationMs > 100) {
-                        System.err.println("[Diagnostic] bridge.generate took " + durationMs + "ms! (Performance glitch or C-level blocking)");
-                    }
+                bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
+                long durationMs = (System.nanoTime() - t0) / 1_000_000;
+                if (durationMs > 100)
+                {
+                    System.err.println("[Diagnostic] bridge.generate took " + durationMs
+                            + "ms! (Performance glitch or C-level blocking)");
+                }
 
-                if (audioOut != null) {
+                if (audioOut != null)
+                {
                     audioOut.processInterleaved(pcmBuffer, FRAMES_PER_RENDER, 2);
-                } else {
-                    try { Thread.sleep(10); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                }
+                else
+                {
+                    try
+                    {
+                        Thread.sleep(10);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
         });
@@ -192,49 +208,32 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
     }
 
     /**
-     * Parses raw MIDI bytes and dispatches to the appropriate bridge method.
-     * Called exclusively from the render thread.
+     * Parses raw MIDI bytes and dispatches to the appropriate bridge method. Called exclusively
+     * from the render thread.
      */
     private void dispatchToNative(byte[] data)
     {
-        if (data == null || data.length == 0)
-            return;
+        if(data==null||data.length==0)return;
 
-        int status = data[0] & 0xFF;
-        if (status >= 0xF0)
-        {
-            if (data.length > 1)
-                bridge.systemExclusive(data);
-            return;
-        }
+        int status=data[0]&0xFF;if(status>=0xF0){if(data.length>1)bridge.systemExclusive(data);return;}
 
-        int command = status & 0xF0;
-        int channel = status & 0x0F;
+        int command=status&0xF0;int channel=status&0x0F;
 
-        if (data.length < 2)
-            return;
-        int data1 = data[1] & 0xFF;
-        int data2 = (data.length >= 3) ? (data[2] & 0xFF) : 0;
+        if(data.length<2)return;int data1=data[1]&0xFF;int data2=(data.length>=3)?(data[2]&0xFF):0;
 
-        switch (command)
-        {
-            case 0x90 -> bridge.noteOn(channel, data1, data2);
-            case 0x80 -> bridge.noteOff(channel, data1);
-            case 0xB0 -> bridge.controlChange(channel, data1, data2);
-            case 0xC0 -> bridge.patchChange(channel, data1);
-            case 0xE0 -> bridge.pitchBend(channel, (data2 << 7) | data1);
-        }
+        switch(command){case 0x90->bridge.noteOn(channel,data1,data2);case 0x80->bridge.noteOff(channel,data1);case 0xB0->bridge.controlChange(channel,data1,data2);case 0xC0->bridge.patchChange(channel,data1);case 0xE0->bridge.pitchBend(channel,(data2<<7)|data1);}
     }
 
-    @Override public void sendMessage(byte[] data) throws Exception
+    @Override
+    public void sendMessage(byte[] data) throws Exception
     {
-        if (data == null || data.length == 0)
-            return;
+        if (data == null || data.length == 0) return;
         // Clone to prevent the caller from mutating the array after enqueue
         eventQueue.offer(data.clone());
     }
 
-    @Override public void panic()
+    @Override
+    public void panic()
     {
         // Clear old-song events so they don't play at the start of the next song
         eventQueue.clear();
@@ -251,8 +250,9 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
                 eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 120, 0}); // All Sound Off
                 eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 121, 0}); // Reset All Controllers
             }
-            catch (Exception ignored) {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            catch (Exception ignored)
+            {
+                System.err.println("[NativeBridge Error] " + ignored.getMessage());
             }
         }
         if (audioOut != null)
@@ -262,7 +262,8 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         }
     }
 
-    @Override public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    @Override
+    public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
     {
         // Step 1: Pause render thread (gives it up to 20 ms to finish current generate)
         renderPaused = true;
@@ -296,14 +297,16 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
         // Leave renderPaused = true; onPlaybackStarted() will resume the render thread
     }
 
-    @Override public void onPlaybackStarted()
+    @Override
+    public void onPlaybackStarted()
     {
         // Resume render thread — it will start filling the ring buffer with real audio
         // immediately, so the first note is heard within one render buffer (~11.6 ms)
         renderPaused = false;
     }
 
-    @Override public void closePort()
+    @Override
+    public void closePort()
     {
         running = false;
         if (renderThread != null)
@@ -322,8 +325,8 @@ public class OpnMidiSynthProvider implements SoftSynthProvider
     }
 
     /**
-     * Test-only: drains the event queue and dispatches all pending events to the bridge.
-     * In production, the render thread does this automatically before each generate() call.
+     * Test-only: drains the event queue and dispatches all pending events to the bridge. In
+     * production, the render thread does this automatically before each generate() call.
      */
     void flushEventQueueForTest()
     {

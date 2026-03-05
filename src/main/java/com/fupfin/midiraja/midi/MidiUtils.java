@@ -13,7 +13,8 @@ import org.jspecify.annotations.Nullable;
 
 public class MidiUtils
 {
-    private MidiUtils() {}
+    private MidiUtils()
+    {}
 
     public static @Nullable String extractSequenceTitle(Sequence sequence)
     {
@@ -28,9 +29,8 @@ public class MidiUtils
                     if (data != null && data.length > 0)
                     {
                         String text =
-                            new String(data, java.nio.charset.StandardCharsets.UTF_8).trim();
-                        if (!text.isEmpty() && !text.matches("^[\\s\\p{C}]+$"))
-                            return text;
+                                new String(data, java.nio.charset.StandardCharsets.UTF_8).trim();
+                        if (!text.isEmpty() && !text.matches("^[\\s\\p{C}]+$")) return text;
                     }
                 }
             }

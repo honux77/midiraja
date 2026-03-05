@@ -10,8 +10,8 @@ package com.fupfin.midiraja.ui;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 
 /**
- * Interface representing a Face/UI implementation that can render the state of a PlaybackEngine
- * and handle user input.
+ * Interface representing a Face/UI implementation that can render the state of a PlaybackEngine and
+ * handle user input.
  */
 public interface PlaybackUI
 {

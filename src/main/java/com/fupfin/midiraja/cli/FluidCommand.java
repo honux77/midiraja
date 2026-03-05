@@ -24,33 +24,37 @@ import picocli.CommandLine.ParentCommand;
  * Plays MIDI files through the built-in FluidSynth SoundFont synthesizer.
  */
 @Command(name = "fluid", aliases = {"fluidsynth"}, mixinStandardHelpOptions = true,
-    description = "Play with FluidSynth using a SoundFont (.sf2) file.")
+        description = "Play with FluidSynth using a SoundFont (.sf2) file.")
 public class FluidCommand implements Callable<Integer>
 {
-    @ParentCommand @Nullable private MidirajaCommand parent;
+    @ParentCommand
+    @Nullable
+    private MidirajaCommand parent;
 
     @Parameters(index = "0", description = "Path to the SoundFont (.sf2) file.")
     private final File soundfont = new File("");
 
     @Parameters(index = "1..*", arity = "1..*",
-        description = "MIDI files, directories, or .m3u playlists to play.")
+            description = "MIDI files, directories, or .m3u playlists to play.")
     private List<File> files = new ArrayList<>();
 
     @Option(names = {"--driver"},
-        description = "Override the audio driver (e.g. coreaudio, dsound, alsa).")
+            description = "Override the audio driver (e.g. coreaudio, dsound, alsa).")
     private Optional<String> driver = Optional.empty();
 
-    @Mixin private final CommonOptions common = new CommonOptions();
+    @Mixin
+    private final CommonOptions common = new CommonOptions();
 
-    @Override public Integer call() throws Exception
+    @Override
+    public Integer call() throws Exception
     {
         var p = java.util.Objects.requireNonNull(parent);
 
         var provider = new com.fupfin.midiraja.midi.FluidSynthProvider(driver.orElse(null));
 
         var runner =
-            new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
-        return runner.run(
-            provider, true, Optional.empty(), Optional.of(soundfont.getPath()), files, common);
+                new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
+        return runner.run(provider, true, Optional.empty(), Optional.of(soundfont.getPath()), files,
+                common);
     }
 }

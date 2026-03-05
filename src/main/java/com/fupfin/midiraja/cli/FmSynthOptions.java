@@ -15,8 +15,8 @@ import picocli.CommandLine.Option;
 public class FmSynthOptions
 {
     @Option(names = {"-c", "--chips"}, defaultValue = "4",
-        description = "Number of chips to emulate (default: 4). More chips = more polyphony.")
+            description = "Number of chips to emulate (default: 4). More chips = more polyphony.")
     public int chips = 4;
 
-    
+
 }

@@ -28,7 +28,8 @@ public interface MidiOutProvider extends MidiSink
     /**
      * Transmits a raw MIDI byte array directly to the native synthesizer.
      */
-    @Override void sendMessage(byte[] data) throws Exception;
+    @Override
+    void sendMessage(byte[] data) throws Exception;
 
     /**
      * Safely tears down the connection and releases native resources.
@@ -36,27 +37,25 @@ public interface MidiOutProvider extends MidiSink
     void closePort();
 
     /**
-     * Prepares the audio pipeline for a new track. Called at the start of each song before
-     * playback begins. Default is a no-op for hardware MIDI ports. Soft-synth implementations
-     * (e.g. Munt) should override this to clear reverb tails and flush queued audio buffers
-     * so the new track starts cleanly. Implementations may leave their render thread paused
-     * here; {@link #onPlaybackStarted()} will resume it when playback actually begins.
-     * The sequence is provided so that software synthesizers can pre-load necessary assets.
+     * Prepares the audio pipeline for a new track. Called at the start of each song before playback
+     * begins. Default is a no-op for hardware MIDI ports. Soft-synth implementations (e.g. Munt)
+     * should override this to clear reverb tails and flush queued audio buffers so the new track
+     * starts cleanly. Implementations may leave their render thread paused here;
+     * {@link #onPlaybackStarted()} will resume it when playback actually begins. The sequence is
+     * provided so that software synthesizers can pre-load necessary assets.
      */
     default void prepareForNewTrack(javax.sound.midi.Sequence sequence)
-    {
-    }
+    {}
 
     /**
-     * Called by {@code PlaybackEngine.playLoop()} at the very start of playback, just before
-     * the first MIDI event is dispatched. Soft-synth implementations that paused their render
-     * thread in {@link #prepareForNewTrack(javax.sound.midi.Sequence)} should resume it here, resetting any timing
-     * references so the first notes are scheduled with fresh, near-zero timestamps.
-     * Default is a no-op for hardware MIDI ports.
+     * Called by {@code PlaybackEngine.playLoop()} at the very start of playback, just before the
+     * first MIDI event is dispatched. Soft-synth implementations that paused their render thread in
+     * {@link #prepareForNewTrack(javax.sound.midi.Sequence)} should resume it here, resetting any
+     * timing references so the first notes are scheduled with fresh, near-zero timestamps. Default
+     * is a no-op for hardware MIDI ports.
      */
     default void onPlaybackStarted()
-    {
-    }
+    {}
 
     /**
      * Returns the estimated audio output latency in nanoseconds. Used to synchronize visual
@@ -73,16 +72,17 @@ public interface MidiOutProvider extends MidiSink
      */
     default void setVolume(int volume)
     {
-        if (volume < 0 || volume > 127)
-            return;
+        if (volume < 0 || volume > 127) return;
         for (int ch = 0; ch < 16; ch++)
         {
             try
             {
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 7, (byte) volume});
             }
-            catch (Exception ignored) {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage()); /* Ignore during panic */
+            catch (Exception ignored)
+            {
+                System.err.println(
+                        "[NativeBridge Error] " + ignored.getMessage()); /* Ignore during panic */
             }
         }
     }
@@ -110,8 +110,10 @@ public interface MidiOutProvider extends MidiSink
                     sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
                 }
             }
-            catch (Exception ignored) {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage()); /* Ignore during panic */
+            catch (Exception ignored)
+            {
+                System.err.println(
+                        "[NativeBridge Error] " + ignored.getMessage()); /* Ignore during panic */
             }
         }
         // Increase flush window for the heavy Note Off barrage
@@ -122,8 +124,9 @@ public interface MidiOutProvider extends MidiSink
             {
                 Thread.sleep(Math.max(1, endWait - System.currentTimeMillis()));
             }
-            catch (Exception ignored) {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage()); /* force wait */
+            catch (Exception ignored)
+            {
+                System.err.println("[NativeBridge Error] " + ignored.getMessage()); /* force wait */
             }
         }
     }

@@ -1,8 +1,8 @@
 package com.fupfin.midiraja.ui;
 
 /**
- * Encapsulates global UI constants, ANSI escape sequences, and magic characters
- * used throughout the terminal application to maintain visual consistency.
+ * Encapsulates global UI constants, ANSI escape sequences, and magic characters used throughout the
+ * terminal application to maintain visual consistency.
  */
 public final class Theme
 {
@@ -17,7 +17,7 @@ public final class Theme
 
     // Warning Yellow (for PAUSED state)
     public static final String COLOR_YELLOW = "\033[1;33m";
-    
+
     // Dim/Gray (for grids and background elements)
     public static final String COLOR_DIM = "\033[38;5;238m";
 
@@ -49,17 +49,16 @@ public final class Theme
     public static final String TERM_ALT_SCREEN_DISABLE = "\033[?1049l";
 
     /**
-     * Disables all common mouse-tracking modes to prevent scroll-wheel events from
-     *  leaking into the shell as cursor-key presses after the application exits.
+     * Disables all common mouse-tracking modes to prevent scroll-wheel events from leaking into the
+     * shell as cursor-key presses after the application exits.
      */
     public static final String TERM_MOUSE_DISABLE = "\033[?1000l" // X10 mouse tracking off
-        + "\033[?1002l" // button-event tracking off
-        + "\033[?1003l" // any-event tracking off
-        + "\033[?1006l" // SGR mouse extension off
-        + "\033[?1007l" // alternate scroll mode off
-        + "\033[?1015l"; // URXVT mouse extension off
+            + "\033[?1002l" // button-event tracking off
+            + "\033[?1003l" // any-event tracking off
+            + "\033[?1006l" // SGR mouse extension off
+            + "\033[?1007l" // alternate scroll mode off
+            + "\033[?1015l"; // URXVT mouse extension off
 
     private Theme()
-    {
-    } // Prevent instantiation
+    {} // Prevent instantiation
 }

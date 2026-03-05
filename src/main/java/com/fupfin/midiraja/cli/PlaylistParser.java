@@ -14,9 +14,9 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Builds a flat playlist from a mix of .mid files, directories, and .m3u playlists.
- * M3U files may contain {@code #MIDRA:} directives that update the {@link CommonOptions}
- * (volume, speed, shuffle, loop, recursive) as a side effect.
+ * Builds a flat playlist from a mix of .mid files, directories, and .m3u playlists. M3U files may
+ * contain {@code #MIDRA:} directives that update the {@link CommonOptions} (volume, speed, shuffle,
+ * loop, recursive) as a side effect.
  */
 public class PlaylistParser
 {
@@ -30,10 +30,10 @@ public class PlaylistParser
     }
 
     /**
-     * Expands {@code rawFiles} into an ordered list of MIDI files.
-     * Directories are scanned according to {@code common.recursive}.
-     * M3U directives may mutate {@code common.shuffle}, {@code common.loop},
-     * {@code common.recursive}, {@code common.volume}, and {@code common.speed}.
+     * Expands {@code rawFiles} into an ordered list of MIDI files. Directories are scanned
+     * according to {@code common.recursive}. M3U directives may mutate {@code common.shuffle},
+     * {@code common.loop}, {@code common.recursive}, {@code common.volume}, and
+     * {@code common.speed}.
      */
     public List<File> parse(List<File> rawFiles, CommonOptions common)
     {
@@ -46,7 +46,7 @@ public class PlaylistParser
                 parseDirectory(f, playlist, common.recursive);
             }
             else if (nameLower.endsWith(".m3u") || nameLower.endsWith(".m3u8")
-                || nameLower.endsWith(".txt"))
+                    || nameLower.endsWith(".txt"))
             {
                 parsePlaylistFile(f, playlist, common);
             }
@@ -105,7 +105,7 @@ public class PlaylistParser
                             try
                             {
                                 common.volume =
-                                    Integer.parseInt(token.substring(token.indexOf('=') + 1));
+                                        Integer.parseInt(token.substring(token.indexOf('=') + 1));
                                 logVerbose("Applied directive from playlist: " + token);
                             }
                             catch (NumberFormatException ignored)
@@ -113,13 +113,13 @@ public class PlaylistParser
                             }
                         }
                         else if ((token.equals("--volume") || token.equals("-v"))
-                            && i + 1 < tokens.length)
+                                && i + 1 < tokens.length)
                         {
                             try
                             {
                                 common.volume = Integer.parseInt(tokens[++i]);
                                 logVerbose("Applied directive from playlist: " + token + " "
-                                    + common.volume);
+                                        + common.volume);
                             }
                             catch (NumberFormatException ignored)
                             {
@@ -131,7 +131,7 @@ public class PlaylistParser
                             try
                             {
                                 common.speed =
-                                    Double.parseDouble(token.substring(token.indexOf('=') + 1));
+                                        Double.parseDouble(token.substring(token.indexOf('=') + 1));
                                 logVerbose("Applied directive from playlist: " + token);
                             }
                             catch (NumberFormatException ignored)
@@ -139,13 +139,13 @@ public class PlaylistParser
                             }
                         }
                         else if ((token.equals("--speed") || token.equals("-x"))
-                            && i + 1 < tokens.length)
+                                && i + 1 < tokens.length)
                         {
                             try
                             {
                                 common.speed = Double.parseDouble(tokens[++i]);
                                 logVerbose("Applied directive from playlist: " + token + " "
-                                    + common.speed);
+                                        + common.speed);
                             }
                             catch (NumberFormatException ignored)
                             {
@@ -180,14 +180,14 @@ public class PlaylistParser
                 }
             }
             logVerbose("Loaded playlist: " + playlistFile.getName() + " (" + lines.size()
-                + " lines parsed)");
+                    + " lines parsed)");
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             System.err.println("[Error in " + getClass().getSimpleName() + "] " + e.getMessage());
-            err.println(
-                "Error reading playlist file '" + playlistFile.getName() + "': " + e.getMessage());
-            if (verbose)
-                e.printStackTrace(err);
+            err.println("Error reading playlist file '" + playlistFile.getName() + "': "
+                    + e.getMessage());
+            if (verbose) e.printStackTrace(err);
         }
     }
 
@@ -198,20 +198,18 @@ public class PlaylistParser
             int maxDepth = recursive ? Integer.MAX_VALUE : 1;
             try (var stream = java.nio.file.Files.walk(dir.toPath(), maxDepth))
             {
-                stream.filter(java.nio.file.Files::isRegularFile)
-                    .map(java.nio.file.Path::toFile)
-                    .filter(f -> {
-                        String name = f.getName().toLowerCase(Locale.ROOT);
-                        return name.endsWith(".mid") || name.endsWith(".midi");
-                    })
-                    .forEach(playlist::add);
+                stream.filter(java.nio.file.Files::isRegularFile).map(java.nio.file.Path::toFile)
+                        .filter(f -> {
+                            String name = f.getName().toLowerCase(Locale.ROOT);
+                            return name.endsWith(".mid") || name.endsWith(".midi");
+                        }).forEach(playlist::add);
             }
         }
-        catch (Exception e) {
+        catch (Exception e)
+        {
             System.err.println("[Error in " + getClass().getSimpleName() + "] " + e.getMessage());
             err.println("Error reading directory '" + dir.getName() + "': " + e.getMessage());
-            if (verbose)
-                e.printStackTrace(err);
+            if (verbose) e.printStackTrace(err);
         }
     }
 

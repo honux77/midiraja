@@ -1,8 +1,8 @@
 /*
  * Copyright (c) 2026, Park, Sungchul All rights reserved.
  *
- * This source code is licensed under the BSD-style license found in the LICENSE
- * file in the root directory of this source tree.
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
  */
 
 package com.fupfin.midiraja.io;
@@ -15,41 +15,49 @@ import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.NonBlockingReader;
 
-public class JLineTerminalIO implements TerminalIO {
-  @org.jspecify.annotations.Nullable private Terminal terminal;
-  @org.jspecify.annotations.Nullable private NonBlockingReader reader;
+public class JLineTerminalIO implements TerminalIO
+{
+    @org.jspecify.annotations.Nullable
+    private Terminal terminal;
+    @org.jspecify.annotations.Nullable
+    private NonBlockingReader reader;
 
-  @Override
-  public boolean isInteractive() {
-    if (terminal == null)
-      return false;
-    String type = terminal.getType();
-    return !Terminal.TYPE_DUMB.equals(type) &&
-        !Terminal.TYPE_DUMB_COLOR.equals(type);
-  }
-
-  @Override
-  public void init() throws IOException {
-    // Create terminal in raw mode
-    terminal = TerminalBuilder.builder().system(true).build();
-    terminal.enterRawMode();
-    Attributes attr = terminal.getAttributes();
-    attr.setLocalFlag(Attributes.LocalFlag.ECHO, false);
-    terminal.setAttributes(attr);
-    reader = terminal.reader();
-  }
-
-  @Override
-  public void close() throws IOException {
-    if (terminal != null) {
-      try {
-        terminal.close();
-      } catch (IOException _) {
-        // Ignore errors during terminal cleanup to prevent masking main
-        // exceptions
-      }
+    @Override
+    public boolean isInteractive()
+    {
+        if (terminal == null) return false;
+        String type = terminal.getType();
+        return !Terminal.TYPE_DUMB.equals(type) && !Terminal.TYPE_DUMB_COLOR.equals(type);
     }
-  }
+
+    @Override
+    public void init() throws IOException
+    {
+        // Create terminal in raw mode
+        terminal = TerminalBuilder.builder().system(true).build();
+        terminal.enterRawMode();
+        Attributes attr = terminal.getAttributes();
+        attr.setLocalFlag(Attributes.LocalFlag.ECHO, false);
+        terminal.setAttributes(attr);
+        reader = terminal.reader();
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if (terminal != null)
+        {
+            try
+            {
+                terminal.close();
+            }
+            catch (IOException _)
+            {
+                // Ignore errors during terminal cleanup to prevent masking main
+                // exceptions
+            }
+        }
+    }
 
   @Override
   public TerminalKey readKey() throws IOException {
@@ -107,35 +115,43 @@ public class JLineTerminalIO implements TerminalIO {
     };
   }
 
-  @Override
-  public void print(String str) {
-    if (terminal != null) {
-      terminal.writer().print(str);
-      terminal.writer().flush();
-    } else {
-      print(str);
+    @Override
+    public void print(String str)
+    {
+        if (terminal != null)
+        {
+            terminal.writer().print(str);
+            terminal.writer().flush();
+        }
+        else
+        {
+            print(str);
+        }
     }
-  }
 
-  @Override
-  public void println(String str) {
-    if (terminal != null) {
-      terminal.writer().println(str);
-      terminal.writer().flush();
-    } else {
-      println(str);
+    @Override
+    public void println(String str)
+    {
+        if (terminal != null)
+        {
+            terminal.writer().println(str);
+            terminal.writer().flush();
+        }
+        else
+        {
+            println(str);
+        }
     }
-  }
 
-  @Override
-  public int getWidth() {
-    return terminal != null && terminal.getWidth() > 0 ? terminal.getWidth()
-                                                       : 80;
-  }
+    @Override
+    public int getWidth()
+    {
+        return terminal != null && terminal.getWidth() > 0 ? terminal.getWidth() : 80;
+    }
 
-  @Override
-  public int getHeight() {
-    return terminal != null && terminal.getHeight() > 0 ? terminal.getHeight()
-                                                        : 24;
-  }
+    @Override
+    public int getHeight()
+    {
+        return terminal != null && terminal.getHeight() > 0 ? terminal.getHeight() : 24;
+    }
 }

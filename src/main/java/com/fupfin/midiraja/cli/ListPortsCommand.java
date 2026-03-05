@@ -17,12 +17,15 @@ import picocli.CommandLine.ParentCommand;
  * Lists all available MIDI output ports for the native OS MIDI provider.
  */
 @Command(name = "ports", mixinStandardHelpOptions = true,
-    description = "List available MIDI output ports.")
+        description = "List available MIDI output ports.")
 public class ListPortsCommand implements Runnable
 {
-    @ParentCommand @Nullable private MidirajaCommand parent;
+    @ParentCommand
+    @Nullable
+    private MidirajaCommand parent;
 
-    @Override public void run()
+    @Override
+    public void run()
     {
         var p = java.util.Objects.requireNonNull(parent);
         var provider = MidiProviderFactory.createProvider();

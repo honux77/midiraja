@@ -9,7 +9,8 @@ package com.fupfin.midiraja.midi;
 
 import java.util.List;
 
-@SuppressWarnings("ThreadPriorityCheck") public class MuntSynthProvider implements SoftSynthProvider
+@SuppressWarnings("ThreadPriorityCheck")
+public class MuntSynthProvider implements SoftSynthProvider
 {
     private final MuntNativeBridge bridge;
     private final com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
@@ -20,8 +21,8 @@ import java.util.List;
     // ensuring close_synth / open_synth are never called concurrently with rendering.
     private volatile boolean renderPaused = false;
 
-    public MuntSynthProvider(
-        MuntNativeBridge bridge, com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut)
+    public MuntSynthProvider(MuntNativeBridge bridge,
+            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut)
     {
         this.bridge = bridge;
         this.audioOut = audioOut;
@@ -35,18 +36,21 @@ import java.util.List;
     // capacity gives a stable, conservative latency estimate vs a dynamic snapshot.
     private static final int RING_BUFFER_CAPACITY_FRAMES = 4096;
 
-    @Override public long getAudioLatencyNanos()
+    @Override
+    public long getAudioLatencyNanos()
     {
         long totalFrames = (long) RING_BUFFER_CAPACITY_FRAMES;
         return totalFrames * 1_000_000_000L / MUNT_SAMPLE_RATE;
     }
 
-    @Override public List<MidiPort> getOutputPorts()
+    @Override
+    public List<MidiPort> getOutputPorts()
     {
         return List.of(new MidiPort(0, "Munt MT-32 Emulator (Embedded)"));
     }
 
-    @Override public void openPort(int portIndex) throws Exception
+    @Override
+    public void openPort(int portIndex) throws Exception
     {
         bridge.createSynth();
     }
@@ -93,7 +97,15 @@ import java.util.List;
                 }
                 else
                 {
-                    try { Thread.sleep(16); } catch (InterruptedException e) { Thread.currentThread().interrupt(); break; }
+                    try
+                    {
+                        Thread.sleep(16);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
             }
         });
@@ -104,7 +116,9 @@ import java.util.List;
         renderThread.start();
     }
 
-    @Override @SuppressWarnings("EmptyCatch") public void panic()
+    @Override
+    @SuppressWarnings("EmptyCatch")
+    public void panic()
     {
         // For Munt, skip the default 200ms wait: all note-offs are timestamped and
         // processed by the render thread in the next render cycle (<16ms). A 20ms wait
@@ -123,8 +137,9 @@ import java.util.List;
                     sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
                 }
             }
-            catch (Exception ignored) {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            catch (Exception ignored)
+            {
+                System.err.println("[NativeBridge Error] " + ignored.getMessage());
             }
         }
         // No sleep needed: note-offs have future timestamps and are processed by the render
@@ -136,7 +151,8 @@ import java.util.List;
         }
     }
 
-    @Override public void loadSoundbank(String path) throws Exception
+    @Override
+    public void loadSoundbank(String path) throws Exception
     {
         bridge.loadRoms(path);
         bridge.openSynth();
@@ -147,11 +163,19 @@ import java.util.List;
         }
     }
 
-    @Override @SuppressWarnings("EmptyCatch") public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    @Override
+    @SuppressWarnings("EmptyCatch")
+    public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
     {
         // Step 1: Pause the render thread so we can call renderAudio() directly below.
         renderPaused = true;
-        try { Thread.sleep(20); } catch (InterruptedException ignored) {}
+        try
+        {
+            Thread.sleep(20);
+        }
+        catch (InterruptedException ignored)
+        {
+        }
 
         // Step 2: Flush the ring buffer to discard audio from the previous song.
         if (audioOut != null) audioOut.reset();
@@ -182,7 +206,8 @@ import java.util.List;
         // so the ring buffer starts filling with real audio (not silence) from the start.
     }
 
-    @Override public void onPlaybackStarted()
+    @Override
+    public void onPlaybackStarted()
     {
         // Reset the render-clock reference so the first events get near-zero future timestamps
         // instead of timestamps capped at 4096 from a stale reference. Safe to call here
@@ -193,10 +218,10 @@ import java.util.List;
         renderPaused = false;
     }
 
-    @Override public void sendMessage(byte[] data) throws Exception
+    @Override
+    public void sendMessage(byte[] data) throws Exception
     {
-        if (data == null || data.length == 0)
-            return;
+        if (data == null || data.length == 0) return;
 
         int status = data[0] & 0xFF;
         if (status >= 0xF0)
@@ -235,7 +260,9 @@ import java.util.List;
         }
     }
 
-    @Override @SuppressWarnings("EmptyCatch") public void closePort()
+    @Override
+    @SuppressWarnings("EmptyCatch")
+    public void closePort()
     {
         running = false;
         if (renderThread != null)

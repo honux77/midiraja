@@ -15,10 +15,7 @@ public class MidiProviderFactory
 {
     private enum OS
     {
-        MAC,
-        WINDOWS,
-        LINUX,
-        UNKNOWN
+        MAC, WINDOWS, LINUX, UNKNOWN
     }
 
     public static MidiOutProvider createProvider()

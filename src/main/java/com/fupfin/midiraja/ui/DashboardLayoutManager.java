@@ -8,10 +8,7 @@ public class DashboardLayoutManager
 {
     public enum PanelId
     {
-        METADATA,
-        CHANNELS,
-        PLAYLIST,
-        CONTROLS
+        METADATA, CHANNELS, PLAYLIST, CONTROLS
     }
 
     // --- Layout Constants ---
@@ -35,8 +32,8 @@ public class DashboardLayoutManager
         return contentHeight + TITLED_PANEL_OVERHEAD;
     }
 
-    public Map<PanelId, LayoutConstraints> calculateLayout(
-        int termWidth, int termHeight, int listSize)
+    public Map<PanelId, LayoutConstraints> calculateLayout(int termWidth, int termHeight,
+            int listSize)
     {
         Map<PanelId, LayoutConstraints> layout = new HashMap<>();
         boolean showPlaylist = listSize > 1;
@@ -50,7 +47,7 @@ public class DashboardLayoutManager
         int hControls = CONTROLS_MIN_CONTENT;
 
         int absoluteMinHeight =
-            APP_STATIC_OVERHEAD + hNowPlaying + hChannels + hPlaylist + hControls;
+                APP_STATIC_OVERHEAD + hNowPlaying + hChannels + hPlaylist + hControls;
 
         boolean isHorizontal = true; // Default to Stacked
 
@@ -58,7 +55,7 @@ public class DashboardLayoutManager
         {
             // 2. Determine Layout Mode based on Two-Column Threshold
             int twoColumnReqHeight = APP_STATIC_OVERHEAD + wrapTitled(NOW_PLAYING_MIN_CONTENT)
-                + wrapTitled(CHANNELS_MAX_CONTENT) + CONTROLS_MIN_CONTENT;
+                    + wrapTitled(CHANNELS_MAX_CONTENT) + CONTROLS_MIN_CONTENT;
 
             if (safeHeight >= twoColumnReqHeight && showPlaylist)
             {
@@ -99,7 +96,8 @@ public class DashboardLayoutManager
                 {
                     // If no playlist, give half of surplus to metadata and half to channels
                     // but cap metadata at max.
-                    int extraNow = Math.min(surplus / 2, NOW_PLAYING_MAX_CONTENT - hNowPlaying + TITLED_PANEL_OVERHEAD);
+                    int extraNow = Math.min(surplus / 2,
+                            NOW_PLAYING_MAX_CONTENT - hNowPlaying + TITLED_PANEL_OVERHEAD);
                     hNowPlaying += extraNow;
                     hChannels += (surplus - extraNow);
                 }
@@ -119,10 +117,10 @@ public class DashboardLayoutManager
         {
             int leftColWidth = Math.max(35, termWidth / 2);
             int rightColWidth = termWidth - leftColWidth;
-            layout.put(
-                PanelId.CHANNELS, new LayoutConstraints(leftColWidth, hChannels, true, false));
-            layout.put(
-                PanelId.PLAYLIST, new LayoutConstraints(rightColWidth, hPlaylist, true, false));
+            layout.put(PanelId.CHANNELS,
+                    new LayoutConstraints(leftColWidth, hChannels, true, false));
+            layout.put(PanelId.PLAYLIST,
+                    new LayoutConstraints(rightColWidth, hPlaylist, true, false));
         }
         return layout;
     }

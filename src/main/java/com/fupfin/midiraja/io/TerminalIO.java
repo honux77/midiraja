@@ -8,7 +8,6 @@
 package com.fupfin.midiraja.io;
 
 import java.io.IOException;
-import java.lang.ScopedValue;
 
 /**
  * Dependency Inversion Principle (DIP) abstraction for terminal interaction. Allows decoupling the
@@ -28,24 +27,12 @@ public interface TerminalIO
      */
     enum TerminalKey
     {
-        NONE,
-        SEEK_FORWARD,
-        SEEK_BACKWARD,
-        VOLUME_UP,
-        VOLUME_DOWN,
-        SPEED_UP,
-        SPEED_DOWN,
-        TRANSPOSE_UP,
-        TRANSPOSE_DOWN,
-        NEXT_TRACK,
-        PREV_TRACK,
-        QUIT,
-        PAUSE
+        NONE, SEEK_FORWARD, SEEK_BACKWARD, VOLUME_UP, VOLUME_DOWN, SPEED_UP, SPEED_DOWN, TRANSPOSE_UP, TRANSPOSE_DOWN, NEXT_TRACK, PREV_TRACK, QUIT, PAUSE
     }
 
     /**
      * Returns true if the terminal supports advanced interactions like cursor movement and raw
-     *         mode.
+     * mode.
      */
     boolean isInteractive();
 

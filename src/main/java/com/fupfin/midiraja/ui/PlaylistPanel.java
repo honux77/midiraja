@@ -13,7 +13,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import org.jspecify.annotations.Nullable;
@@ -21,11 +20,13 @@ import org.jspecify.annotations.Nullable;
 public class PlaylistPanel implements Panel
 {
     private LayoutConstraints constraints = new LayoutConstraints(80, 0, false, false);
-    @Nullable private PlaylistContext context;
+    @Nullable
+    private PlaylistContext context;
     private final Map<File, String> titleCache = new ConcurrentHashMap<>();
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
 
-    @Override public void onLayoutUpdated(LayoutConstraints bounds)
+    @Override
+    public void onLayoutUpdated(LayoutConstraints bounds)
     {
         this.constraints = bounds;
     }
@@ -44,7 +45,8 @@ public class PlaylistPanel implements Panel
                         try
                         {
                             Sequence seq = MidiSystem.getSequence(file);
-                            String title = com.fupfin.midiraja.midi.MidiUtils.extractSequenceTitle(seq);
+                            String title =
+                                    com.fupfin.midiraja.midi.MidiUtils.extractSequenceTitle(seq);
                             if (title != null && !title.isEmpty())
                             {
                                 titleCache.put(file, title.trim());
@@ -54,8 +56,10 @@ public class PlaylistPanel implements Panel
                                 titleCache.put(file, ""); // Empty string means no title
                             }
                         }
-                        catch (Exception ignored) {
-            System.err.println("[Error in " + getClass().getSimpleName() + "] " + ignored.getMessage());
+                        catch (Exception ignored)
+                        {
+                            System.err.println("[Error in " + getClass().getSimpleName() + "] "
+                                    + ignored.getMessage());
                             titleCache.put(file, "");
                         }
                     });
@@ -64,23 +68,26 @@ public class PlaylistPanel implements Panel
         }
     }
 
-    @Override public void onPlaybackStateChanged()
-    {
-    }
-    @Override public void onTick(long currentMicroseconds)
-    {
-    }
-    @Override public void onTempoChanged(float bpm)
-    {
-    }
-    @Override public void onChannelActivity(int channel, int velocity)
-    {
-    }
+    @Override
+    public void onPlaybackStateChanged()
+    {}
 
-    @Override public void render(ScreenBuffer buffer)
+    @Override
+    public void onTick(long currentMicroseconds)
+    {}
+
+    @Override
+    public void onTempoChanged(float bpm)
+    {}
+
+    @Override
+    public void onChannelActivity(int channel, int velocity)
+    {}
+
+    @Override
+    public void render(ScreenBuffer buffer)
     {
-        if (constraints.height() <= 0 || context == null)
-            return;
+        if (constraints.height() <= 0 || context == null) return;
 
         int listSize = context.files().size();
         int idx = context.currentIndex();
@@ -98,8 +105,8 @@ public class PlaylistPanel implements Panel
 
             String fetchedTitle = titleCache.get(file);
             String displayName = (fetchedTitle != null && !fetchedTitle.isEmpty())
-                ? fileName + " (" + fetchedTitle + ")"
-                : fileName;
+                    ? fileName + " (" + fetchedTitle + ")"
+                    : fileName;
 
             String status = (i == idx) ? "  (Playing)" : "";
 
@@ -126,7 +133,7 @@ public class PlaylistPanel implements Panel
 
             int visibleDisplayNameLen = displayName.replaceAll("\\033\\[[;\\d]*m", "").length();
             int visibleStatusLen = status.replaceAll("\\033\\[[;\\d]*m", "").length();
-            int baseLen = 6; // "  " + "99. " (approx 6 chars)
+            int baseLen = 6; // " " + "99. " (approx 6 chars)
 
             if (visibleDisplayNameLen > constraints.width() - visibleStatusLen - baseLen)
             {
@@ -136,8 +143,8 @@ public class PlaylistPanel implements Panel
                 {
                     if (i == idx)
                     {
-                        displayName =
-                            Theme.COLOR_HIGHLIGHT + stripped.substring(0, maxLen) + "...\033[0m";
+                        displayName = Theme.COLOR_HIGHLIGHT + stripped.substring(0, maxLen)
+                                + "...\033[0m";
                     }
                     else
                     {

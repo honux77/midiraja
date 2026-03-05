@@ -9,7 +9,8 @@ package com.fupfin.midiraja.ui;
 
 public class UIUtils
 {
-    private UIUtils() {}
+    private UIUtils()
+    {}
 
     public static String formatTime(long microseconds, boolean includeHours)
     {
@@ -17,8 +18,7 @@ public class UIUtils
         long hours = totalSeconds / 3600;
         long minutes = (totalSeconds % 3600) / 60;
         long seconds = totalSeconds % 60;
-        if (includeHours)
-            return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+        if (includeHours) return String.format("%02d:%02d:%02d", hours, minutes, seconds);
         return String.format("%02d:%02d", minutes, seconds);
     }
 
@@ -40,7 +40,7 @@ public class UIUtils
             if (inAnsi)
             {
                 if (c == 'm' || c == 'K' || c == 'J' || c == 'H' || c == 'A' || c == 'l'
-                    || c == 'h')
+                        || c == 'h')
                 {
                     // Primitive check to end ANSI sequences, 'm' is color, others are cursor/screen
                     inAnsi = false;

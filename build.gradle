@@ -1,4 +1,5 @@
 plugins {
+    id 'com.diffplug.spotless' version '7.0.2'
     id 'application'
     id 'org.graalvm.buildtools.native' version '0.10.1'
     id 'jacoco'
@@ -302,4 +303,15 @@ pmd {
     ignoreFailures = true
     ruleSets = []
     ruleSetFiles = files("config/pmd/ruleset.xml")
+}
+
+spotless {
+    java {
+        target 'src/main/java/**/*.java'
+        // googleJavaFormat('1.25.2').aosp() // This might fail due to Java 25
+        eclipse().configFile('eclipse-java-google-style.xml')
+        removeUnusedImports()
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
 }

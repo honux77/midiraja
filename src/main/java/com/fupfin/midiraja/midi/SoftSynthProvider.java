@@ -8,8 +8,8 @@
 package com.fupfin.midiraja.midi;
 
 /**
- * An extended interface for software synthesizer providers that require a soundbank (e.g., .sf2)
- * to produce audio.
+ * An extended interface for software synthesizer providers that require a soundbank (e.g., .sf2) to
+ * produce audio.
  */
 public interface SoftSynthProvider extends MidiOutProvider
 {

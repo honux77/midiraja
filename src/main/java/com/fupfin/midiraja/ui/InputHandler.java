@@ -13,7 +13,8 @@ import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
 
 public class InputHandler
 {
-    private InputHandler() {}
+    private InputHandler()
+    {}
 
     public static void handleCommonInput(PlaybackEngine engine, TerminalKey key)
     {

@@ -15,13 +15,15 @@ import java.util.function.BiConsumer;
 
 public class InputLoopRunner
 {
-    private InputLoopRunner() {}
+    private InputLoopRunner()
+    {}
 
     /**
-     * Standard polling loop for terminal input.
-     * Blocks and reads keys until the engine stops playing, passing each key to the provided handler.
+     * Standard polling loop for terminal input. Blocks and reads keys until the engine stops
+     * playing, passing each key to the provided handler.
      */
-    public static void run(PlaybackEngine engine, BiConsumer<PlaybackEngine, TerminalKey> keyHandler)
+    public static void run(PlaybackEngine engine,
+            BiConsumer<PlaybackEngine, TerminalKey> keyHandler)
     {
         var term = TerminalIO.CONTEXT.get();
         try

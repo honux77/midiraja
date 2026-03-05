@@ -28,38 +28,46 @@ public class TitledPanel implements Panel
         this.noBottomBorder = noBottomBorder;
     }
 
-    @Override public void onLayoutUpdated(LayoutConstraints bounds)
+    @Override
+    public void onLayoutUpdated(LayoutConstraints bounds)
     {
         this.constraints = bounds;
         int overhead = noBottomBorder ? 1 : 2; // 1 for title, 1 for bottom border
         int contentHeight = Math.max(0, bounds.height() - overhead);
         // Reduce width by 2 to account for left and right padding spaces!
         int contentWidth = Math.max(0, bounds.width() - 2);
-        content.onLayoutUpdated(new LayoutConstraints(
-            contentWidth, contentHeight, bounds.showHeaders(), bounds.isHorizontal()));
+        content.onLayoutUpdated(new LayoutConstraints(contentWidth, contentHeight,
+                bounds.showHeaders(), bounds.isHorizontal()));
     }
 
-    @Override public void onPlaybackStateChanged()
+    @Override
+    public void onPlaybackStateChanged()
     {
         content.onPlaybackStateChanged();
     }
-    @Override public void onTick(long currentMicroseconds)
+
+    @Override
+    public void onTick(long currentMicroseconds)
     {
         content.onTick(currentMicroseconds);
     }
-    @Override public void onTempoChanged(float bpm)
+
+    @Override
+    public void onTempoChanged(float bpm)
     {
         content.onTempoChanged(bpm);
     }
-    @Override public void onChannelActivity(int channel, int velocity)
+
+    @Override
+    public void onChannelActivity(int channel, int velocity)
     {
         content.onChannelActivity(channel, velocity);
     }
 
-    @Override public void render(ScreenBuffer buffer)
+    @Override
+    public void render(ScreenBuffer buffer)
     {
-        if (constraints.height() <= 0)
-            return;
+        if (constraints.height() <= 0) return;
 
         // Draw Header
         String header = " ≡≡[ " + title + " ]";

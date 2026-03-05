@@ -5,4 +5,5 @@
  * directory of this source tree.
  */
 
-@org.jspecify.annotations.NullMarked package com.fupfin.midiraja.ui;
+@org.jspecify.annotations.NullMarked
+package com.fupfin.midiraja.ui;

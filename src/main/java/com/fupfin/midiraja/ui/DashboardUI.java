@@ -10,7 +10,6 @@ package com.fupfin.midiraja.ui;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +27,7 @@ public class DashboardUI implements PlaybackUI
     private final PlaylistPanel rawPlaylistPanel = new PlaylistPanel();
 
     private final TitledPanel titledNowPlayingPanel =
-        new TitledPanel("NOW PLAYING", nowPlayingPanel);
+            new TitledPanel("NOW PLAYING", nowPlayingPanel);
     private final TitledPanel channelPanel = new TitledPanel("MIDI CHANNELS", rawChannelPanel);
     private final TitledPanel titledPlaylistPanel = new TitledPanel("PLAYLIST", rawPlaylistPanel);
 
@@ -53,8 +52,7 @@ public class DashboardUI implements PlaybackUI
                         if (text.length() > 0 && text.chars().allMatch(c -> c >= 32 && c < 127))
                         {
                             // Deduplicate
-                            if (!meta.contains(text))
-                                meta.add(text);
+                            if (!meta.contains(text)) meta.add(text);
                         }
                     }
                 }
@@ -63,11 +61,11 @@ public class DashboardUI implements PlaybackUI
         return meta;
     }
 
-    @Override public void runRenderLoop(PlaybackEngine engine)
+    @Override
+    public void runRenderLoop(PlaybackEngine engine)
     {
         var term = TerminalIO.CONTEXT.get();
-        if (!term.isInteractive())
-            return;
+        if (!term.isInteractive()) return;
 
         engine.addPlaybackEventListener(nowPlayingPanel);
         engine.addPlaybackEventListener(rawChannelPanel);
@@ -97,31 +95,28 @@ public class DashboardUI implements PlaybackUI
                 }
 
                 nowPlayingPanel.updateState(engine.getCurrentMicroseconds(),
-                    engine.getTotalMicroseconds(), engine.getCurrentBpm(), engine.getCurrentSpeed(),
-                    engine.getVolumeScale(), engine.getCurrentTranspose(), engine.isPaused(),
-                    engine.getContext());
+                        engine.getTotalMicroseconds(), engine.getCurrentBpm(),
+                        engine.getCurrentSpeed(), engine.getVolumeScale(),
+                        engine.getCurrentTranspose(), engine.isPaused(), engine.getContext());
 
                 ScreenBuffer buffer = new ScreenBuffer(4096);
                 buffer.append(Theme.TERM_CURSOR_HOME);
 
-                String banner = String.format(
-                    " Midiraja v%s - Terminal Lover's MIDI Player", com.fupfin.midiraja.Version.VERSION);
+                String banner = String.format(" Midiraja v%s - Terminal Lover's MIDI Player",
+                        com.fupfin.midiraja.Version.VERSION);
                 int bannerPadding = Math.max(0, termWidth - banner.length());
-                buffer.append(Theme.FORMAT_INVERT)
-                    .append(banner)
-                    .append(" ".repeat(bannerPadding))
-                    .append("\033[0m\n");
+                buffer.append(Theme.FORMAT_INVERT).append(banner).append(" ".repeat(bannerPadding))
+                        .append("\033[0m\n");
 
                 titledNowPlayingPanel.render(buffer);
 
-                Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout =
-                    layoutManager.calculateLayout(
-                        termWidth, termHeight, engine.getContext().files().size());
+                Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = layoutManager
+                        .calculateLayout(termWidth, termHeight, engine.getContext().files().size());
 
                 LayoutConstraints chanC =
-                    Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS));
+                        Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS));
                 LayoutConstraints playC =
-                    Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
+                        Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
 
                 if (chanC.isHorizontal())
                 {
@@ -176,18 +171,19 @@ public class DashboardUI implements PlaybackUI
     private void recalculateLayout(int width, int height, int listSize)
     {
         Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout =
-            layoutManager.calculateLayout(width, height, listSize);
+                layoutManager.calculateLayout(width, height, listSize);
         titledNowPlayingPanel.onLayoutUpdated(
-            Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
+                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
         channelPanel.onLayoutUpdated(
-            Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS)));
+                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS)));
         titledPlaylistPanel.onLayoutUpdated(
-            Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST)));
+                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST)));
         controlsPanel.onLayoutUpdated(
-            Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CONTROLS)));
+                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CONTROLS)));
     }
 
-    @Override public void runInputLoop(PlaybackEngine engine)
+    @Override
+    public void runInputLoop(PlaybackEngine engine)
     {
         InputLoopRunner.run(engine, InputHandler::handleCommonInput);
     }

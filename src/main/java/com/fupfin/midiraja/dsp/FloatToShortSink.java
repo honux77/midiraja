@@ -4,61 +4,80 @@ import com.fupfin.midiraja.midi.AudioEngine;
 import org.jspecify.annotations.Nullable;
 
 /**
- * A terminal sink that converts float[] (-1.0 to 1.0) into interleaved short[] PCM
- * and pushes it to the native AudioEngine.
+ * A terminal sink that converts float[] (-1.0 to 1.0) into interleaved short[] PCM and pushes it to
+ * the native AudioEngine.
  */
-public class FloatToShortSink implements AudioSink {
+public class FloatToShortSink implements AudioSink
+{
     private final @Nullable AudioEngine engine;
     private final int outputChannels;
     private short @Nullable [] pcmBuffer = null;
 
-    public FloatToShortSink(@Nullable AudioEngine engine) {
+    public FloatToShortSink(@Nullable AudioEngine engine)
+    {
         this(engine, 2); // Default to stereo
     }
 
-    public FloatToShortSink(@Nullable AudioEngine engine, int outputChannels) {
+    public FloatToShortSink(@Nullable AudioEngine engine, int outputChannels)
+    {
         this.engine = engine;
         this.outputChannels = outputChannels;
     }
 
     @Override
-    public void processInterleaved(short[] interleavedPcm, int frames, int channels) {
-        if (engine != null) {
+    public void processInterleaved(short[] interleavedPcm, int frames, int channels)
+    {
+        if (engine != null)
+        {
             int totalSamples = frames * channels;
             int offset = 0;
             int stuckCount = 0;
-            while (offset < totalSamples) {
+            while (offset < totalSamples)
+            {
                 int written = engine.push(interleavedPcm, offset, totalSamples - offset);
-                if (written > 0) {
+                if (written > 0)
+                {
                     offset += written;
                     stuckCount = 0;
-                } else if (written < 0) {
+                }
+                else if (written < 0)
+                {
                     break; // C-layer error, abort frame to save thread
-                } else {
+                }
+                else
+                {
                     stuckCount++;
-                    
-                    java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms sleep to match consumption rate
+
+                    java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms sleep to match
+                                                                               // consumption rate
                 }
             }
         }
     }
 
     @Override
-    public void process(float[] left, float[] right, int frames) {
+    public void process(float[] left, float[] right, int frames)
+    {
         if (engine == null) return;
-        
+
         int needed = frames * outputChannels;
-        if (pcmBuffer == null || pcmBuffer.length < needed) {
+        if (pcmBuffer == null || pcmBuffer.length < needed)
+        {
             pcmBuffer = new short[needed];
         }
 
-        if (outputChannels == 1) {
-            for (int i = 0; i < frames; i++) {
+        if (outputChannels == 1)
+        {
+            for (int i = 0; i < frames; i++)
+            {
                 float avg = (left[i] + right[i]) * 0.5f;
                 pcmBuffer[i] = (short) (Math.max(-1.0f, Math.min(1.0f, avg)) * 32767.0f);
             }
-        } else {
-            for (int i = 0; i < frames; i++) {
+        }
+        else
+        {
+            for (int i = 0; i < frames; i++)
+            {
                 float clampL = Math.max(-1.0f, Math.min(1.0f, left[i]));
                 float clampR = Math.max(-1.0f, Math.min(1.0f, right[i]));
                 pcmBuffer[i * 2] = (short) (clampL * 32767.0f);
@@ -69,24 +88,33 @@ public class FloatToShortSink implements AudioSink {
         int totalSamples = frames * outputChannels;
         int offset = 0;
         int stuckCount = 0;
-        while (offset < totalSamples) {
+        while (offset < totalSamples)
+        {
             int written = engine.push(pcmBuffer, offset, totalSamples - offset);
-            if (written > 0) {
+            if (written > 0)
+            {
                 offset += written;
                 stuckCount = 0;
-            } else if (written < 0) {
+            }
+            else if (written < 0)
+            {
                 break; // C-layer error, abort frame
-            } else {
+            }
+            else
+            {
                 stuckCount++;
-                
-                java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms sleep to match consumption rate
+
+                java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms sleep to match
+                                                                           // consumption rate
             }
         }
     }
 
     @Override
-    public void reset() {
-        if (engine != null) {
+    public void reset()
+    {
+        if (engine != null)
+        {
             engine.flush();
         }
     }
