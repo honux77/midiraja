@@ -17,7 +17,7 @@ package com.fupfin.midiraja.midi;
  * routing methods which are called from the playback thread but queued in AdlMidiSynthProvider
  * before dispatching.
  */
-public interface AdlMidiNativeBridge extends AutoCloseable
+public interface AdlMidiNativeBridge extends MidiNativeBridge
 {
     /**
      * Initializes the OPL synthesizer device at the given sample rate. Must be called before any
@@ -25,7 +25,7 @@ public interface AdlMidiNativeBridge extends AutoCloseable
      *
      * @param sampleRate Audio output sample rate (e.g. 44100).
      */
-    void init(int sampleRate) throws Exception;
+
 
     /**
      * Selects one of the 76 built-in OPL instrument banks by index. Call after {@link #init}.
@@ -53,17 +53,11 @@ public interface AdlMidiNativeBridge extends AutoCloseable
      * Resets the synthesizer state (clears all notes and patch settings). Safe to call only from
      * the render thread (not thread-safe).
      */
-    void reset();
+
 
     // --- MIDI Event Routing (dispatched by render thread from event queue) ---
 
-    void noteOn(int channel, int note, int velocity);
 
-    void noteOff(int channel, int note);
-
-    void controlChange(int channel, int type, int value);
-
-    void patchChange(int channel, int patch);
 
     /**
      * Sends a pitch-bend event on the given channel.
@@ -71,15 +65,14 @@ public interface AdlMidiNativeBridge extends AutoCloseable
      * @param channel MIDI channel (0–15).
      * @param pitch 14-bit signed pitch bend value (-8192 to +8191).
      */
-    void pitchBend(int channel, int pitch);
 
-    void systemExclusive(byte[] data);
+
 
     /**
      * Immediately cuts all active notes. Must be called from the render thread while it is paused
      * (i.e., not in {@link #generate}).
      */
-    void panic();
+
 
     /**
      * Renders PCM audio into {@code buffer}.
@@ -92,7 +85,7 @@ public interface AdlMidiNativeBridge extends AutoCloseable
      * @param buffer Output buffer (interleaved stereo 16-bit PCM).
      * @param stereoFrames Number of stereo frames to render.
      */
-    void generate(short[] buffer, int stereoFrames);
+
 
     /** Returns the number of built-in banks available. */
     default int getBanksCount()
@@ -101,6 +94,5 @@ public interface AdlMidiNativeBridge extends AutoCloseable
     }
 
     /** Closes and frees all native resources. */
-    @Override
-    void close();
+
 }
