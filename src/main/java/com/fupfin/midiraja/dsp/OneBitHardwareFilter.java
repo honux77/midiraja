@@ -42,35 +42,9 @@ public class OneBitHardwareFilter implements AudioProcessor
 
         for (int i = 0; i < frames; i++)
         {
-            double monoIn = (left[i] + right[i]) * 0.5;
-            double out;
-
-            if (Math.abs(monoIn) < 1e-4)
-            {
-                out = 0.0;
-            }
-            else if ("dsd".equals(mode))
-            {
-                dsdErr += monoIn + (rand.nextDouble() - 0.5) * 0.1;
-                out = dsdErr > 0.0 ? 1.0 : -1.0;
-                dsdErr -= out;
-            }
-            else
-            {
-                double rawDuty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
-                // Discretize the duty cycle based on hardware clock limitations!
-                double duty = Math.round(rawDuty * levels) / levels;
-                out = integratePwm(carrierPhase, carrierStep, duty);
-                carrierPhase = (carrierPhase + carrierStep) % 1.0;
-            }
-
-            smoothL1 += smoothAlpha * ((float) out - smoothL1);
-            smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
-            if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
-            if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
-
-            left[i] = smoothL2;
-            right[i] = smoothL2;
+            float filtered = processOneSample((left[i] + right[i]) * 0.5);
+            left[i] = filtered;
+            right[i] = filtered;
         }
 
         next.process(left, right, frames);
@@ -91,38 +65,45 @@ public class OneBitHardwareFilter implements AudioProcessor
             float l = interleavedPcm[lIdx] / 32768.0f;
             float r = channels > 1 ? interleavedPcm[lIdx + 1] / 32768.0f : l;
 
-            double monoIn = (l + r) * 0.5;
-            double out;
+            float filtered = processOneSample((l + r) * 0.5);
 
-            if (Math.abs(monoIn) < 1e-4)
-            {
-                out = 0.0;
-            }
-            else if ("dsd".equals(mode))
-            {
-                dsdErr += monoIn + (rand.nextDouble() - 0.5) * 0.1;
-                out = dsdErr > 0.0 ? 1.0 : -1.0;
-                dsdErr -= out;
-            }
-            else
-            {
-                double rawDuty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
-                double duty = Math.round(rawDuty * levels) / levels;
-                out = integratePwm(carrierPhase, carrierStep, duty);
-                carrierPhase = (carrierPhase + carrierStep) % 1.0;
-            }
-
-            smoothL1 += smoothAlpha * ((float) out - smoothL1);
-            smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
-            if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
-            if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
-
-            short outPcm = (short) Math.max(-32768, Math.min(32767, smoothL2 * 32768.0));
+            short outPcm = (short) Math.max(-32768, Math.min(32767, filtered * 32768.0));
             interleavedPcm[lIdx] = outPcm;
             if (channels > 1) interleavedPcm[lIdx + 1] = outPcm;
         }
 
         next.processInterleaved(interleavedPcm, frames, channels);
+    }
+
+    private float processOneSample(double monoIn)
+    {
+        double out;
+
+        if (Math.abs(monoIn) < 1e-4)
+        {
+            out = 0.0;
+        }
+        else if ("dsd".equals(mode))
+        {
+            dsdErr += monoIn + (rand.nextDouble() - 0.5) * 0.1;
+            out = dsdErr > 0.0 ? 1.0 : -1.0;
+            dsdErr -= out;
+        }
+        else
+        {
+            double rawDuty = Math.max(0.0, Math.min(1.0, (monoIn + 1.0) * 0.5));
+            // Discretize the duty cycle based on hardware clock limitations!
+            double duty = Math.round(rawDuty * levels) / levels;
+            out = integratePwm(carrierPhase, carrierStep, duty);
+            carrierPhase = (carrierPhase + carrierStep) % 1.0;
+        }
+
+        smoothL1 += smoothAlpha * ((float) out - smoothL1);
+        smoothL2 += smoothAlpha * (smoothL1 - smoothL2);
+        if (Math.abs(smoothL1) < 1e-10f) smoothL1 = 0;
+        if (Math.abs(smoothL2) < 1e-10f) smoothL2 = 0;
+
+        return smoothL2;
     }
 
     private double integratePwm(double startPhase, double step, double duty)

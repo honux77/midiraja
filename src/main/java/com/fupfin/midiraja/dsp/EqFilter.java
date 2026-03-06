@@ -121,13 +121,8 @@ public final class EqFilter extends AudioFilter
 
         void setLowShelf(float fs, float f0, float q, float dbGain)
         {
-            float a = (float) Math.pow(10, dbGain / 40.0);
-            float w0 = (float) (2.0 * Math.PI * f0 / fs);
-            float cosW0 = (float) Math.cos(w0);
-            float sinW0 = (float) Math.sin(w0);
-            float alpha =
-                    sinW0 / 2.0f * (float) Math.sqrt((a + 1.0f / a) * (1.0f / q - 1.0f) + 2.0f);
-            float sqrtA2 = 2.0f * (float) Math.sqrt(a) * alpha;
+            float[] coeffs = shelfCoeffs(fs, f0, q, dbGain);
+            float a = coeffs[0], cosW0 = coeffs[1], sqrtA2 = coeffs[2];
 
             b0 = a * ((a + 1.0f) - (a - 1.0f) * cosW0 + sqrtA2);
             b1 = 2.0f * a * ((a - 1.0f) - (a + 1.0f) * cosW0);
@@ -141,13 +136,8 @@ public final class EqFilter extends AudioFilter
 
         void setHighShelf(float fs, float f0, float q, float dbGain)
         {
-            float a = (float) Math.pow(10, dbGain / 40.0);
-            float w0 = (float) (2.0 * Math.PI * f0 / fs);
-            float cosW0 = (float) Math.cos(w0);
-            float sinW0 = (float) Math.sin(w0);
-            float alpha =
-                    sinW0 / 2.0f * (float) Math.sqrt((a + 1.0f / a) * (1.0f / q - 1.0f) + 2.0f);
-            float sqrtA2 = 2.0f * (float) Math.sqrt(a) * alpha;
+            float[] coeffs = shelfCoeffs(fs, f0, q, dbGain);
+            float a = coeffs[0], cosW0 = coeffs[1], sqrtA2 = coeffs[2];
 
             b0 = a * ((a + 1.0f) + (a - 1.0f) * cosW0 + sqrtA2);
             b1 = -2.0f * a * ((a - 1.0f) + (a + 1.0f) * cosW0);
@@ -157,6 +147,19 @@ public final class EqFilter extends AudioFilter
             a2 = (a + 1.0f) - (a - 1.0f) * cosW0 - sqrtA2;
 
             normalize(a0);
+        }
+
+        /** Returns [a, cosW0, sqrtA2] — the shared precomputation for both shelf filters. */
+        private static float[] shelfCoeffs(float fs, float f0, float q, float dbGain)
+        {
+            float a = (float) Math.pow(10, dbGain / 40.0);
+            float w0 = (float) (2.0 * Math.PI * f0 / fs);
+            float cosW0 = (float) Math.cos(w0);
+            float sinW0 = (float) Math.sin(w0);
+            float alpha =
+                    sinW0 / 2.0f * (float) Math.sqrt((a + 1.0f / a) * (1.0f / q - 1.0f) + 2.0f);
+            float sqrtA2 = 2.0f * (float) Math.sqrt(a) * alpha;
+            return new float[] {a, cosW0, sqrtA2};
         }
 
         void setPeaking(float fs, float f0, float q, float dbGain)

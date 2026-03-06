@@ -61,70 +61,12 @@ public class Mac128kSimulatorFilter implements AudioProcessor
 
         for (int i = 0; i < frames; i++)
         {
-            double targetOutputTimeUs = currentTimeUs + outputSampleTimeUs;
-
-            while (currentTimeUs < targetOutputTimeUs)
-            {
-                if (currentTimeUs >= nextMacSampleTimeUs)
-                {
-                    // Authentic 8-bit Quantization
-                    // The capture proves the Mac successfully isolated the 8-bit steps.
-                    // We use standard symmetrical clamping to represent the clean digital buffer.
-                    int u8L = Math.max(0,
-                            Math.min(255, Math.round((left[i] * 0.5f + 0.5f) * 255.0f)));
-                    int u8R = Math.max(0,
-                            Math.min(255, Math.round((right[i] * 0.5f + 0.5f) * 255.0f)));
-
-                    dutyL = u8L / 255.0;
-                    dutyR = u8R / 255.0;
-
-                    isHighL = true;
-                    isHighR = true;
-
-                    transitionTimeLUs = nextMacSampleTimeUs + (dutyL * macSampleTimeUs);
-                    transitionTimeRUs = nextMacSampleTimeUs + (dutyR * macSampleTimeUs);
-
-                    nextMacSampleTimeUs += macSampleTimeUs;
-                }
-
-                double nextEventUs = targetOutputTimeUs;
-                if (nextEventUs > nextMacSampleTimeUs) nextEventUs = nextMacSampleTimeUs;
-                if (isHighL && nextEventUs > transitionTimeLUs) nextEventUs = transitionTimeLUs;
-                if (isHighR && nextEventUs > transitionTimeRUs) nextEventUs = transitionTimeRUs;
-
-                double deltaT = nextEventUs - currentTimeUs;
-                if (deltaT > 1e-9)
-                {
-                    double expDecay = Math.exp(-deltaT / tauUs);
-
-                    double uL = isHighL ? 1.0 : -1.0;
-                    double uR = isHighR ? 1.0 : -1.0;
-
-                    xL = uL + (xL - uL) * expDecay;
-                    xR = uR + (xR - uR) * expDecay;
-
-                    currentTimeUs = nextEventUs;
-                }
-                else
-                {
-                    currentTimeUs = nextEventUs;
-                }
-
-                if (isHighL && currentTimeUs >= transitionTimeLUs) isHighL = false;
-                if (isHighR && currentTimeUs >= transitionTimeRUs) isHighR = false;
-            }
-
+            simulateSample(left[i], right[i]);
             left[i] = (float) xL;
             right[i] = (float) xR;
         }
 
-        while (currentTimeUs > 1000000.0)
-        {
-            currentTimeUs -= 1000000.0;
-            nextMacSampleTimeUs -= 1000000.0;
-            transitionTimeLUs -= 1000000.0;
-            transitionTimeRUs -= 1000000.0;
-        }
+        wrapTime();
     }
 
     @Override
@@ -146,53 +88,7 @@ public class Mac128kSimulatorFilter implements AudioProcessor
             float inL = interleavedPcm[leftIdx] / 32768.0f;
             float inR = interleavedPcm[rightIdx] / 32768.0f;
 
-            double targetOutputTimeUs = currentTimeUs + outputSampleTimeUs;
-
-            while (currentTimeUs < targetOutputTimeUs)
-            {
-                if (currentTimeUs >= nextMacSampleTimeUs)
-                {
-                    int u8L = Math.max(0, Math.min(255, Math.round((inL * 0.5f + 0.5f) * 255.0f)));
-                    int u8R = Math.max(0, Math.min(255, Math.round((inR * 0.5f + 0.5f) * 255.0f)));
-
-                    dutyL = u8L / 255.0;
-                    dutyR = u8R / 255.0;
-
-                    isHighL = true;
-                    isHighR = true;
-
-                    transitionTimeLUs = nextMacSampleTimeUs + (dutyL * macSampleTimeUs);
-                    transitionTimeRUs = nextMacSampleTimeUs + (dutyR * macSampleTimeUs);
-
-                    nextMacSampleTimeUs += macSampleTimeUs;
-                }
-
-                double nextEventUs = targetOutputTimeUs;
-                if (nextEventUs > nextMacSampleTimeUs) nextEventUs = nextMacSampleTimeUs;
-                if (isHighL && nextEventUs > transitionTimeLUs) nextEventUs = transitionTimeLUs;
-                if (isHighR && nextEventUs > transitionTimeRUs) nextEventUs = transitionTimeRUs;
-
-                double deltaT = nextEventUs - currentTimeUs;
-                if (deltaT > 1e-9)
-                {
-                    double expDecay = Math.exp(-deltaT / tauUs);
-
-                    double uL = isHighL ? 1.0 : -1.0;
-                    double uR = isHighR ? 1.0 : -1.0;
-
-                    xL = uL + (xL - uL) * expDecay;
-                    xR = uR + (xR - uR) * expDecay;
-
-                    currentTimeUs = nextEventUs;
-                }
-                else
-                {
-                    currentTimeUs = nextEventUs;
-                }
-
-                if (isHighL && currentTimeUs >= transitionTimeLUs) isHighL = false;
-                if (isHighR && currentTimeUs >= transitionTimeRUs) isHighR = false;
-            }
+            simulateSample(inL, inR);
 
             interleavedPcm[leftIdx] = (short) Math.max(-32768, Math.min(32767, xL * 32768.0));
             if (channels > 1)
@@ -201,6 +97,67 @@ public class Mac128kSimulatorFilter implements AudioProcessor
             }
         }
 
+        wrapTime();
+    }
+
+    private void simulateSample(float inL, float inR)
+    {
+        double targetOutputTimeUs = currentTimeUs + outputSampleTimeUs;
+
+        while (currentTimeUs < targetOutputTimeUs)
+        {
+            if (currentTimeUs >= nextMacSampleTimeUs)
+            {
+                // Authentic 8-bit Quantization
+                // The capture proves the Mac successfully isolated the 8-bit steps.
+                // We use standard symmetrical clamping to represent the clean digital buffer.
+                int u8L = Math.max(0,
+                        Math.min(255, Math.round((inL * 0.5f + 0.5f) * 255.0f)));
+                int u8R = Math.max(0,
+                        Math.min(255, Math.round((inR * 0.5f + 0.5f) * 255.0f)));
+
+                dutyL = u8L / 255.0;
+                dutyR = u8R / 255.0;
+
+                isHighL = true;
+                isHighR = true;
+
+                transitionTimeLUs = nextMacSampleTimeUs + (dutyL * macSampleTimeUs);
+                transitionTimeRUs = nextMacSampleTimeUs + (dutyR * macSampleTimeUs);
+
+                nextMacSampleTimeUs += macSampleTimeUs;
+            }
+
+            double nextEventUs = targetOutputTimeUs;
+            if (nextEventUs > nextMacSampleTimeUs) nextEventUs = nextMacSampleTimeUs;
+            if (isHighL && nextEventUs > transitionTimeLUs) nextEventUs = transitionTimeLUs;
+            if (isHighR && nextEventUs > transitionTimeRUs) nextEventUs = transitionTimeRUs;
+
+            double deltaT = nextEventUs - currentTimeUs;
+            if (deltaT > 1e-9)
+            {
+                double expDecay = Math.exp(-deltaT / tauUs);
+
+                double uL = isHighL ? 1.0 : -1.0;
+                double uR = isHighR ? 1.0 : -1.0;
+
+                xL = uL + (xL - uL) * expDecay;
+                xR = uR + (xR - uR) * expDecay;
+
+                currentTimeUs = nextEventUs;
+            }
+            else
+            {
+                currentTimeUs = nextEventUs;
+            }
+
+            if (isHighL && currentTimeUs >= transitionTimeLUs) isHighL = false;
+            if (isHighR && currentTimeUs >= transitionTimeRUs) isHighR = false;
+        }
+    }
+
+    private void wrapTime()
+    {
         while (currentTimeUs > 1000000.0)
         {
             currentTimeUs -= 1000000.0;
