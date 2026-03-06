@@ -67,10 +67,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
                         ValueLayout.ADDRESS),
                 // free_context, close_synth
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS),
+                DESC_VOID_PTR,
                 // add_rom_file
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.ADDRESS),
+                DESC_PTR_STR,
                 // set_stereo_output_samplerate
                 FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE),
                 // set_master_volume_override (JAVA_BYTE param → "jint" in metadata after ABI
@@ -79,8 +78,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 // open_synth, get_internal_rendered_sample_count, get_part_states
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
                 // set_midi_event_queue_size
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_INT),
+                DESC_PTR_INT,
                 // play_msg_at
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
                         ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
@@ -140,12 +138,10 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 .of(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
 
         // void mt32emu_free_context(mt32emu_context context)
-        mt32emu_free_context =
-                downcall("mt32emu_free_context", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        mt32emu_free_context = downcall("mt32emu_free_context", DESC_VOID_PTR);
 
         // mt32emu_return_code mt32emu_add_rom_file(mt32emu_context context, const char *filename)
-        mt32emu_add_rom_file = downcall("mt32emu_add_rom_file", FunctionDescriptor
-                .of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+        mt32emu_add_rom_file = downcall("mt32emu_add_rom_file", DESC_PTR_STR);
 
         // void mt32emu_set_stereo_output_samplerate(mt32emu_context context, const double
         // samplerate)
@@ -163,13 +159,11 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
 
         // void mt32emu_close_synth(mt32emu_const_context context)
-        mt32emu_close_synth =
-                downcall("mt32emu_close_synth", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        mt32emu_close_synth = downcall("mt32emu_close_synth", DESC_VOID_PTR);
 
         // mt32emu_return_code mt32emu_set_midi_event_queue_size(context, queue_size)
         mt32emu_set_midi_event_queue_size =
-                downcall("mt32emu_set_midi_event_queue_size", FunctionDescriptor
-                        .of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+                downcall("mt32emu_set_midi_event_queue_size", DESC_PTR_INT);
 
         // mt32emu_return_code mt32emu_play_msg_at(context, msg, timestamp) — thread-safe
         mt32emu_play_msg_at =

@@ -315,3 +315,23 @@ spotless {
         endWithNewline()
     }
 }
+
+
+task cpdCheck {
+    group = 'verification'
+    doLast {
+        File outDir = new File(buildDir, 'reports/cpd')
+        outDir.mkdirs()
+        // Ensure pmd-ant is available in the classpath
+        ant.taskdef(name: 'cpd', classname: 'net.sourceforge.pmd.ant.cpd.CPDTask', classpath: configurations.pmd.asPath)
+        ant.cpd(minimumTokenCount: '50', format: 'text', outputFile: new File(outDir, 'cpdCheck.txt')) {
+            fileset(dir: "src/main/java") {
+                include(name: '**/*.java')
+            }
+        }
+        println "--- CPD Findings (Duplicated Code) ---"
+        if (new File(outDir, 'cpdCheck.txt').exists()) {
+            println new File(outDir, 'cpdCheck.txt').text
+        }
+    }
+}

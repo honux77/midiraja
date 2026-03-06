@@ -51,41 +51,32 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
     {
         return List.of(
                 // opn2_init: (long sample_rate) → OPN2_MIDIPlayer*
-                FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                DESC_INIT,
                 // opn2_close: (ptr) → void
                 // opn2_reset, opn2_panic share this descriptor
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS),
+                DESC_VOID_PTR,
                 // opn2_setNumChips, opn2_switchEmulator: (ptr, int) → int
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_INT),
+                DESC_PTR_INT,
                 // opn2_openBankFile: (ptr, const char*) → int
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.ADDRESS),
+                DESC_PTR_STR,
                 // opn2_openBankData: (ptr, const void* mem, unsigned long size) → int
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                DESC_PTR_PTR_LONG,
                 // opn2_generate: (ptr, int, short*) → int
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+                DESC_GENERATE,
                 // opn2_rt_noteOn: (ptr, uint8_t channel, uint8_t note, uint8_t velocity) → int
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE),
+                DESC_NOTE_ON,
                 // opn2_rt_noteOff: (ptr, uint8_t channel, uint8_t note) → void
                 // opn2_rt_patchChange shares this descriptor
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
-                        ValueLayout.JAVA_BYTE),
+                DESC_NOTE_OFF,
                 // opn2_rt_controllerChange: (ptr, uint8_t channel, uint8_t type, uint8_t value) →
                 // void
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
-                        ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE),
+                DESC_CTRL_CHANGE,
                 // opn2_rt_pitchBend: (ptr, uint8_t channel, uint16_t pitch) → void
-                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE,
-                        ValueLayout.JAVA_SHORT),
+                DESC_PITCH_BEND,
                 // opn2_rt_systemExclusive: (ptr, const uint8_t* msg, size_t size) → int
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.ADDRESS, ValueLayout.JAVA_LONG),
+                DESC_PTR_PTR_LONG,
                 // opn2_errorInfo: (ptr) → const char*
-                FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+                DESC_ERROR_INFO);
     }
 
     // FFM Method Handles
@@ -117,75 +108,58 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
                 "libOPNMIDI.dll"));
 
         // OPN2_MIDIPlayer* opn2_init(long sample_rate)
-        opn2_init = downcall("opn2_init",
-                FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+        opn2_init = downcall("opn2_init", DESC_INIT);
 
         // void opn2_close(struct OPN2_MIDIPlayer *device)
-        opn2_close = downcall("opn2_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        opn2_close = downcall("opn2_close", DESC_VOID_PTR);
 
         // int opn2_openBankFile(struct OPN2_MIDIPlayer *device, const char *filePath)
-        opn2_openBankFile = downcall("opn2_openBankFile", FunctionDescriptor
-                .of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+        opn2_openBankFile = downcall("opn2_openBankFile", DESC_PTR_STR);
 
         // int opn2_openBankData(struct OPN2_MIDIPlayer *device, const void *mem, unsigned long
         // size)
-        opn2_openBankData =
-                downcall("opn2_openBankData", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-                        ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+        opn2_openBankData = downcall("opn2_openBankData", DESC_PTR_PTR_LONG);
 
         // int opn2_setNumChips(struct OPN2_MIDIPlayer *device, int numChips)
-        opn2_setNumChips = downcall("opn2_setNumChips", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-                ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+        opn2_setNumChips = downcall("opn2_setNumChips", DESC_PTR_INT);
 
         // int opn2_switchEmulator(struct OPN2_MIDIPlayer *device, int emulatorId)
-        opn2_switchEmulator = downcall("opn2_switchEmulator", FunctionDescriptor
-                .of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+        opn2_switchEmulator = downcall("opn2_switchEmulator", DESC_PTR_INT);
 
         // void opn2_reset(struct OPN2_MIDIPlayer *device)
-        opn2_reset = downcall("opn2_reset", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        opn2_reset = downcall("opn2_reset", DESC_VOID_PTR);
 
         // void opn2_panic(struct OPN2_MIDIPlayer *device)
-        opn2_panic = downcall("opn2_panic", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+        opn2_panic = downcall("opn2_panic", DESC_VOID_PTR);
 
         // int opn2_generate(struct OPN2_MIDIPlayer *device, int numSamples, short *out)
-        opn2_generate = downcall("opn2_generate", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-                ValueLayout.ADDRESS, ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+        opn2_generate = downcall("opn2_generate", DESC_GENERATE);
 
         // int opn2_rt_noteOn(struct OPN2_MIDIPlayer *device, OPN2_UInt8 channel, OPN2_UInt8 note,
         // OPN2_UInt8 velocity)
-        opn2_rt_noteOn = downcall("opn2_rt_noteOn",
-                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE));
+        opn2_rt_noteOn = downcall("opn2_rt_noteOn", DESC_NOTE_ON);
 
         // void opn2_rt_noteOff(struct OPN2_MIDIPlayer *device, OPN2_UInt8 channel, OPN2_UInt8 note)
-        opn2_rt_noteOff = downcall("opn2_rt_noteOff", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS,
-                ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE));
+        opn2_rt_noteOff = downcall("opn2_rt_noteOff", DESC_NOTE_OFF);
 
         // void opn2_rt_controllerChange(struct OPN2_MIDIPlayer *device, OPN2_UInt8 channel,
         // OPN2_UInt8 type, OPN2_UInt8 value)
-        opn2_rt_controllerChange =
-                downcall("opn2_rt_controllerChange", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE));
+        opn2_rt_controllerChange = downcall("opn2_rt_controllerChange", DESC_CTRL_CHANGE);
 
         // void opn2_rt_patchChange(struct OPN2_MIDIPlayer *device, OPN2_UInt8 channel, OPN2_UInt8
         // patch)
-        opn2_rt_patchChange = downcall("opn2_rt_patchChange", FunctionDescriptor
-                .ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.JAVA_BYTE));
+        opn2_rt_patchChange = downcall("opn2_rt_patchChange", DESC_NOTE_OFF);
 
         // void opn2_rt_pitchBend(struct OPN2_MIDIPlayer *device, OPN2_UInt8 channel, OPN2_UInt16
         // pitch)
-        opn2_rt_pitchBend = downcall("opn2_rt_pitchBend", FunctionDescriptor
-                .ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE, ValueLayout.JAVA_SHORT));
+        opn2_rt_pitchBend = downcall("opn2_rt_pitchBend", DESC_PITCH_BEND);
 
         // int opn2_rt_systemExclusive(struct OPN2_MIDIPlayer *device, const OPN2_UInt8 *msg, size_t
         // size)
-        opn2_rt_systemExclusive =
-                downcall("opn2_rt_systemExclusive", FunctionDescriptor.of(ValueLayout.JAVA_INT,
-                        ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_LONG));
+        opn2_rt_systemExclusive = downcall("opn2_rt_systemExclusive", DESC_PTR_PTR_LONG);
 
         // const char* opn2_errorInfo(struct OPN2_MIDIPlayer *device)
-        opn2_errorInfo = downcall("opn2_errorInfo",
-                FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+        opn2_errorInfo = downcall("opn2_errorInfo", DESC_ERROR_INFO);
     }
 
     /**
