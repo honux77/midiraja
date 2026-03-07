@@ -383,40 +383,11 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         }
     }
 
-    // Cached native render buffer to avoid per-frame allocation
-    private MemorySegment renderBuffer = MemorySegment.NULL;
-    private int currentRenderBufferSize = 0;
-
     @Override
     public void generate(short[] buffer, int stereoFrames)
     {
-        if (device.equals(MemorySegment.NULL) || buffer == null || buffer.length == 0) return;
-
-        int requiredBytes = buffer.length * 2; // 2 bytes per short
-        if (currentRenderBufferSize < requiredBytes)
-        {
-            try
-            {
-                renderBuffer = arena.allocate(requiredBytes);
-                currentRenderBufferSize = requiredBytes;
-            }
-            catch (Throwable ignored)
-            {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
-                return;
-            }
-        }
-
-        try
-        {
-            // opn2_generate sampleCount = total shorts in the buffer (L+R interleaved).
-            int ignored = (int) opn2_generate.invokeExact(device, buffer.length, renderBuffer);
-            MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
-        }
-        catch (Throwable ignored)
-        {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
-        }
+        // opn2_generate sampleCount = total shorts in the buffer (L+R interleaved).
+        generateInto(opn2_generate, device, buffer);
     }
 
     @Override

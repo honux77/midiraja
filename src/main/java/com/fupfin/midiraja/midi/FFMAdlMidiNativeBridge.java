@@ -369,42 +369,13 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
     }
 
-    // Cached native render buffer to avoid per-frame allocation
-    private MemorySegment renderBuffer = MemorySegment.NULL;
-    private int currentRenderBufferSize = 0;
-
     @Override
     public void generate(short[] buffer, int stereoFrames)
     {
-        if (device.equals(MemorySegment.NULL) || buffer == null || buffer.length == 0) return;
-
-        int requiredBytes = buffer.length * 2; // 2 bytes per short
-        if (currentRenderBufferSize < requiredBytes)
-        {
-            try
-            {
-                renderBuffer = arena.allocate(requiredBytes);
-                currentRenderBufferSize = requiredBytes;
-            }
-            catch (Throwable ignored)
-            {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
-                return;
-            }
-        }
-
-        try
-        {
-            // adl_generate sampleCount = total shorts in the buffer (L+R interleaved).
-            // Passing stereoFrames here only fills half the buffer with valid audio;
-            // the rest is garbage → wrong pitch and noise. Must pass buffer.length.
-            int ignored = (int) adl_generate.invokeExact(device, buffer.length, renderBuffer);
-            MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
-        }
-        catch (Throwable ignored)
-        {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
-        }
+        // adl_generate sampleCount = total shorts in the buffer (L+R interleaved).
+        // Passing stereoFrames here only fills half the buffer with valid audio;
+        // the rest is garbage → wrong pitch and noise. Must pass buffer.length.
+        generateInto(adl_generate, device, buffer);
     }
 
     @Override

@@ -117,31 +117,13 @@ public class MuntSynthProvider implements SoftSynthProvider
     }
 
     @Override
-    @SuppressWarnings("EmptyCatch")
     public void panic()
     {
         // For Munt, skip the default 200ms wait: all note-offs are timestamped and
         // processed by the render thread in the next render cycle (<16ms). A 20ms wait
         // is sufficient. Then flush the ring buffer immediately so the next song or seek
         // starts with an empty buffer instead of waiting ~128ms for queued silence to drain.
-        for (int ch = 0; ch < 16; ch++)
-        {
-            try
-            {
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 64, 0}); // Sustain Off
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 123, 0}); // All Notes Off
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 120, 0}); // All Sound Off
-                sendMessage(new byte[] {(byte) (0xB0 | ch), 121, 0}); // Reset All Controllers
-                for (int note = 0; note < 128; note++)
-                {
-                    sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
-                }
-            }
-            catch (Exception ignored)
-            {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
-            }
-        }
+        sendPanicMessages();
         // No sleep needed: note-offs have future timestamps and are processed by the render
         // thread asynchronously. Flushing the ring buffer immediately discards any old audio;
         // the note-off decay will be rendered fresh into the now-empty ring buffer.

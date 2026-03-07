@@ -16,7 +16,7 @@ package com.fupfin.midiraja.midi.psg;
  * independent channels, effectively emulating the upgraded "SCC+" (Sound Cartridge) hardware. This
  * prevents catastrophic instrument clashing during complex MIDI polyphony.
  */
-public class SccChip implements TrackerSynthChip
+public class SccChip extends AbstractTrackerChip
 {
     private static final int NUM_CHANNELS = 5;
     private final int sampleRate;
@@ -24,20 +24,8 @@ public class SccChip implements TrackerSynthChip
     private final double vibratoDepth;
     private final boolean smoothScc;
 
-    private static class SccChannel
+    private static class SccChannel extends AbstractTrackerChip.Channel
     {
-        int midiChannel = -1;
-        int midiNote = -1;
-        boolean active = false;
-        long activeFrames = 0;
-
-        int volume15 = 0;
-        int[] arpNotes = new int[4];
-        int arpSize = 0;
-        int arpIndex = 0;
-
-        double baseFrequency = 0.0;
-
         // 32-byte waveform (signed -128 to 127)
         byte[] waveform = new byte[32];
 
@@ -45,16 +33,10 @@ public class SccChip implements TrackerSynthChip
         double phase = 0.0;
         double phaseStep = 0.0;
 
-        void reset()
+        @Override
+        void resetCommon()
         {
-            active = false;
-            volume15 = 0;
-            arpSize = 0;
-            arpIndex = 0;
-            activeFrames = 0;
-            midiChannel = -1;
-            midiNote = -1;
-            baseFrequency = 0.0;
+            super.resetCommon();
             phase = 0.0;
             phaseStep = 0.0;
         }
@@ -119,11 +101,48 @@ public class SccChip implements TrackerSynthChip
         dacTable[0] = 0.0;
     }
 
+    // --- AbstractTrackerChip hooks ---
+
+    @Override
+    protected int getNumChannels()
+    {
+        return NUM_CHANNELS;
+    }
+
+    @Override
+    protected Channel getChannel(int index)
+    {
+        return channels[index];
+    }
+
+    @Override
+    protected void resetChannelSpecific(int index)
+    {
+        // phase/phaseStep are reset via resetCommon() in SccChannel; waveform is preserved
+    }
+
+    @Override
+    protected void onNoteActivated(int index, int ch, int note, int velocity)
+    {
+        SccChannel c = channels[index];
+        c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+        c.phaseStep = (c.baseFrequency * 32.0) / sampleRate;
+        c.phase = 0.0;
+    }
+
+    @Override
+    protected int getArpeggioFallbackChannel()
+    {
+        return 0;
+    }
+
+    // --- TrackerSynthChip implementations ---
+
     @Override
     public void reset()
     {
         for (int i = 0; i < NUM_CHANNELS; i++)
-            channels[i].reset();
+            channels[i].resetCommon();
     }
 
     @Override
@@ -255,35 +274,6 @@ public class SccChip implements TrackerSynthChip
     }
 
     @Override
-    public boolean updateNote(int ch, int note, int velocity)
-    {
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            SccChannel c = channels[i];
-            if (c.active && c.midiChannel == ch)
-            {
-                if (c.arpSize > 0)
-                {
-                    for (int j = 0; j < c.arpSize; j++)
-                    {
-                        if (c.arpNotes[j] == note)
-                        {
-                            c.volume15 = (int) ((velocity / 127.0) * 15.0);
-                            return true;
-                        }
-                    }
-                }
-                else if (c.midiNote == note)
-                {
-                    c.volume15 = (int) ((velocity / 127.0) * 15.0);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
     public boolean tryAllocateFree(int ch, int note, int velocity)
     {
         int targetCh = -1;
@@ -299,7 +289,7 @@ public class SccChip implements TrackerSynthChip
         if (targetCh == -1) return false;
 
         SccChannel c = channels[targetCh];
-        c.reset();
+        c.resetCommon();
         c.active = true;
         c.midiChannel = ch;
         c.midiNote = note;
@@ -313,145 +303,5 @@ public class SccChip implements TrackerSynthChip
         // Let PsgSynthProvider handle program changes, but default is square.
 
         return true;
-    }
-
-    @Override
-    public boolean tryStealChannel(int ch, int note, int velocity)
-    {
-        // Steal the channel with the lowest current volume (least noticeable).
-        // If volumes are equal, prefer stealing from a higher MIDI channel number.
-        int targetCh = -1;
-        int minVolume = Integer.MAX_VALUE;
-        int targetMidiCh = -1;
-
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            SccChannel c = channels[i];
-            if (c.active && c.midiChannel != 9)
-            {
-                if (c.volume15 < minVolume
-                        || (c.volume15 == minVolume && c.midiChannel > targetMidiCh))
-                {
-                    minVolume = c.volume15;
-                    targetMidiCh = c.midiChannel;
-                    targetCh = i;
-                }
-            }
-        }
-
-        // Only steal if the target is quieter than our new note, or if our new note is
-        // high priority (ch 0-3) and the target is low priority (ch > 3).
-        int newVol = (int) ((velocity / 127.0) * 15.0);
-        if (targetCh != -1 && (minVolume <= newVol || (ch < 4 && targetMidiCh >= 4)))
-        {
-            SccChannel c = channels[targetCh];
-            c.reset();
-            c.active = true;
-            c.midiChannel = ch;
-            c.midiNote = note;
-            c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-            c.phaseStep = (c.baseFrequency * 32.0) / sampleRate;
-            c.volume15 = newVol;
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public void forceArpeggioFallback(int ch, int note, int velocity)
-    {
-        int targetCh = -1;
-
-        // 1. Try to find a channel already playing the SAME instrument (midiChannel)
-        // that has room in its arpeggio buffer (< 4 notes).
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            SccChannel c = channels[i];
-            if (c.active && c.midiChannel == ch && c.arpSize < 4)
-            {
-                targetCh = i;
-                break;
-            }
-        }
-
-        // 2. If no matching instrument has room, steal from the first channel
-        if (targetCh == -1)
-        {
-            targetCh = 0; // Fallback hard steal
-            SccChannel c = channels[targetCh];
-            c.reset();
-            c.active = true;
-            c.midiChannel = ch;
-            c.midiNote = note;
-            c.volume15 = (int) ((velocity / 127.0) * 15.0);
-            c.arpNotes[0] = note;
-            c.arpSize = 1;
-            c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-            c.phaseStep = (c.baseFrequency * 32.0) / sampleRate;
-            return;
-        }
-
-        // 3. Append to existing arpeggio buffer
-        SccChannel c = channels[targetCh];
-
-        if (c.arpSize == 0 && c.active)
-        {
-            c.arpNotes[0] = c.midiNote;
-            c.arpSize = 1;
-        }
-
-        boolean exists = false;
-        for (int i = 0; i < c.arpSize; i++)
-        {
-            if (c.arpNotes[i] == note) exists = true;
-        }
-
-        if (!exists)
-        {
-            c.arpNotes[c.arpSize++] = note;
-            c.volume15 = Math.max(c.volume15, (int) ((velocity / 127.0) * 15.0));
-        }
-    }
-
-    @Override
-    public void handleNoteOff(int ch, int note)
-    {
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            SccChannel c = channels[i];
-            if (c.active && c.midiChannel == ch)
-            {
-                if (c.arpSize > 1)
-                {
-                    int removeIdx = -1;
-                    for (int j = 0; j < c.arpSize; j++)
-                    {
-                        if (c.arpNotes[j] == note)
-                        {
-                            removeIdx = j;
-                            break;
-                        }
-                    }
-
-                    if (removeIdx != -1)
-                    {
-                        for (int j = removeIdx; j < c.arpSize - 1; j++)
-                        {
-                            c.arpNotes[j] = c.arpNotes[j + 1];
-                        }
-                        c.arpSize--;
-
-                        if (c.arpIndex >= c.arpSize)
-                        {
-                            c.arpIndex = 0;
-                        }
-                    }
-                }
-                else if (c.midiNote == note)
-                {
-                    c.active = false;
-                }
-            }
-        }
     }
 }

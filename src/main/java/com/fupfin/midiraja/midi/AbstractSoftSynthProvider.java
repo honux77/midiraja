@@ -8,6 +8,8 @@
 package com.fupfin.midiraja.midi;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import org.jspecify.annotations.Nullable;
 
@@ -174,6 +176,24 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
         int command=status&0xF0;int channel=status&0x0F;if(data.length<2)return;int data1=data[1]&0xFF;int data2=(data.length>=3)?(data[2]&0xFF):0;
 
         switch(command){case 0x90->bridge.noteOn(channel,data1,data2);case 0x80->bridge.noteOff(channel,data1);case 0xB0->bridge.controlChange(channel,data1,data2);case 0xC0->bridge.patchChange(channel,data1);case 0xE0->bridge.pitchBend(channel,(data2<<7)|data1);}
+    }
+
+    /**
+     * Builds a standard FM synth port name from emulator name, chip count, and optional DAC mode.
+     * Used by {@link AdlMidiSynthProvider} and {@link OpnMidiSynthProvider}.
+     */
+    protected static List<MidiPort> buildFmSynthPorts(String[] emulatorNames, int emulatorId,
+            int numChips, @Nullable String dacMode)
+    {
+        String emuName = (emulatorId >= 0 && emulatorId < emulatorNames.length)
+                ? emulatorNames[emulatorId]
+                : "Emulator " + emulatorId;
+        String portName = emuName + " · " + numChips + " chip" + (numChips > 1 ? "s" : "");
+        if (dacMode != null)
+        {
+            portName += " [" + dacMode.toUpperCase(Locale.ROOT) + "]";
+        }
+        return List.of(new MidiPort(0, portName));
     }
 
     /**

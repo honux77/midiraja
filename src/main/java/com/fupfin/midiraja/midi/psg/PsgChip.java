@@ -4,40 +4,23 @@ package com.fupfin.midiraja.midi.psg;
  * Represents a single physical AY-3-8910 / YM2149F hardware chip. Contains 3 Tone Channels, 1 Noise
  * Generator, and 1 Hardware Envelope Generator.
  */
-class PsgChip implements TrackerSynthChip
+class PsgChip extends AbstractTrackerChip
 {
     private static final int NUM_CHANNELS = 3;
     private final int sampleRate;
 
-    private static class PsgChannel
+    private static class PsgChannel extends AbstractTrackerChip.Channel
     {
-        int midiChannel = -1;
-        int midiNote = -1;
-        boolean active = false;
-        long activeFrames = 0;
-
-        int volume15 = 0;
-        int[] arpNotes = new int[4];
-        int arpSize = 0;
-        int arpIndex = 0;
-
-        double baseFrequency = 0.0;
         int dutyCycle16 = 32767; // Default 50% square wave
         int phase16 = 0;
         int phaseStep16 = 0;
         boolean isNoise = false;
 
-        void reset()
+        @Override
+        void resetCommon()
         {
-            active = false;
-            volume15 = 0;
-            arpSize = 0;
-            arpIndex = 0;
-            activeFrames = 0;
+            super.resetCommon();
             isNoise = false;
-            midiChannel = -1;
-            midiNote = -1;
-            baseFrequency = 0.0;
             dutyCycle16 = 32767;
         }
     }
@@ -76,11 +59,67 @@ class PsgChip implements TrackerSynthChip
         dacTable[0] = 0.0;
     }
 
+    // --- AbstractTrackerChip hooks ---
+
+    @Override
+    protected int getNumChannels()
+    {
+        return NUM_CHANNELS;
+    }
+
+    @Override
+    protected Channel getChannel(int index)
+    {
+        return channels[index];
+    }
+
+    @Override
+    protected void resetChannelSpecific(int index)
+    {
+        // resetCommon() in PsgChannel already handles dutyCycle16 and isNoise.
+        // phase16 is intentionally NOT reset here to preserve phase continuity on steal.
+    }
+
+    @Override
+    protected void onNoteActivated(int index, int ch, int note, int velocity)
+    {
+        PsgChannel c = channels[index];
+        c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
+        c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
+        c.dutyCycle16 = 32767;
+    }
+
+    @Override
+    protected boolean skipChannelForStealing(int index)
+    {
+        return index == 2; // don't steal the hardware envelope/noise channel
+    }
+
+    @Override
+    protected boolean skipChannelForArpeggio(int index)
+    {
+        return index == 2; // Skip noise channel for arpeggios
+    }
+
+    @Override
+    protected int getArpeggioFallbackChannel()
+    {
+        return 1;
+    }
+
+    @Override
+    protected void onChannelDeactivated(int index)
+    {
+        if (index == 2) hwEnvActive = false;
+    }
+
+    // --- TrackerSynthChip implementations ---
+
     @Override
     public void reset()
     {
         for (int i = 0; i < NUM_CHANNELS; i++)
-            channels[i].reset();
+            channels[i].resetCommon();
         hwEnvActive = false;
     }
 
@@ -217,35 +256,6 @@ class PsgChip implements TrackerSynthChip
     }
 
     @Override
-    public boolean updateNote(int ch, int note, int velocity)
-    {
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            PsgChannel c = channels[i];
-            if (c.active && c.midiChannel == ch)
-            {
-                if (c.arpSize > 0)
-                {
-                    for (int j = 0; j < c.arpSize; j++)
-                    {
-                        if (c.arpNotes[j] == note)
-                        {
-                            c.volume15 = (int) ((velocity / 127.0) * 15.0);
-                            return true;
-                        }
-                    }
-                }
-                else if (c.midiNote == note)
-                {
-                    c.volume15 = (int) ((velocity / 127.0) * 15.0);
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    @Override
     public boolean tryAllocateFree(int ch, int note, int velocity)
     {
         int targetCh = -1;
@@ -264,7 +274,7 @@ class PsgChip implements TrackerSynthChip
         {
             targetCh = 0; // Force to channel 0 for drums if possible
             PsgChannel c = channels[targetCh];
-            c.reset();
+            c.resetCommon();
             c.active = true;
             c.midiChannel = 9;
             c.midiNote = note;
@@ -305,7 +315,7 @@ class PsgChip implements TrackerSynthChip
         }
 
         PsgChannel c = channels[targetCh];
-        c.reset();
+        c.resetCommon();
         c.active = true;
         c.midiChannel = ch;
         c.midiNote = note;
@@ -322,157 +332,5 @@ class PsgChip implements TrackerSynthChip
             hwEnvActive = true;
         }
         return true;
-    }
-
-    @Override
-    public boolean tryStealChannel(int ch, int note, int velocity)
-    {
-        // Steal the channel with the lowest current volume (least noticeable).
-        // If volumes are equal, prefer stealing from a higher MIDI channel number.
-        int targetCh = -1;
-        int minVolume = Integer.MAX_VALUE;
-        int targetMidiCh = -1;
-
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            if (i == 2) continue; // don't steal the hardware envelope/noise channel
-            PsgChannel c = channels[i];
-            if (c.active && c.midiChannel != 9)
-            {
-                if (c.volume15 < minVolume
-                        || (c.volume15 == minVolume && c.midiChannel > targetMidiCh))
-                {
-                    minVolume = c.volume15;
-                    targetMidiCh = c.midiChannel;
-                    targetCh = i;
-                }
-            }
-        }
-
-        // Only steal if the target is quieter than our new note, or if our new note is
-        // high priority (ch 0-3) and the target is low priority (ch > 3).
-        int newVol = (int) ((velocity / 127.0) * 15.0);
-        if (targetCh != -1 && (minVolume <= newVol || (ch < 4 && targetMidiCh >= 4)))
-        {
-            PsgChannel c = channels[targetCh];
-            c.reset();
-            c.active = true;
-            c.midiChannel = ch;
-            c.midiNote = note;
-            c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-            c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
-            c.volume15 = newVol;
-            c.dutyCycle16 = 32767;
-            return true;
-        }
-        return false;
-    }
-
-    @Override
-    public void forceArpeggioFallback(int ch, int note, int velocity)
-    {
-        int targetCh = -1;
-
-        // 1. Try to find a tone channel already playing the SAME instrument (midiChannel)
-        // that has room in its arpeggio buffer (< 4 notes).
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            if (i == 2) continue; // Skip noise channel for arpeggios
-            PsgChannel c = channels[i];
-            if (c.active && c.midiChannel == ch && c.arpSize < 4)
-            {
-                targetCh = i;
-                break;
-            }
-        }
-
-        // 2. If no matching instrument has room, we must steal a channel.
-        // Let's steal from channel 1 (or the oldest active tone channel).
-        if (targetCh == -1)
-        {
-            targetCh = 1; // Fallback hard steal
-            PsgChannel c = channels[targetCh];
-            c.reset();
-            c.active = true;
-            c.midiChannel = ch;
-            c.midiNote = note;
-            c.volume15 = (int) ((velocity / 127.0) * 15.0);
-            c.arpNotes[0] = note;
-            c.arpSize = 1;
-            c.baseFrequency = 440.0 * Math.pow(2.0, (note - 69) / 12.0);
-            c.phaseStep16 = (int) ((c.baseFrequency * 65536.0) / sampleRate);
-            return;
-        }
-
-        // 3. Append to existing arpeggio buffer
-        PsgChannel c = channels[targetCh];
-
-        // If it was playing a single note, convert it to an arpeggio array
-        if (c.arpSize == 0 && c.active)
-        {
-            c.arpNotes[0] = c.midiNote;
-            c.arpSize = 1;
-        }
-
-        // Avoid duplicate notes in the arpeggio
-        boolean exists = false;
-        for (int i = 0; i < c.arpSize; i++)
-        {
-            if (c.arpNotes[i] == note) exists = true;
-        }
-
-        if (!exists)
-        {
-            c.arpNotes[c.arpSize++] = note;
-            // Optionally boost volume slightly since it's now playing chords
-            c.volume15 = Math.max(c.volume15, (int) ((velocity / 127.0) * 15.0));
-        }
-    }
-
-    @Override
-    public void handleNoteOff(int ch, int note)
-    {
-        for (int i = 0; i < NUM_CHANNELS; i++)
-        {
-            PsgChannel c = channels[i];
-            if (c.active && c.midiChannel == ch)
-            {
-                if (c.arpSize > 1)
-                {
-                    // It's playing an arpeggio chord. Try to remove the specific note.
-                    int removeIdx = -1;
-                    for (int j = 0; j < c.arpSize; j++)
-                    {
-                        if (c.arpNotes[j] == note)
-                        {
-                            removeIdx = j;
-                            break;
-                        }
-                    }
-
-                    if (removeIdx != -1)
-                    {
-                        // Shift remaining notes left
-                        for (int j = removeIdx; j < c.arpSize - 1; j++)
-                        {
-                            c.arpNotes[j] = c.arpNotes[j + 1];
-                        }
-                        c.arpSize--;
-
-                        // If index is now out of bounds, reset it
-                        if (c.arpIndex >= c.arpSize)
-                        {
-                            c.arpIndex = 0;
-                        }
-                    }
-                }
-                else if (c.midiNote == note)
-                {
-                    // Single note playing, just kill the channel
-                    c.active = false;
-                    if (i == 2) hwEnvActive = false;
-                }
-            }
-        }
     }
 }

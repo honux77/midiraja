@@ -4,6 +4,7 @@ import java.io.File;
 import java.lang.foreign.Arena;
 import java.lang.foreign.FunctionDescriptor;
 import java.lang.foreign.Linker;
+import java.lang.foreign.MemorySegment;
 import java.lang.foreign.SymbolLookup;
 import java.lang.foreign.ValueLayout;
 import java.lang.invoke.MethodHandle;
@@ -45,11 +46,57 @@ public abstract class AbstractFFMBridge implements AutoCloseable
     protected final SymbolLookup lib;
     protected final Linker linker;
 
+    // Cached native render buffer shared by subclasses for generate() calls
+    private MemorySegment renderBuffer = MemorySegment.NULL;
+    private int currentRenderBufferSize = 0;
+
     protected AbstractFFMBridge(Arena arena, SymbolLookup lib)
     {
         this.arena = arena;
         this.lib = lib;
         this.linker = Linker.nativeLinker();
+    }
+
+    /**
+     * Renders audio into the provided buffer using the given generate method handle.
+     *
+     * <p>The generate handle must accept {@code (MemorySegment device, int sampleCount,
+     * MemorySegment out)} and return {@code int}. Allocates a native render buffer lazily and
+     * reuses it across calls to avoid per-frame allocation.
+     *
+     * @param generateHandle the native generate method handle
+     * @param device the native device pointer
+     * @param buffer the Java output buffer to fill
+     */
+    @SuppressWarnings({"EmptyCatch", "UnusedVariable"})
+    protected void generateInto(MethodHandle generateHandle, MemorySegment device, short[] buffer)
+    {
+        if (device.equals(MemorySegment.NULL) || buffer == null || buffer.length == 0) return;
+
+        int requiredBytes = buffer.length * 2; // 2 bytes per short
+        if (currentRenderBufferSize < requiredBytes)
+        {
+            try
+            {
+                renderBuffer = arena.allocate(requiredBytes);
+                currentRenderBufferSize = requiredBytes;
+            }
+            catch (Throwable ignored)
+            {
+                System.err.println("[NativeBridge Error] " + ignored.getMessage());
+                return;
+            }
+        }
+
+        try
+        {
+            int ignored = (int) generateHandle.invokeExact(device, buffer.length, renderBuffer);
+            MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
+        }
+        catch (Throwable ignored)
+        {
+            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+        }
     }
 
     protected final MethodHandle downcall(String symbol, FunctionDescriptor descriptor)

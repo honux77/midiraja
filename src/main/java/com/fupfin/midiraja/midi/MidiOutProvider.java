@@ -88,10 +88,11 @@ public interface MidiOutProvider extends MidiSink
     }
 
     /**
-     * Instantly silences all active notes to prevent stuck sounds across track changes or abrupt
-     * exits.
+     * Sends standard panic MIDI messages (Sustain Off, All Notes Off, All Sound Off, Reset All
+     * Controllers, and individual Note Offs for every key) to all 16 channels. Does not wait
+     * afterward; callers that need a hardware flush window should sleep after this returns.
      */
-    default void panic()
+    default void sendPanicMessages()
     {
         for (int ch = 0; ch < 16; ch++)
         {
@@ -116,6 +117,15 @@ public interface MidiOutProvider extends MidiSink
                         "[NativeBridge Error] " + ignored.getMessage()); /* Ignore during panic */
             }
         }
+    }
+
+    /**
+     * Instantly silences all active notes to prevent stuck sounds across track changes or abrupt
+     * exits.
+     */
+    default void panic()
+    {
+        sendPanicMessages();
         // Increase flush window for the heavy Note Off barrage
         long endWait = System.currentTimeMillis() + 200;
         while (System.currentTimeMillis() < endWait)

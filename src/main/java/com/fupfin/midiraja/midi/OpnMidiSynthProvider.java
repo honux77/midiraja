@@ -9,7 +9,6 @@ package com.fupfin.midiraja.midi;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.util.List;
-import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -42,15 +41,7 @@ public class OpnMidiSynthProvider extends AbstractSoftSynthProvider<OpnMidiNativ
     @Override
     public List<MidiPort> getOutputPorts()
     {
-        String emuName =
-                (emulatorId >= 0 && emulatorId < EMULATOR_NAMES.length) ? EMULATOR_NAMES[emulatorId]
-                        : "Emulator " + emulatorId;
-        String portName = emuName + " · " + numChips + " chip" + (numChips > 1 ? "s" : "");
-        if (dacMode != null)
-        {
-            portName += " [" + dacMode.toUpperCase(Locale.ROOT) + "]";
-        }
-        return List.of(new MidiPort(0, portName));
+        return buildFmSynthPorts(EMULATOR_NAMES, emulatorId, numChips, dacMode);
     }
 
     @Override
