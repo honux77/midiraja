@@ -33,8 +33,7 @@ public class BeepCommand implements Callable<Integer>
     private @org.jspecify.annotations.Nullable MidirajaCommand parent;
 
     @Mixin
-    @org.jspecify.annotations.Nullable
-    private CommonOptions common;
+    private final CommonOptions common = new CommonOptions();
 
     @Option(names = {"--synth"}, defaultValue = "square",
             description = "Synthesis generation algorithm:\n"
@@ -83,16 +82,13 @@ public class BeepCommand implements Callable<Integer>
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
         audio.init(44100, 1, 4096);
-        if (common != null && common.dumpWav.isPresent())
+        if (common.dumpWav.isPresent())
         {
             audio.enableDump(common.dumpWav.get());
         }
         com.fupfin.midiraja.dsp.AudioProcessor pipeline =
                 new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
-        if (common != null)
-        {
-            pipeline = common.wrapRetroPipeline(pipeline);
-        }
+        pipeline = common.wrapRetroPipeline(pipeline);
 
         // Map user's 1~6 quality level exponentially (1 -> 1x, 2 -> 2x, 3 -> 4x, ..., 6 -> 32x)
         int clampedLevel = Math.max(1, Math.min(6, qualityLevel));

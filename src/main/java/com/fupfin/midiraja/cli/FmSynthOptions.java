@@ -15,7 +15,7 @@ import picocli.CommandLine.Option;
 public class FmSynthOptions
 {
     @Option(names = {"-e", "--emulator"}, defaultValue = "0",
-            description = "Emulator backend ID. See the command footer for available IDs.")
+            description = "Emulator backend ID (default: 0). Available IDs are listed in the command footer.")
     public int emulator = 0;
 
     @Option(names = {"-c", "--chips"}, defaultValue = "4",

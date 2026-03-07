@@ -64,6 +64,9 @@ public abstract class AbstractFFMBridge implements AutoCloseable
      * MemorySegment out)} and return {@code int}. Allocates a native render buffer lazily and
      * reuses it across calls to avoid per-frame allocation.
      *
+     * <p>Must be called only from a single render thread per bridge instance. The internal
+     * {@code renderBuffer} and {@code currentRenderBufferSize} fields are not synchronized.
+     *
      * @param generateHandle the native generate method handle
      * @param device the native device pointer
      * @param buffer the Java output buffer to fill
