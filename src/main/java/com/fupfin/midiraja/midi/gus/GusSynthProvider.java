@@ -8,17 +8,17 @@
 package com.fupfin.midiraja.midi.gus;
 
 
+import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.midi.MidiPort;
 import com.fupfin.midiraja.midi.SoftSynthProvider;
-import java.util.List;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.Track;
 import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("ThreadPriorityCheck")
@@ -31,7 +31,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class GusSynthProvider implements SoftSynthProvider
 {
-    private final com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
+    private final @Nullable AudioProcessor audioOut;
     private final GusEngine engine;
     private final @Nullable GusBank bank;
     private final Set<Integer> failedPatches = Collections.synchronizedSet(new HashSet<>());
@@ -49,9 +49,7 @@ public class GusSynthProvider implements SoftSynthProvider
      */
 
 
-    public GusSynthProvider(
-            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut,
-            @Nullable String patchDir)
+    public GusSynthProvider(@Nullable AudioProcessor audioOut, @Nullable String patchDir)
     {
         this.audioOut = audioOut;
         this.engine = new GusEngine(44100);
@@ -202,13 +200,13 @@ public class GusSynthProvider implements SoftSynthProvider
 
     @SuppressWarnings("EmptyCatch")
     @Override
-    public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    public void prepareForNewTrack(Sequence sequence)
     {
         if (bank != null)
         {
             boolean[] loadedPrograms = new boolean[128];
             boolean[] loadedDrums = new boolean[128];
-            for (javax.sound.midi.Track track : sequence.getTracks())
+            for (Track track : sequence.getTracks())
             {
                 for (int i = 0; i < track.size(); i++)
                 {

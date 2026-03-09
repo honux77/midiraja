@@ -7,7 +7,9 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.lang.Math.max;
 import static java.lang.System.out;
+import static java.util.Locale.ROOT;
 
 import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.engine.PlaybackEngine;
@@ -17,15 +19,25 @@ import com.fupfin.midiraja.io.JLineTerminalIO;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.midi.MidiUtils;
 import com.fupfin.midiraja.midi.SoftSynthProvider;
+import com.fupfin.midiraja.ui.DashboardUI;
+import com.fupfin.midiraja.ui.DumbUI;
+import com.fupfin.midiraja.ui.LineUI;
+import com.fupfin.midiraja.ui.PlaybackUI;
+import com.fupfin.midiraja.ui.ScreenBuffer;
 import com.fupfin.midiraja.ui.Theme;
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.sound.midi.MidiSystem;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -145,7 +157,7 @@ public class PlaybackRunner
                         {
                             try
                             {
-                                Thread.sleep(Math.max(1, endWait - System.currentTimeMillis()));
+                                Thread.sleep(max(1, endWait - System.currentTimeMillis()));
                             }
                             catch (Exception ignored)
                             {
@@ -163,8 +175,7 @@ public class PlaybackRunner
 
             // ── UI mode ───────────────────────────────────────────────────────
             boolean[] altScreenOut = new boolean[1];
-            com.fupfin.midiraja.ui.PlaybackUI ui =
-                    buildUI(common.uiOptions, isInteractive, activeIO.getHeight(), altScreenOut);
+            PlaybackUI ui = buildUI(common.uiOptions, isInteractive, activeIO.getHeight(), altScreenOut);
             boolean useAltScreen = altScreenOut[0];
 
             if (useAltScreen && isInteractive)
@@ -209,7 +220,7 @@ public class PlaybackRunner
                 {
                     try
                     {
-                        Thread.sleep(Math.max(1, endWait - System.currentTimeMillis()));
+                        Thread.sleep(max(1, endWait - System.currentTimeMillis()));
                     }
                     catch (Exception ignored)
                     {
@@ -239,9 +250,9 @@ public class PlaybackRunner
         {
         }
 
-        var lowerQuery = query.toLowerCase(java.util.Locale.ROOT);
+        var lowerQuery = query.toLowerCase(ROOT);
         var matches = ports.stream()
-                .filter(p -> p.name().toLowerCase(java.util.Locale.ROOT).contains(lowerQuery))
+                .filter(p -> p.name().toLowerCase(ROOT).contains(lowerQuery))
                 .toList();
 
         if (matches.size() == 1) return matches.get(0).index();
@@ -275,8 +286,7 @@ public class PlaybackRunner
         int selectedIndex = 0;
         int numPorts = ports.size();
 
-        try (org.jline.terminal.Terminal terminal =
-                org.jline.terminal.TerminalBuilder.builder().system(true).build())
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
             terminal.enterRawMode();
             var reader = terminal.reader();
@@ -332,8 +342,7 @@ public class PlaybackRunner
         int selectedIndex = 0;
         int numPorts = ports.size();
 
-        try (org.jline.terminal.Terminal terminal =
-                org.jline.terminal.TerminalBuilder.builder().system(true).build())
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
             terminal.enterRawMode();
             var reader = terminal.reader();
@@ -346,11 +355,10 @@ public class PlaybackRunner
                 int height = terminal.getHeight();
                 int boxWidth = 50;
                 int boxHeight = numPorts + 4;
-                int padLeft = Math.max(0, (width - boxWidth) / 2);
-                int padTop = Math.max(0, (height - boxHeight) / 2);
+                int padLeft = max(0, (width - boxWidth) / 2);
+                int padTop = max(0, (height - boxHeight) / 2);
 
-                com.fupfin.midiraja.ui.ScreenBuffer buffer =
-                        new com.fupfin.midiraja.ui.ScreenBuffer(4096);
+                ScreenBuffer buffer = new ScreenBuffer(4096);
                 buffer.append(Theme.TERM_CURSOR_HOME).append(Theme.TERM_CLEAR_TO_END);
                 buffer.repeat("\n", padTop);
 
@@ -423,7 +431,7 @@ public class PlaybackRunner
         }
     }
 
-    private void clearMenu(org.jline.terminal.Terminal terminal, int numPorts)
+    private void clearMenu(Terminal terminal, int numPorts)
     {
         terminal.writer().print("\033[" + (numPorts + 1) + "A");
         for (int i = 0; i <= numPorts; i++)
@@ -442,7 +450,7 @@ public class PlaybackRunner
         }
         out.print("Select a port index: ");
         out.flush();
-        var scanner = new java.util.Scanner(System.in, java.nio.charset.StandardCharsets.UTF_8);
+        var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
         if (scanner.hasNextInt())
         {
             int selected = scanner.nextInt();
@@ -507,41 +515,41 @@ public class PlaybackRunner
         }
     }
 
-    private com.fupfin.midiraja.ui.PlaybackUI buildUI(UiModeOptions uiOpts, boolean isInteractive,
+    private PlaybackUI buildUI(UiModeOptions uiOpts, boolean isInteractive,
             int activeIOHeight, boolean[] useAltScreenOut)
     {
-        com.fupfin.midiraja.ui.PlaybackUI ui;
+        PlaybackUI ui;
         if (uiOpts.classicMode)
         {
-            ui = new com.fupfin.midiraja.ui.DumbUI();
+            ui = new DumbUI();
         }
         else if (uiOpts.miniMode)
         {
-            ui = new com.fupfin.midiraja.ui.LineUI();
+            ui = new LineUI();
         }
         else if (uiOpts.fullMode)
         {
-            ui = new com.fupfin.midiraja.ui.DashboardUI();
+            ui = new DashboardUI();
             useAltScreenOut[0] = true;
         }
         else if (!isInteractive)
         {
-            ui = new com.fupfin.midiraja.ui.DumbUI();
+            ui = new DumbUI();
         }
         else if (activeIOHeight < 10)
         {
-            ui = new com.fupfin.midiraja.ui.LineUI();
+            ui = new LineUI();
         }
         else
         {
-            ui = new com.fupfin.midiraja.ui.DashboardUI();
+            ui = new DashboardUI();
             useAltScreenOut[0] = true;
         }
         return ui;
     }
 
     private void playPlaylistLoop(List<File> playlist, MidiOutProvider provider, MidiPort port,
-            CommonOptions common, com.fupfin.midiraja.ui.PlaybackUI ui, TerminalIO activeIO,
+            CommonOptions common, PlaybackUI ui, TerminalIO activeIO,
             Optional<String> initialStartTime) throws Exception
     {
         int currentTrackIdx = 0;
@@ -557,7 +565,7 @@ public class PlaybackRunner
                             file.getName(), sequence.getResolution(),
                             sequence.getMicrosecondLength()));
 
-            String title = com.fupfin.midiraja.midi.MidiUtils.extractSequenceTitle(sequence);
+            String title = MidiUtils.extractSequenceTitle(sequence);
             var context = new PlaylistContext(playlist, currentTrackIdx, port, title);
 
             var engine = new PlaybackEngine(sequence, provider, context, common.volume,
@@ -568,7 +576,7 @@ public class PlaybackRunner
             if (wasPaused) engine.setInitiallyPaused();
 
             boolean isLastTrack = (currentTrackIdx == playlist.size() - 1);
-            if (isLastTrack && !common.loop && (ui instanceof com.fupfin.midiraja.ui.DashboardUI))
+            if (isLastTrack && !common.loop && (ui instanceof DashboardUI))
             {
                 engine.setHoldAtEnd(true);
             }
@@ -596,7 +604,7 @@ public class PlaybackRunner
             case PREVIOUS:
                 currentTrackIdx--;
                 if (common.loop && currentTrackIdx < 0) return playlist.size() - 1;
-                return Math.max(0, currentTrackIdx);
+                return max(0, currentTrackIdx);
             case FINISHED:
             case NEXT:
                 currentTrackIdx++;

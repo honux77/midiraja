@@ -1,6 +1,9 @@
 package com.fupfin.midiraja.dsp;
 
+import static java.lang.Math.*;
+
 import com.fupfin.midiraja.midi.AudioEngine;
+import java.util.concurrent.locks.LockSupport;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -48,7 +51,7 @@ public class FloatToShortSink implements AudioSink
                 {
                     stuckCount++;
 
-                    java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms sleep to match
+                    LockSupport.parkNanos(1000000); // 1ms sleep to match
                                                                                // consumption rate
                 }
             }
@@ -71,15 +74,15 @@ public class FloatToShortSink implements AudioSink
             for (int i = 0; i < frames; i++)
             {
                 float avg = (left[i] + right[i]) * 0.5f;
-                pcmBuffer[i] = (short) (Math.max(-1.0f, Math.min(1.0f, avg)) * 32767.0f);
+                pcmBuffer[i] = (short) (max(-1.0f, min(1.0f, avg)) * 32767.0f);
             }
         }
         else
         {
             for (int i = 0; i < frames; i++)
             {
-                float clampL = Math.max(-1.0f, Math.min(1.0f, left[i]));
-                float clampR = Math.max(-1.0f, Math.min(1.0f, right[i]));
+                float clampL = max(-1.0f, min(1.0f, left[i]));
+                float clampR = max(-1.0f, min(1.0f, right[i]));
                 pcmBuffer[i * 2] = (short) (clampL * 32767.0f);
                 pcmBuffer[i * 2 + 1] = (short) (clampR * 32767.0f);
             }
@@ -104,7 +107,7 @@ public class FloatToShortSink implements AudioSink
             {
                 stuckCount++;
 
-                java.util.concurrent.locks.LockSupport.parkNanos(1000000); // 1ms sleep to match
+                LockSupport.parkNanos(1000000); // 1ms sleep to match
                                                                            // consumption rate
             }
         }

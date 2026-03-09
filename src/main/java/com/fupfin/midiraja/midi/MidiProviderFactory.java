@@ -7,6 +7,8 @@
 
 package com.fupfin.midiraja.midi;
 
+import static java.util.Locale.ROOT;
+
 import com.fupfin.midiraja.midi.os.AlsaProvider;
 import com.fupfin.midiraja.midi.os.CoreMidiProvider;
 import com.fupfin.midiraja.midi.os.WinMmProvider;
@@ -20,7 +22,7 @@ public class MidiProviderFactory
 
     public static MidiOutProvider createProvider()
     {
-        String osName = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT);
+        String osName = System.getProperty("os.name").toLowerCase(ROOT);
 
         OS os = osName.contains("mac") ? OS.MAC
             : osName.contains("win")   ? OS.WINDOWS

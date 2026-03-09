@@ -1,5 +1,7 @@
 package com.fupfin.midiraja.ui;
 
+import static java.lang.Math.*;
+
 import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
 import java.util.HashMap;
 import java.util.Map;
@@ -43,7 +45,7 @@ public class DashboardLayoutManager
         // 1. Calculate Absolute Minimums Required
         int hNowPlaying = wrapTitled(NOW_PLAYING_MIN_CONTENT);
         int hChannels = wrapTitled(CHANNELS_MIN_CONTENT);
-        int hPlaylist = showPlaylist ? wrapTitled(Math.min(PLAYLIST_MIN_CONTENT, listSize)) : 0;
+        int hPlaylist = showPlaylist ? wrapTitled(min(PLAYLIST_MIN_CONTENT, listSize)) : 0;
         int hControls = CONTROLS_MIN_CONTENT;
 
         int absoluteMinHeight =
@@ -67,11 +69,11 @@ public class DashboardLayoutManager
                 int surplus = safeHeight - twoColumnReqHeight;
 
                 // Distribute surplus
-                int addNow = Math.min(surplus, NOW_PLAYING_MAX_CONTENT - NOW_PLAYING_MIN_CONTENT);
+                int addNow = min(surplus, NOW_PLAYING_MAX_CONTENT - NOW_PLAYING_MIN_CONTENT);
                 hNowPlaying += addNow;
                 surplus -= addNow;
 
-                int addCtrl = Math.min(surplus, CONTROLS_MAX_CONTENT - CONTROLS_MIN_CONTENT);
+                int addCtrl = min(surplus, CONTROLS_MAX_CONTENT - CONTROLS_MIN_CONTENT);
                 hControls += addCtrl;
                 surplus -= addCtrl;
 
@@ -84,7 +86,7 @@ public class DashboardLayoutManager
                 // --- Stacked Mode ---
                 int surplus = safeHeight - absoluteMinHeight;
 
-                int addNow = Math.min(surplus, NOW_PLAYING_MAX_CONTENT - NOW_PLAYING_MIN_CONTENT);
+                int addNow = min(surplus, NOW_PLAYING_MAX_CONTENT - NOW_PLAYING_MIN_CONTENT);
                 hNowPlaying += addNow;
                 surplus -= addNow;
 
@@ -96,7 +98,7 @@ public class DashboardLayoutManager
                 {
                     // If no playlist, give half of surplus to metadata and half to channels
                     // but cap metadata at max.
-                    int extraNow = Math.min(surplus / 2,
+                    int extraNow = min(surplus / 2,
                             NOW_PLAYING_MAX_CONTENT - hNowPlaying + TITLED_PANEL_OVERHEAD);
                     hNowPlaying += extraNow;
                     hChannels += (surplus - extraNow);
@@ -115,7 +117,7 @@ public class DashboardLayoutManager
         }
         else
         {
-            int leftColWidth = Math.max(35, termWidth / 2);
+            int leftColWidth = max(35, termWidth / 2);
             int rightColWidth = termWidth - leftColWidth;
             layout.put(PanelId.CHANNELS,
                     new LayoutConstraints(leftColWidth, hChannels, true, false));

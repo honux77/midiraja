@@ -7,6 +7,7 @@
 
 package com.fupfin.midiraja.ui;
 
+import static java.lang.Math.*;
 
 /**
  * Responsive VU meter display for 16 MIDI channels.
@@ -44,7 +45,7 @@ public class ChannelActivityPanel implements Panel
     {
         if (channel >= 0 && channel < 16)
         {
-            channelLevels[channel] = Math.max(channelLevels[channel], velocity / 127.0);
+            channelLevels[channel] = max(channelLevels[channel], velocity / 127.0);
         }
     }
 
@@ -68,7 +69,7 @@ public class ChannelActivityPanel implements Panel
 
         for (int i = 0; i < 16; i++)
         {
-            channelLevels[i] = Math.max(0, channelLevels[i] - 0.05);
+            channelLevels[i] = max(0, channelLevels[i] - 0.05);
         }
 
         int w = constraints.width();
@@ -97,8 +98,8 @@ public class ChannelActivityPanel implements Panel
             numCols = 4;
         }
 
-        int numRows = (int) Math.ceil(16.0 / numCols);
-        int rowsToDraw = Math.min(numRows, h);
+        int numRows = (int) ceil(16.0 / numCols);
+        int rowsToDraw = min(numRows, h);
         int colWidth = w / numCols;
 
         for (int r = 0; r < rowsToDraw; r++)
@@ -114,7 +115,7 @@ public class ChannelActivityPanel implements Panel
                 {
                     // Format: "C01:[███··]"
                     // CXX: (4 static) + brackets from ProgressBar (2 static) = 6 static
-                    int maxMeter = Math.max(2, colWidth - 6);
+                    int maxMeter = max(2, colWidth - 6);
                     int meterLen = (int) (channelLevels[ch] * maxMeter);
 
                     String meter = ProgressBar.render(meterLen, maxMeter,
@@ -122,7 +123,7 @@ public class ChannelActivityPanel implements Panel
                     cell = String.format("C%02d:%s", ch + 1, meter);
 
                     int visibleLen = 4 + 2 + maxMeter;
-                    cell += " ".repeat(Math.max(0, colWidth - visibleLen));
+                    cell += " ".repeat(max(0, colWidth - visibleLen));
                 }
                 else
                 {
@@ -135,7 +136,7 @@ public class ChannelActivityPanel implements Panel
                     // Format: "CH 01 (Piano ): [%s]"
                     // "CH 01 " (6) + "(Piano )" (13) + ": " (2) + brackets (2) = 23 static
                     int staticLen = 23;
-                    int maxMeter = Math.max(2, colWidth - staticLen);
+                    int maxMeter = max(2, colWidth - staticLen);
                     int meterLen = (int) (channelLevels[ch] * maxMeter);
 
                     String meter = ProgressBar.render(meterLen, maxMeter,
@@ -144,7 +145,7 @@ public class ChannelActivityPanel implements Panel
                     cell = String.format("CH %02d %-13s: %s", ch + 1, "(" + instName + ")", meter);
 
                     int visibleLen = staticLen + maxMeter;
-                    cell += " ".repeat(Math.max(0, colWidth - visibleLen));
+                    cell += " ".repeat(max(0, colWidth - visibleLen));
                 }
                 rowSb.append(cell);
             }

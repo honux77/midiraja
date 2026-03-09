@@ -7,7 +7,10 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.midi.FluidSynthProvider;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,9 +51,9 @@ public class FluidCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
 
-        var provider = new com.fupfin.midiraja.midi.FluidSynthProvider(driver.orElse(null));
+        var provider = new FluidSynthProvider(driver.orElse(null));
 
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());

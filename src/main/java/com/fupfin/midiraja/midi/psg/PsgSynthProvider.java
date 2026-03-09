@@ -7,6 +7,7 @@
 
 package com.fupfin.midiraja.midi.psg;
 
+import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.midi.AbstractOneBitSynthProvider;
 import com.fupfin.midiraja.midi.MidiPort;
 import java.util.List;
@@ -28,9 +29,8 @@ public class PsgSynthProvider extends AbstractOneBitSynthProvider
     private final int[] channelPrograms = new int[16];
     private final boolean useScc;
 
-    public PsgSynthProvider(
-            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut,
-            int systems, double vibratoDepth, double dutySweep, boolean useScc, boolean smoothScc)
+    public PsgSynthProvider(@Nullable AudioProcessor audioOut, int systems, double vibratoDepth,
+            double dutySweep, boolean useScc, boolean smoothScc)
     {
         super(audioOut);
         this.systems = Math.max(1, Math.min(16, systems));

@@ -1,5 +1,8 @@
 package com.fupfin.midiraja.dsp;
 
+import static java.lang.Math.abs;
+import static java.util.Locale.ROOT;
+
 import java.util.Random;
 
 public class OneBitHardwareFilter implements AudioProcessor
@@ -25,7 +28,7 @@ public class OneBitHardwareFilter implements AudioProcessor
     {
         this.enabled = enabled;
         this.next = next;
-        this.mode = mode != null ? mode.toLowerCase(java.util.Locale.ROOT) : "pwm";
+        this.mode = mode != null ? mode.toLowerCase(ROOT) : "pwm";
         this.carrierStep = carrierHz / 44100.0;
         this.levels = levels;
         this.smoothAlpha = smoothAlpha;
@@ -79,7 +82,7 @@ public class OneBitHardwareFilter implements AudioProcessor
     {
         double out;
 
-        if (Math.abs(monoIn) < 1e-4)
+        if (abs(monoIn) < 1e-4)
         {
             out = 0.0;
         }

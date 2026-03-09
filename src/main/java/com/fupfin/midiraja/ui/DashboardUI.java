@@ -7,17 +7,16 @@
 
 package com.fupfin.midiraja.ui;
 
+import com.fupfin.midiraja.Version;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import javax.sound.midi.MidiMessage;
-import javax.sound.midi.Sequence;
-import javax.sound.midi.Track;
+import static java.lang.Math.max;
+import static java.util.Objects.requireNonNull;
+
+import java.util.*;
+import javax.sound.midi.*;
 
 public class DashboardUI implements PlaybackUI
 {
@@ -43,7 +42,7 @@ public class DashboardUI implements PlaybackUI
             for (int i = 0; i < track.size(); i++)
             {
                 MidiMessage msg = track.get(i).getMessage();
-                if (msg instanceof javax.sound.midi.MetaMessage m)
+                if (msg instanceof MetaMessage m)
                 {
                     if (m.getType() == 0x01 || m.getType() == 0x02)
                     { // Text or Copyright
@@ -103,8 +102,8 @@ public class DashboardUI implements PlaybackUI
                 buffer.append(Theme.TERM_CURSOR_HOME);
 
                 String banner = String.format(" Midiraja v%s - Terminal Lover's MIDI Player",
-                        com.fupfin.midiraja.Version.VERSION);
-                int bannerPadding = Math.max(0, termWidth - banner.length());
+                        Version.VERSION);
+                int bannerPadding = max(0, termWidth - banner.length());
                 buffer.append(Theme.FORMAT_INVERT).append(banner).append(" ".repeat(bannerPadding))
                         .append("\033[0m\n");
 
@@ -114,9 +113,9 @@ public class DashboardUI implements PlaybackUI
                         .calculateLayout(termWidth, termHeight, engine.getContext().files().size());
 
                 LayoutConstraints chanC =
-                        Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS));
+                        requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS));
                 LayoutConstraints playC =
-                        Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
+                        requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST));
 
                 if (chanC.isHorizontal())
                 {
@@ -173,13 +172,13 @@ public class DashboardUI implements PlaybackUI
         Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout =
                 layoutManager.calculateLayout(width, height, listSize);
         titledNowPlayingPanel.onLayoutUpdated(
-                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
+                requireNonNull(layout.get(DashboardLayoutManager.PanelId.METADATA)));
         channelPanel.onLayoutUpdated(
-                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS)));
+                requireNonNull(layout.get(DashboardLayoutManager.PanelId.CHANNELS)));
         titledPlaylistPanel.onLayoutUpdated(
-                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST)));
+                requireNonNull(layout.get(DashboardLayoutManager.PanelId.PLAYLIST)));
         controlsPanel.onLayoutUpdated(
-                Objects.requireNonNull(layout.get(DashboardLayoutManager.PanelId.CONTROLS)));
+                requireNonNull(layout.get(DashboardLayoutManager.PanelId.CONTROLS)));
     }
 
     @Override

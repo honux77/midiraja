@@ -7,11 +7,10 @@
 
 package com.fupfin.midiraja.midi;
 
+import static java.lang.System.err;
+
 import java.io.File;
-import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
+import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 
@@ -220,7 +219,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error creating Munt context", t);
         }
     }
@@ -264,12 +263,12 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Exception e)
         {
-            System.err.println("[NativeBridge Error] " + e.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
             throw e;
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error invoking Munt ROM API", t);
         }
     }
@@ -302,7 +301,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error opening Munt synth", t);
         }
     }
@@ -346,7 +345,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -398,7 +397,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -414,7 +413,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error closing Munt synth", t);
         }
         // Re-open exactly as in openSynth(): disable the masterVolumeOverride (which
@@ -427,12 +426,12 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Exception e)
         {
-            System.err.println("[NativeBridge Error] " + e.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
             throw e;
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error reopening Munt synth", t);
         }
         // After open_synth the internal rendered-sample counter restarts at 0.
@@ -467,7 +466,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             }
             catch (Throwable ignored)
             {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " +ignored.getMessage());
                 return; // Cannot allocate render buffer; skip this cycle
             }
         }
@@ -479,7 +478,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
 
         // Update the timing reference AFTER rendering so computeTimestamp() in the
@@ -491,7 +490,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
         lastRenderCompletedNanos = System.nanoTime();
     }
@@ -506,7 +505,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
             return false;
         }
     }
@@ -521,7 +520,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
             return 0;
         }
     }
@@ -552,7 +551,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
             return 0;
         }
     }
@@ -569,7 +568,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             }
             catch (Throwable ignored)
             {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " +ignored.getMessage());
             }
             context = MemorySegment.NULL;
         }
@@ -579,7 +578,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         }
         catch (Exception e)
         {
-            System.err.println("[NativeBridge Error] " + e.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 }

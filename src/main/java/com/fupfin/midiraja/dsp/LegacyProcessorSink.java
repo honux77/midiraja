@@ -1,13 +1,15 @@
 package com.fupfin.midiraja.dsp;
 
+import java.util.List;
+
 /**
  * An adapter sink that iterates over a legacy list of AudioProcessors.
  */
 public class LegacyProcessorSink extends AudioFilter
 {
-    private final java.util.List<AudioProcessor> processors;
+    private final List<AudioProcessor> processors;
 
-    public LegacyProcessorSink(AudioProcessor next, java.util.List<AudioProcessor> processors)
+    public LegacyProcessorSink(AudioProcessor next, List<AudioProcessor> processors)
     {
         super(next);
         this.processors = processors;

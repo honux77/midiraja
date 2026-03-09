@@ -9,6 +9,8 @@ package com.fupfin.midiraja.cli;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -63,7 +65,7 @@ public class PlaylistParser
     {
         try
         {
-            List<String> lines = java.nio.file.Files.readAllLines(playlistFile.toPath());
+            List<String> lines = Files.readAllLines(playlistFile.toPath());
             File parentDir = playlistFile.getParentFile();
 
             for (String rawLine : lines)
@@ -196,9 +198,9 @@ public class PlaylistParser
         try
         {
             int maxDepth = recursive ? Integer.MAX_VALUE : 1;
-            try (var stream = java.nio.file.Files.walk(dir.toPath(), maxDepth))
+            try (var stream = Files.walk(dir.toPath(), maxDepth))
             {
-                stream.filter(java.nio.file.Files::isRegularFile).map(java.nio.file.Path::toFile)
+                stream.filter(Files::isRegularFile).map(Path::toFile)
                         .filter(f -> {
                             String name = f.getName().toLowerCase(Locale.ROOT);
                             return name.endsWith(".mid") || name.endsWith(".midi");

@@ -9,9 +9,7 @@ package com.fupfin.midiraja.midi.gus;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.foreign.Arena;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
+import java.lang.foreign.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;

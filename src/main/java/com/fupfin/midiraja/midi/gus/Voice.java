@@ -7,6 +7,8 @@
 
 package com.fupfin.midiraja.midi.gus;
 
+import java.lang.foreign.ValueLayout;
+
 public class Voice
 {
     private final GusPatch patch;
@@ -44,7 +46,7 @@ public class Voice
             int bytePos = index * 2;
             if (bytePos + 1 < sample.pcmData().byteSize())
             {
-                short val = sample.pcmData().get(java.lang.foreign.ValueLayout.JAVA_SHORT_UNALIGNED,
+                short val = sample.pcmData().get(ValueLayout.JAVA_SHORT_UNALIGNED,
                         bytePos);
                 if (sample.isUnsigned()) val = (short) ((val & 0xFFFF) - 32768);
                 return val / 32768.0f;
@@ -55,7 +57,7 @@ public class Voice
             int bytePos = index;
             if (bytePos < sample.pcmData().byteSize())
             {
-                byte val = sample.pcmData().get(java.lang.foreign.ValueLayout.JAVA_BYTE, bytePos);
+                byte val = sample.pcmData().get(ValueLayout.JAVA_BYTE, bytePos);
                 if (sample.isUnsigned()) val = (byte) ((val & 0xFF) - 128);
                 return val / 128.0f;
             }

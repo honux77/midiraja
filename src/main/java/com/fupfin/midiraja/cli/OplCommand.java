@@ -7,7 +7,11 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
+import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,12 +57,12 @@ public class OplCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
 
         var pipeline = FmSynthOptions.buildStereoFmPipeline(common, fxOptions);
 
-        var bridge = new com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge();
-        var provider = new com.fupfin.midiraja.midi.AdlMidiSynthProvider(bridge, pipeline,
+        var bridge = new FFMAdlMidiNativeBridge();
+        var provider = new AdlMidiSynthProvider(bridge, pipeline,
                 fmOptions.emulator, fmOptions.chips, common.retroMode.orElse(null));
 
         // Resolve bank argument: "" → "bank:0", "14" → "bank:14", path → path

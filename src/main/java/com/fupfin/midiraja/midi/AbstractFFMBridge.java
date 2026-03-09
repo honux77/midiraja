@@ -1,12 +1,9 @@
 package com.fupfin.midiraja.midi;
 
+import static java.lang.System.err;
+
 import java.io.File;
-import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.ValueLayout;
+import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
@@ -86,7 +83,7 @@ public abstract class AbstractFFMBridge implements AutoCloseable
             }
             catch (Throwable ignored)
             {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " + ignored.getMessage());
                 return;
             }
         }
@@ -98,7 +95,7 @@ public abstract class AbstractFFMBridge implements AutoCloseable
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + ignored.getMessage());
         }
     }
 

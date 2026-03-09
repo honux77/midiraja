@@ -11,6 +11,7 @@ import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import javax.sound.midi.Sequence;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -71,7 +72,7 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
     }
 
     @Override
-    public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    public void prepareForNewTrack(Sequence sequence)
     {
         renderPaused = true;
         try

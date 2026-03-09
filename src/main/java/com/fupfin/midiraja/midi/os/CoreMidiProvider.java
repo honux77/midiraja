@@ -13,6 +13,7 @@ import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiPort;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -132,7 +133,7 @@ public class CoreMidiProvider implements MidiOutProvider
                     if (getResult != 0)
                     {
                         String name =
-                                buffer.getString(0, java.nio.charset.StandardCharsets.UTF_8).trim();
+                                buffer.getString(0, StandardCharsets.UTF_8).trim();
                         ports.add(new MidiPort(i, name));
                     }
                     CFRelease.invokeExact(cfString);

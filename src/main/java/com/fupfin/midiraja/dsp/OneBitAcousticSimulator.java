@@ -1,5 +1,7 @@
 package com.fupfin.midiraja.dsp;
 
+import static java.util.Locale.ROOT;
+
 import java.util.Random;
 
 public class OneBitAcousticSimulator implements AudioProcessor
@@ -26,7 +28,7 @@ public class OneBitAcousticSimulator implements AudioProcessor
 
     public OneBitAcousticSimulator(int sampleRate, String oneBitMode)
     {
-        this.oneBitMode = oneBitMode.toLowerCase(java.util.Locale.ROOT);
+        this.oneBitMode = oneBitMode.toLowerCase(ROOT);
 
         // Characteristic filters. Oversampling is universally 32x (~1.4MHz)
         // to match the original 1980s hardware switching speeds.

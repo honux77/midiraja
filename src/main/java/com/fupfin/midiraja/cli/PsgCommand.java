@@ -1,22 +1,28 @@
 package com.fupfin.midiraja.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.FloatToShortSink;
+import com.fupfin.midiraja.dsp.ShortToFloatFilter;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.psg.PsgSynthProvider;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 
 @Command(name = "psg", aliases = {"ay", "msx"}, mixinStandardHelpOptions = true,
         description = "Play using the Programmable Sound Generator (PSG) emulator with 8-bit tracker hacks")
-public class PsgCommand implements java.util.concurrent.Callable<Integer>
+public class PsgCommand implements Callable<Integer>
 {
     @ParentCommand
     @Nullable
@@ -57,7 +63,7 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
 
         // If SCC is requested and chips was left at default (4), change it to 2.
         // 2 chips in SCC mode gives the classic MSX + SCC combination (1 PSG + 1 SCC).
@@ -75,13 +81,12 @@ public class PsgCommand implements java.util.concurrent.Callable<Integer>
             audio.enableDump(common.dumpWav.get());
         }
 
-        com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
+        AudioProcessor pipeline = new FloatToShortSink(audio, 1);
         pipeline = common.wrapRetroPipeline(pipeline);
         pipeline = fxOptions.wrapFxPipeline(pipeline);
         if (fxOptions.needsFloatConversion(common))
         {
-            pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
+            pipeline = new ShortToFloatFilter(pipeline);
         }
 
         var provider =

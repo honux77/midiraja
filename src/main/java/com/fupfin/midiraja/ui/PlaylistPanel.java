@@ -7,12 +7,14 @@
 
 package com.fupfin.midiraja.ui;
 
+import static java.lang.Math.*;
+import static java.lang.System.err;
+
 import com.fupfin.midiraja.engine.PlaylistContext;
+import com.fupfin.midiraja.midi.MidiUtils;
 import java.io.File;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import org.jspecify.annotations.Nullable;
@@ -46,7 +48,7 @@ public class PlaylistPanel implements Panel
                         {
                             Sequence seq = MidiSystem.getSequence(file);
                             String title =
-                                    com.fupfin.midiraja.midi.MidiUtils.extractSequenceTitle(seq);
+                                    MidiUtils.extractSequenceTitle(seq);
                             if (title != null && !title.isEmpty())
                             {
                                 titleCache.put(file, title.trim());
@@ -58,7 +60,7 @@ public class PlaylistPanel implements Panel
                         }
                         catch (Exception ignored)
                         {
-                            System.err.println("[Error in " + getClass().getSimpleName() + "] "
+                            err.println("[Error in " + getClass().getSimpleName() + "] "
                                     + ignored.getMessage());
                             titleCache.put(file, "");
                         }
@@ -94,9 +96,9 @@ public class PlaylistPanel implements Panel
 
         int maxItems = constraints.height();
         int half = maxItems / 2;
-        int startIdx = Math.max(0, idx - half);
-        int endIdx = Math.min(listSize - 1, startIdx + maxItems - 1);
-        startIdx = Math.max(0, endIdx - maxItems + 1);
+        int startIdx = max(0, idx - half);
+        int endIdx = min(listSize - 1, startIdx + maxItems - 1);
+        startIdx = max(0, endIdx - maxItems + 1);
 
         for (int i = startIdx; i <= endIdx; i++)
         {
@@ -137,7 +139,7 @@ public class PlaylistPanel implements Panel
 
             if (visibleDisplayNameLen > constraints.width() - visibleStatusLen - baseLen)
             {
-                int maxLen = Math.max(0, constraints.width() - visibleStatusLen - baseLen - 3);
+                int maxLen = max(0, constraints.width() - visibleStatusLen - baseLen - 3);
                 String stripped = displayName.replaceAll("\\033\\[[;\\d]*m", "");
                 if (stripped.length() > maxLen)
                 {

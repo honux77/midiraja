@@ -10,22 +10,22 @@ package com.fupfin.midiraja;
 import static java.lang.System.err;
 import static java.lang.System.out;
 
-import com.fupfin.midiraja.cli.AudioLibResolver;
-import com.fupfin.midiraja.cli.CommonOptions;
-import com.fupfin.midiraja.cli.FluidCommand;
-import com.fupfin.midiraja.cli.JavaSynthCommand;
-import com.fupfin.midiraja.cli.ListPortsCommand;
-import com.fupfin.midiraja.cli.MuntCommand;
-import com.fupfin.midiraja.cli.OplCommand;
-import com.fupfin.midiraja.cli.OpnCommand;
-import com.fupfin.midiraja.cli.PlaybackRunner;
-import com.fupfin.midiraja.cli.GusCommand;
-import com.fupfin.midiraja.cli.BeepCommand;
-
+import com.fupfin.midiraja.cli.*;
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.FloatToShortSink;
 import com.fupfin.midiraja.io.TerminalIO;
+import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
+import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
+import com.fupfin.midiraja.midi.FFMMuntNativeBridge;
+import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
+import com.fupfin.midiraja.midi.FluidSynthProvider;
+import com.fupfin.midiraja.midi.JavaSynthProvider;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiPort;
 import com.fupfin.midiraja.midi.MidiProviderFactory;
+import com.fupfin.midiraja.midi.MuntSynthProvider;
+import com.fupfin.midiraja.midi.NativeAudioEngine;
+import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import java.io.File;
 import java.io.PrintStream;
 import java.io.PrintWriter;
@@ -45,8 +45,8 @@ import picocli.CommandLine.Parameters;
         customSynopsis = {"midra [command] [OPTIONS] [<files>...]"},
         subcommands = {OplCommand.class, OpnCommand.class, MuntCommand.class, FluidCommand.class,
                 JavaSynthCommand.class, GusCommand.class, BeepCommand.class,
-                com.fupfin.midiraja.cli.DeviceCommand.class,
-                com.fupfin.midiraja.cli.PsgCommand.class, ListPortsCommand.class,
+                DeviceCommand.class,
+                PsgCommand.class, ListPortsCommand.class,
                 CommandLine.HelpCommand.class, picocli.AutoComplete.GenerateCompletion.class,},
         footer = {"", "Synths (subcommands):", "  opl    OPL2/OPL3 FM  (AdLib / Sound Blaster)",
                 "  opn    OPN2 FM       (Sega Genesis / PC-98)",
@@ -241,12 +241,11 @@ public class MidirajaCommand implements Callable<Integer>
             err.println("Warning: --munt is deprecated. Use 'midra munt <rom-dir> "
                     + "<files...>' instead.");
             String audioLib = AudioLibResolver.resolve();
-            var audio = new com.fupfin.midiraja.midi.NativeAudioEngine(audioLib);
-            var bridge = new com.fupfin.midiraja.midi.FFMMuntNativeBridge();
+            var audio = new NativeAudioEngine(audioLib);
+            var bridge = new FFMMuntNativeBridge();
             audio.init(32000, 2, 4096);
-            com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                    new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-            resolvedProvider = new com.fupfin.midiraja.midi.MuntSynthProvider(bridge, pipeline);
+            AudioProcessor pipeline = new FloatToShortSink(audio);
+            resolvedProvider = new MuntSynthProvider(bridge, pipeline);
             soundbankArg = legacyMunt;
         }
         else if (legacyOpl.isPresent())
@@ -254,12 +253,11 @@ public class MidirajaCommand implements Callable<Integer>
             err.println("Warning: --opl is deprecated. Use 'midra opl [-b BANK] "
                     + "<files...>' instead.");
             String audioLib = AudioLibResolver.resolve();
-            var audio = new com.fupfin.midiraja.midi.NativeAudioEngine(audioLib);
+            var audio = new NativeAudioEngine(audioLib);
             audio.init(44100, 2, 4096);
-            com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                    new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-            var bridge = new com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge();
-            resolvedProvider = new com.fupfin.midiraja.midi.AdlMidiSynthProvider(bridge, pipeline,
+            AudioProcessor pipeline = new FloatToShortSink(audio);
+            var bridge = new FFMAdlMidiNativeBridge();
+            resolvedProvider = new AdlMidiSynthProvider(bridge, pipeline,
                     legacyOplEmulator, legacyOplChips, null);
             String val = legacyOpl.get();
             soundbankArg = Optional
@@ -270,12 +268,11 @@ public class MidirajaCommand implements Callable<Integer>
             err.println("Warning: --opn is deprecated. Use 'midra opn [-b PATH] "
                     + "<files...>' instead.");
             String audioLib = AudioLibResolver.resolve();
-            var audio = new com.fupfin.midiraja.midi.NativeAudioEngine(audioLib);
-            var bridge = new com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge();
+            var audio = new NativeAudioEngine(audioLib);
+            var bridge = new FFMOpnMidiNativeBridge();
             audio.init(44100, 2, 4096);
-            com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                    new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
-            resolvedProvider = new com.fupfin.midiraja.midi.OpnMidiSynthProvider(bridge, pipeline,
+            AudioProcessor pipeline = new FloatToShortSink(audio);
+            resolvedProvider = new OpnMidiSynthProvider(bridge, pipeline,
                     legacyOpnEmulator, legacyOpnChips, null);
             soundbankArg = Optional.of(legacyOpn.get());
         }
@@ -283,15 +280,14 @@ public class MidirajaCommand implements Callable<Integer>
         {
             stdErr.println("Warning: --fluid is deprecated. Use 'midra fluid <soundfont.sf2> "
                     + "<files...>' instead.");
-            resolvedProvider =
-                    new com.fupfin.midiraja.midi.FluidSynthProvider(legacyFluidDriver.orElse(null));
+            resolvedProvider = new FluidSynthProvider(legacyFluidDriver.orElse(null));
             soundbankArg = legacyFluid;
         }
         else if (legacySynth)
         {
             stdErr.println(
                     "Warning: --synth is deprecated. Use 'midra java " + "<files...>' instead.");
-            resolvedProvider = new com.fupfin.midiraja.midi.JavaSynthProvider();
+            resolvedProvider = new JavaSynthProvider();
         }
         else
         {

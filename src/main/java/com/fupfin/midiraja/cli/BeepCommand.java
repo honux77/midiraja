@@ -7,19 +7,27 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.Locale.ROOT;
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.FloatToShortSink;
+import com.fupfin.midiraja.midi.NativeAudioEngine;
+import com.fupfin.midiraja.midi.beep.BeepSynthProvider;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.Callable;
+import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
-
-import com.fupfin.midiraja.midi.NativeAudioEngine;
-import java.util.Optional;
 
 /**
  * Plays MIDI files using a 1-bit PC Speaker / Apple II style synthesizer.
@@ -30,7 +38,7 @@ import java.util.Optional;
 public class BeepCommand implements Callable<Integer>
 {
     @ParentCommand
-    private @org.jspecify.annotations.Nullable MidirajaCommand parent;
+    private @Nullable MidirajaCommand parent;
 
     @Mixin
     private final CommonOptions common = new CommonOptions();
@@ -78,7 +86,7 @@ public class BeepCommand implements Callable<Integer>
             return 1;
         }
 
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);
         audio.init(44100, 1, 4096);
@@ -86,22 +94,21 @@ public class BeepCommand implements Callable<Integer>
         {
             audio.enableDump(common.dumpWav.get());
         }
-        com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                new com.fupfin.midiraja.dsp.FloatToShortSink(audio, 1);
+        AudioProcessor pipeline = new FloatToShortSink(audio, 1);
         pipeline = common.wrapRetroPipeline(pipeline);
 
         // Map user's 1~6 quality level exponentially (1 -> 1x, 2 -> 2x, 3 -> 4x, ..., 6 -> 32x)
-        int clampedLevel = Math.max(1, Math.min(6, qualityLevel));
+        int clampedLevel = max(1, min(6, qualityLevel));
         int actualOversample = 1 << (clampedLevel - 1);
 
-        var provider = new com.fupfin.midiraja.midi.beep.BeepSynthProvider(pipeline, voices,
-                fmRatio, fmIndex, actualOversample, mux.toLowerCase(java.util.Locale.ROOT),
-                synth.toLowerCase(java.util.Locale.ROOT));
+        var provider = new BeepSynthProvider(pipeline, voices,
+                fmRatio, fmIndex, actualOversample, mux.toLowerCase(ROOT),
+                synth.toLowerCase(ROOT));
 
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
         int result = runner.run(provider, true, Optional.empty(), Optional.empty(), files,
-                java.util.Objects.requireNonNull(common));
+                requireNonNull(common));
 
         provider.closePort();
         return result;

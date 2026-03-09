@@ -7,10 +7,9 @@
 
 package com.fupfin.midiraja.midi;
 
-import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.ValueLayout;
+import static java.lang.System.err;
+
+import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 
@@ -182,7 +181,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new IllegalStateException("Error initializing libADLMIDI", t);
         }
     }
@@ -197,7 +196,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -216,12 +215,12 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Exception e)
         {
-            System.err.println("[NativeBridge Error] " + e.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
             throw e;
         }
         catch (Throwable t)
         {
-            System.err.println("[NativeBridge Error] " + t.getMessage());
+            err.println("[NativeBridge Error] " +t.getMessage());
             throw new IllegalStateException("Error loading WOPL bank file: " + path, t);
         }
     }
@@ -236,7 +235,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -250,7 +249,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -264,7 +263,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -278,7 +277,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -293,7 +292,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -307,7 +306,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -321,7 +320,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -335,7 +334,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -350,7 +349,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -365,7 +364,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
         }
     }
 
@@ -387,7 +386,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Throwable ignored)
         {
-            System.err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " +ignored.getMessage());
             return 0;
         }
     }
@@ -403,7 +402,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
             }
             catch (Throwable ignored)
             {
-                System.err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " +ignored.getMessage());
             }
             device = MemorySegment.NULL;
         }
@@ -413,7 +412,7 @@ public class FFMAdlMidiNativeBridge extends AbstractFFMBridge implements AdlMidi
         }
         catch (Exception e)
         {
-            System.err.println("[NativeBridge Error] " + e.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 }

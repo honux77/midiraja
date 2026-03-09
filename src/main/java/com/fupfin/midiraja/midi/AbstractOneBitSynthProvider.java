@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.midi;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import javax.sound.midi.Sequence;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -55,7 +56,7 @@ public abstract class AbstractOneBitSynthProvider implements SoftSynthProvider
     }
 
     @Override
-    public void prepareForNewTrack(javax.sound.midi.Sequence seq)
+    public void prepareForNewTrack(Sequence seq)
     {
         renderPaused = true;
         if (audioOut != null) audioOut.reset();

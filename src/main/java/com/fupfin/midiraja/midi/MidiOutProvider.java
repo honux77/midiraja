@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.midi;
 
 import java.util.List;
+import javax.sound.midi.Sequence;
 
 /**
  * Abstraction layer for native OS MIDI capabilities. Decouples the playback engine from operating
@@ -44,13 +45,13 @@ public interface MidiOutProvider extends MidiSink
      * {@link #onPlaybackStarted()} will resume it when playback actually begins. The sequence is
      * provided so that software synthesizers can pre-load necessary assets.
      */
-    default void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    default void prepareForNewTrack(Sequence sequence)
     {}
 
     /**
      * Called by {@code PlaybackEngine.playLoop()} at the very start of playback, just before the
      * first MIDI event is dispatched. Soft-synth implementations that paused their render thread in
-     * {@link #prepareForNewTrack(javax.sound.midi.Sequence)} should resume it here, resetting any
+     * {@link #prepareForNewTrack(Sequence)} should resume it here, resetting any
      * timing references so the first notes are scheduled with fresh, near-zero timestamps. Default
      * is a no-op for hardware MIDI ports.
      */

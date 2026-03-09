@@ -9,12 +9,9 @@ package com.fupfin.midiraja.midi;
 
 import static java.lang.System.err;
 
-import java.lang.foreign.Arena;
-import java.lang.foreign.FunctionDescriptor;
-import java.lang.foreign.Linker;
-import java.lang.foreign.MemorySegment;
-import java.lang.foreign.SymbolLookup;
-import java.lang.foreign.ValueLayout;
+import static java.util.Locale.ROOT;
+
+import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -80,7 +77,7 @@ public class FluidSynthProvider implements SoftSynthProvider
         try
         {
             // Try default system lookup first
-            String os = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT);
+            String os = System.getProperty("os.name").toLowerCase(ROOT);
             if (os.contains("mac"))
             {
                 lib = AbstractFFMBridge.tryLoadLibrary(arena, "", "libfluidsynth.dylib",

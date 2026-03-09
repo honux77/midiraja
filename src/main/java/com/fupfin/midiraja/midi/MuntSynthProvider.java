@@ -7,22 +7,24 @@
 
 package com.fupfin.midiraja.midi;
 
+import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.util.List;
+import javax.sound.midi.Sequence;
+import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings("ThreadPriorityCheck")
 public class MuntSynthProvider implements SoftSynthProvider
 {
     private final MuntNativeBridge bridge;
-    private final com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut;
-    private @org.jspecify.annotations.Nullable Thread renderThread;
+    private final @Nullable AudioProcessor audioOut;
+    private @Nullable Thread renderThread;
     private volatile boolean running = false;
     // Set to true while prepareForNewTrack() is cycling the Munt synth context.
     // The render thread checks this flag and spins instead of calling renderAudio(),
     // ensuring close_synth / open_synth are never called concurrently with rendering.
     private volatile boolean renderPaused = false;
 
-    public MuntSynthProvider(MuntNativeBridge bridge,
-            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut)
+    public MuntSynthProvider(MuntNativeBridge bridge, @Nullable AudioProcessor audioOut)
     {
         this.bridge = bridge;
         this.audioOut = audioOut;
@@ -147,7 +149,7 @@ public class MuntSynthProvider implements SoftSynthProvider
 
     @Override
     @SuppressWarnings("EmptyCatch")
-    public void prepareForNewTrack(javax.sound.midi.Sequence sequence)
+    public void prepareForNewTrack(Sequence sequence)
     {
         // Step 1: Pause the render thread so we can call renderAudio() directly below.
         renderPaused = true;

@@ -7,17 +7,13 @@
 
 package com.fupfin.midiraja.midi.gus;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import static java.util.Locale.ROOT;
+
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Pattern;
 import org.jspecify.annotations.Nullable;
 
@@ -155,7 +151,7 @@ public class GusBank
     public Optional<InputStream> openPatchStream(String patchPath) throws IOException
     {
         // TiMidity allows dropping the .pat extension
-        String filename = patchPath.toLowerCase(java.util.Locale.ROOT).endsWith(".pat") ? patchPath
+        String filename = patchPath.toLowerCase(ROOT).endsWith(".pat") ? patchPath
                 : patchPath + ".pat";
 
         if (rootDir != null)

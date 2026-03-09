@@ -7,7 +7,11 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
+import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,12 +59,12 @@ public class OpnCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
 
         var pipeline = FmSynthOptions.buildStereoFmPipeline(common, fxOptions);
 
-        var bridge = new com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge();
-        var provider = new com.fupfin.midiraja.midi.OpnMidiSynthProvider(bridge, pipeline,
+        var bridge = new FFMOpnMidiNativeBridge();
+        var provider = new OpnMidiSynthProvider(bridge, pipeline,
                 fmOptions.emulator, fmOptions.chips, common.retroMode.orElse(null));
 
         // bank: empty string = default built-in GM bank; otherwise WOPN file path

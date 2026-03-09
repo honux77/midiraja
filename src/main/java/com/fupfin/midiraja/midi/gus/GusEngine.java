@@ -7,10 +7,7 @@
 
 package com.fupfin.midiraja.midi.gus;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 public class GusEngine

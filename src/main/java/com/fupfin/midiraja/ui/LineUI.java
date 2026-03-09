@@ -10,7 +10,11 @@ package com.fupfin.midiraja.ui;
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
 import static com.fupfin.midiraja.ui.UIUtils.truncateAnsi;
 
+import static java.lang.Math.*;
+
+import com.fupfin.midiraja.Version;
 import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaylistContext;
 import com.fupfin.midiraja.io.TerminalIO;
 
 public class LineUI implements PlaybackUI
@@ -26,7 +30,7 @@ public class LineUI implements PlaybackUI
             term.print(Theme.TERM_HIDE_CURSOR + "\033[?7l");
         }
 
-        com.fupfin.midiraja.engine.PlaylistContext context = engine.getContext();
+        PlaylistContext context = engine.getContext();
         String fileName = context.files().get(context.currentIndex()).getName();
         String title = context.sequenceTitle() != null ? context.sequenceTitle() : "";
 
@@ -35,7 +39,7 @@ public class LineUI implements PlaybackUI
         int staticLinesPrinted = 0;
 
         term.println(String.format("\033[7m Midiraja v%s - Terminal Lover's MIDI Player \033[0m",
-                com.fupfin.midiraja.Version.VERSION));
+                Version.VERSION));
         staticLinesPrinted++;
 
         int listSize = context.files().size();
@@ -72,8 +76,8 @@ public class LineUI implements PlaybackUI
                 buffer.append("\r\033[38;5;215mVol:[\033[0m");
                 for (int i = 0; i < 16; i++)
                 {
-                    int levelIndex = (int) Math.round(levels[i] * 8);
-                    levelIndex = Math.max(0, Math.min(8, levelIndex));
+                    int levelIndex = (int) round(levels[i] * 8);
+                    levelIndex = max(0, min(8, levelIndex));
                     // Highlight bars
                     buffer.append(Theme.COLOR_HIGHLIGHT).append(blocks[levelIndex])
                             .append(Theme.COLOR_RESET);
@@ -101,7 +105,7 @@ public class LineUI implements PlaybackUI
                 if (termWidth > 0)
                 {
                     // Safe truncation that leaves room for the cursor
-                    rawLine = truncateAnsi(rawLine, Math.max(10, termWidth - 2));
+                    rawLine = truncateAnsi(rawLine, max(10, termWidth - 2));
                 }
 
                 // Always clear to EOL *after* truncation so the clear command isn't

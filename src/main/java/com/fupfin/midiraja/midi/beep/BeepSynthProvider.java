@@ -8,10 +8,12 @@
 package com.fupfin.midiraja.midi.beep;
 
 
+import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.midi.AbstractOneBitSynthProvider;
 import com.fupfin.midiraja.midi.MidiPort;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -57,26 +59,26 @@ public class BeepSynthProvider extends AbstractOneBitSynthProvider
      * dither amplitudes, and overdrive levels discovered via Genetic Algorithm for every
      * combination of synth and mux modes.
      */
-    private static final java.util.Map<String, DspParams> GOD_TABLE = java.util.Map.ofEntries(
+    private static final Map<String, DspParams> GOD_TABLE = Map.ofEntries(
             // Purist Architecture: Only XOR and TDM are valid true Multiplexers.
-            java.util.Map.entry("fm_tdm_1", new DspParams(0.230, 0.000, 1.580)),
-            java.util.Map.entry("fm_tdm_2", new DspParams(0.241, 0.000, 1.806)),
-            java.util.Map.entry("fm_tdm_4", new DspParams(0.224, 0.000, 0.000)),
-            java.util.Map.entry("fm_xor_1", new DspParams(0.028, 0.000, 8.625)),
-            java.util.Map.entry("fm_xor_2", new DspParams(0.186, 0.000, 0.129)),
-            java.util.Map.entry("fm_xor_4", new DspParams(0.143, 0.000, 0.059)),
-            java.util.Map.entry("xor_tdm_1", new DspParams(0.023, 0.000, 0.000)),
-            java.util.Map.entry("xor_tdm_2", new DspParams(0.036, 0.000, 0.000)),
-            java.util.Map.entry("xor_tdm_4", new DspParams(0.028, 0.000, 0.000)),
-            java.util.Map.entry("xor_xor_1", new DspParams(0.024, 0.000, 0.000)),
-            java.util.Map.entry("xor_xor_2", new DspParams(0.028, 0.000, 0.000)),
-            java.util.Map.entry("xor_xor_4", new DspParams(0.033, 0.000, 0.000)),
-            java.util.Map.entry("square_tdm_1", new DspParams(0.232, 0.000, 0.000)),
-            java.util.Map.entry("square_tdm_2", new DspParams(0.236, 0.000, 0.000)),
-            java.util.Map.entry("square_tdm_4", new DspParams(0.230, 0.000, 0.000)),
-            java.util.Map.entry("square_xor_1", new DspParams(0.230, 0.000, 0.000)),
-            java.util.Map.entry("square_xor_2", new DspParams(0.032, 0.000, 0.000)),
-            java.util.Map.entry("square_xor_4", new DspParams(0.029, 0.000, 0.000)));
+            Map.entry("fm_tdm_1", new DspParams(0.230, 0.000, 1.580)),
+            Map.entry("fm_tdm_2", new DspParams(0.241, 0.000, 1.806)),
+            Map.entry("fm_tdm_4", new DspParams(0.224, 0.000, 0.000)),
+            Map.entry("fm_xor_1", new DspParams(0.028, 0.000, 8.625)),
+            Map.entry("fm_xor_2", new DspParams(0.186, 0.000, 0.129)),
+            Map.entry("fm_xor_4", new DspParams(0.143, 0.000, 0.059)),
+            Map.entry("xor_tdm_1", new DspParams(0.023, 0.000, 0.000)),
+            Map.entry("xor_tdm_2", new DspParams(0.036, 0.000, 0.000)),
+            Map.entry("xor_tdm_4", new DspParams(0.028, 0.000, 0.000)),
+            Map.entry("xor_xor_1", new DspParams(0.024, 0.000, 0.000)),
+            Map.entry("xor_xor_2", new DspParams(0.028, 0.000, 0.000)),
+            Map.entry("xor_xor_4", new DspParams(0.033, 0.000, 0.000)),
+            Map.entry("square_tdm_1", new DspParams(0.232, 0.000, 0.000)),
+            Map.entry("square_tdm_2", new DspParams(0.236, 0.000, 0.000)),
+            Map.entry("square_tdm_4", new DspParams(0.230, 0.000, 0.000)),
+            Map.entry("square_xor_1", new DspParams(0.230, 0.000, 0.000)),
+            Map.entry("square_xor_2", new DspParams(0.032, 0.000, 0.000)),
+            Map.entry("square_xor_4", new DspParams(0.029, 0.000, 0.000)));
 
 
     private final int voicesPerCore;
@@ -448,10 +450,8 @@ public class BeepSynthProvider extends AbstractOneBitSynthProvider
      * @param muxMode Multiplexing algorithm ("xor" or "tdm").
      * @param synthMode Synthesis algorithm ("fm", "xor", or "square").
      */
-    public BeepSynthProvider(
-            com.fupfin.midiraja.dsp.@org.jspecify.annotations.Nullable AudioProcessor audioOut,
-            int voices, double fmRatio, double fmIndex, int oversample, String muxMode,
-            String synthMode)
+    public BeepSynthProvider(@Nullable AudioProcessor audioOut, int voices, double fmRatio,
+            double fmIndex, int oversample, String muxMode, String synthMode)
     {
         super(audioOut);
         this.voicesPerCore = Math.max(1, Math.min(4, voices));

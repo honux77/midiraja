@@ -7,7 +7,14 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.FloatToShortSink;
+import com.fupfin.midiraja.midi.FFMMuntNativeBridge;
+import com.fupfin.midiraja.midi.MuntSynthProvider;
+import com.fupfin.midiraja.midi.NativeAudioEngine;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,21 +53,20 @@ public class MuntCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
 
         String audioLib = AudioLibResolver.resolve();
-        var audio = new com.fupfin.midiraja.midi.NativeAudioEngine(audioLib);
+        var audio = new NativeAudioEngine(audioLib);
         audio.init(32000, 2, 4096);
         if (common.dumpWav.isPresent())
         {
             audio.enableDump(common.dumpWav.get());
         }
-        com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
+        AudioProcessor pipeline = new FloatToShortSink(audio);
         pipeline = common.wrapRetroPipeline(pipeline);
 
-        var bridge = new com.fupfin.midiraja.midi.FFMMuntNativeBridge();
-        var provider = new com.fupfin.midiraja.midi.MuntSynthProvider(bridge, pipeline);
+        var bridge = new FFMMuntNativeBridge();
+        var provider = new MuntSynthProvider(bridge, pipeline);
 
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());

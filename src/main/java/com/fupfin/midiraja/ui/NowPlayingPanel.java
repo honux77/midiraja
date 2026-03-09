@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.ui;
 
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
+import static java.lang.Math.*;
 
 import com.fupfin.midiraja.engine.PlaylistContext;
 import java.util.ArrayList;
@@ -87,7 +88,7 @@ public class NowPlayingPanel implements Panel
         String totStr = formatTime(totalMicros, incHrs);
         String curStr = formatTime(currentMicros, incHrs);
         int percent = (int) (totalMicros > 0 ? (currentMicros * 100 / totalMicros) : 0);
-        percent = Math.min(100, Math.max(0, percent));
+        percent = min(100, max(0, percent));
 
         String pauseIndicator = isPaused ? "\033[1;33m[PAUSED]\033[0m " : "";
         int visiblePauseLen = isPaused ? 9 : 0;
@@ -107,7 +108,7 @@ public class NowPlayingPanel implements Panel
         // Total = 23 + visiblePauseLen + timeLen
         // Increase safety margin by 2 to completely avoid any edge-case string
         // overflow truncations.
-        int barWidth = Math.max(10, constraints.width() - 23 - visiblePauseLen - timeLen);
+        int barWidth = max(10, constraints.width() - 23 - visiblePauseLen - timeLen);
 
         int filled = (int) ((percent / 100.0) * barWidth);
         String bar = ProgressBar.render(filled, barWidth, ProgressBar.Style.SOLID_BACKGROUND, true);

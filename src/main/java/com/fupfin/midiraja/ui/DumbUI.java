@@ -9,6 +9,7 @@ package com.fupfin.midiraja.ui;
 
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
 
+import com.fupfin.midiraja.Version;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.engine.PlaylistContext;
 import com.fupfin.midiraja.io.TerminalIO;
@@ -36,7 +37,7 @@ public class DumbUI implements PlaybackUI
         {
             term.println(
                     String.format("\033[7m Midiraja v%s - Terminal Lover's MIDI Player \033[0m",
-                            com.fupfin.midiraja.Version.VERSION));
+                            Version.VERSION));
 
             // 2. 재생 목록 요약
             if (listSize == 1)

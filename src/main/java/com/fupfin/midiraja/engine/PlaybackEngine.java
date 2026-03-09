@@ -8,18 +8,20 @@
 package com.fupfin.midiraja.engine;
 
 
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.ui.PlaybackEventListener;
-import java.util.*;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import static java.lang.Math.*;
+import static java.util.Locale.ROOT;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.StructuredTaskScope;
-import java.util.concurrent.TimeUnit;
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiProcessor;
+import com.fupfin.midiraja.midi.SysexFilter;
+import com.fupfin.midiraja.midi.TransposeFilter;
+import com.fupfin.midiraja.midi.VolumeFilter;
+import com.fupfin.midiraja.ui.PlaybackEventListener;
+import com.fupfin.midiraja.ui.PlaybackUI;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.*;
 import java.util.stream.IntStream;
 import javax.sound.midi.*;
 
@@ -36,10 +38,10 @@ public class PlaybackEngine
 
     private final Sequence sequence;
     private final MidiOutProvider provider;
-    private final com.fupfin.midiraja.midi.MidiProcessor pipelineRoot;
-    private final com.fupfin.midiraja.midi.TransposeFilter transposeFilter;
-    private final com.fupfin.midiraja.midi.VolumeFilter volumeFilter;
-    private final com.fupfin.midiraja.midi.SysexFilter sysexFilter;
+    private final MidiProcessor pipelineRoot;
+    private final TransposeFilter transposeFilter;
+    private final VolumeFilter volumeFilter;
+    private final SysexFilter sysexFilter;
 
     private final AtomicLong currentMicroseconds = new AtomicLong(0);
     private final AtomicLong seekTarget = new AtomicLong(-1);
@@ -83,7 +85,7 @@ public class PlaybackEngine
     private final int[] channelPrograms = new int[16];
 
     private final List<PlaybackEventListener> listeners =
-            new java.util.concurrent.CopyOnWriteArrayList<>();
+            new CopyOnWriteArrayList<>();
     private final ScheduledExecutorService notificationScheduler =
             Executors.newSingleThreadScheduledExecutor(r -> {
                 Thread t = new Thread(r, "midi-notify");
@@ -99,10 +101,10 @@ public class PlaybackEngine
         this.provider = provider;
 
         this.currentSpeed.set(initialSpeed);
-        double initVol = Math.max(0, Math.min(100, initialVolumePercent)) / 100.0;
-        this.sysexFilter = new com.fupfin.midiraja.midi.SysexFilter(provider, false);
-        this.volumeFilter = new com.fupfin.midiraja.midi.VolumeFilter(this.sysexFilter, initVol);
-        this.transposeFilter = new com.fupfin.midiraja.midi.TransposeFilter(this.volumeFilter,
+        double initVol = max(0, min(100, initialVolumePercent)) / 100.0;
+        this.sysexFilter = new SysexFilter(provider, false);
+        this.volumeFilter = new VolumeFilter(this.sysexFilter, initVol);
+        this.transposeFilter = new TransposeFilter(this.volumeFilter,
                 initialTranspose.orElse(0));
         this.pipelineRoot = this.transposeFilter;
         this.resolution = sequence.getResolution();
@@ -130,7 +132,7 @@ public class PlaybackEngine
      * @return the terminal state indicating what the user requested next (e.g., NEXT, QUIT_ALL)
      */
     @SuppressWarnings({"ThreadPriorityCheck", "NonAtomicVolatileUpdate"})
-    public PlaybackStatus start(com.fupfin.midiraja.ui.PlaybackUI ui) throws Exception
+    public PlaybackStatus start(PlaybackUI ui) throws Exception
     {
         isPlaying.set(true);
         playbackActuallyStarted.set(false);
@@ -230,7 +232,7 @@ public class PlaybackEngine
     private void sendInitialReset()
     {
         if (initialResetType.isEmpty()) return;
-        String type = initialResetType.get().trim().toLowerCase(java.util.Locale.ROOT);
+        String type = initialResetType.get().trim().toLowerCase(ROOT);
         byte[] payload = null;
 
         switch (type)
@@ -440,7 +442,7 @@ public class PlaybackEngine
                     long remainingMs = (targetNanos - currentNanos) / 1_000_000L;
                     if (remainingMs > 1)
                     {
-                        Thread.sleep(Math.min(remainingMs - 1, 50));
+                        Thread.sleep(min(remainingMs - 1, 50));
                     }
                     else
                     {
@@ -486,7 +488,7 @@ public class PlaybackEngine
 
     private void processChaseEvent(MidiEvent event)
     {
-        if (com.fupfin.midiraja.MidirajaCommand.SHUTTING_DOWN) return;
+        if (MidirajaCommand.SHUTTING_DOWN) return;
         var msg = event.getMessage();
         var raw = msg.getMessage();
         int status = raw[0] & 0xFF;
@@ -541,7 +543,7 @@ public class PlaybackEngine
 
     private void processEvent(MidiEvent event)
     {
-        if (com.fupfin.midiraja.MidirajaCommand.SHUTTING_DOWN) return;
+        if (MidirajaCommand.SHUTTING_DOWN) return;
         var msg = event.getMessage();
 
 
@@ -603,13 +605,13 @@ public class PlaybackEngine
                 if (latencyNanos > 0)
                 {
                     var unused = notificationScheduler.schedule(() -> {
-                        channelLevels[channel] = Math.max(channelLevels[channel], velocity / 127.0);
+                        channelLevels[channel] = max(channelLevels[channel], velocity / 127.0);
                         listeners.forEach(l -> l.onChannelActivity(channel, velocity));
                     }, latencyNanos, TimeUnit.NANOSECONDS);
                 }
                 else
                 {
-                    channelLevels[ch] = Math.max(channelLevels[ch], velocity / 127.0);
+                    channelLevels[ch] = max(channelLevels[ch], velocity / 127.0);
                     listeners.forEach(l -> l.onChannelActivity(ch, velocity));
                 }
             }
@@ -710,7 +712,7 @@ public class PlaybackEngine
     public void adjustSpeed(double delta)
     {
         Double cs = currentSpeed.get();
-        currentSpeed.set(Math.max(0.5, Math.min(2.0, (cs != null ? cs : 1.0) + delta)));
+        currentSpeed.set(max(0.5, min(2.0, (cs != null ? cs : 1.0) + delta)));
         listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);
     }
 
@@ -764,7 +766,7 @@ public class PlaybackEngine
         if (seekTarget.get() == -1)
         {
             seekTarget.set(
-                    getTickForTime(Math.max(0, currentMicroseconds.get() + microsecondsDelta)));
+                    getTickForTime(max(0, currentMicroseconds.get() + microsecondsDelta)));
         }
     }
 
@@ -772,7 +774,7 @@ public class PlaybackEngine
     {
         for (int i = 0; i < 16; i++)
         {
-            channelLevels[i] = Math.max(0, channelLevels[i] - decayAmount);
+            channelLevels[i] = max(0, channelLevels[i] - decayAmount);
         }
     }
 }

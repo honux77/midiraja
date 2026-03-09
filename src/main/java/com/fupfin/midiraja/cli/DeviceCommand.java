@@ -1,21 +1,24 @@
 package com.fupfin.midiraja.cli;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiProviderFactory;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.Parameters;
-import picocli.CommandLine.ParentCommand;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import org.jspecify.annotations.Nullable;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.Parameters;
+import picocli.CommandLine.ParentCommand;
 
 @Command(name = "device", aliases = {"dev"}, mixinStandardHelpOptions = true,
         description = "Play using the OS's native hardware/software MIDI ports")
-public class DeviceCommand implements java.util.concurrent.Callable<Integer>
+public class DeviceCommand implements Callable<Integer>
 {
     @ParentCommand
     @Nullable
@@ -32,7 +35,7 @@ public class DeviceCommand implements java.util.concurrent.Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        var p = java.util.Objects.requireNonNull(parent);
+        var p = requireNonNull(parent);
         MidiOutProvider provider = MidiProviderFactory.createProvider();
 
         // We must separate the potential device query from the files list

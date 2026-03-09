@@ -10,16 +10,15 @@ package com.fupfin.midiraja.io;
 import static java.lang.IO.*;
 
 import java.io.IOException;
-import org.jline.terminal.Attributes;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
+import org.jline.terminal.*;
 import org.jline.utils.NonBlockingReader;
+import org.jspecify.annotations.Nullable;
 
 public class JLineTerminalIO implements TerminalIO
 {
-    @org.jspecify.annotations.Nullable
+    @Nullable
     private Terminal terminal;
-    @org.jspecify.annotations.Nullable
+    @Nullable
     private NonBlockingReader reader;
 
     @Override
