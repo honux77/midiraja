@@ -115,8 +115,10 @@ public class CommonOptions
                     pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
                     break;
                 case "apple2":
-                    // DAC522 technique: carrier raised to 22.05kHz (above hearing limit),
-                    // 32 discrete levels (5-bit: pulse widths 6-37 out of 46-cycle period).
+                    // DAC522 technique: each audio sample is encoded as TWO 46-cycle pulses.
+                    // Two pulses together (92 cycles) ≈ the original 93-cycle 11kHz sample period,
+                    // but the carrier noise is now at 22.05kHz — above the hearing limit.
+                    // 32 discrete widths per pulse (6-37 out of 46 cycles, ~5-bit).
                     pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm",
                             22050.0, 32.0, 0.55f, pipeline);
                     break;
