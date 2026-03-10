@@ -76,7 +76,8 @@ class RetroFiltersTest {
 
     @Test
     void testApple2DacToggle() {
-        OneBitHardwareFilter filter = new OneBitHardwareFilter(true, "pwm", 11025.0, 93.0, 0.35f, mock);
+        // DAC522 profile: 22kHz carrier (above hearing limit), 5-bit resolution
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 0.55f, mock);
         float[] left = {0.5f, 0.5f, -0.5f, -0.5f};
         float[] right = {0.5f, 0.5f, -0.5f, -0.5f};
         

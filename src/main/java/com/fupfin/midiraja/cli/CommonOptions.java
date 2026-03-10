@@ -115,8 +115,10 @@ public class CommonOptions
                     pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
                     break;
                 case "apple2":
+                    // DAC522 technique: carrier raised to 22.05kHz (above hearing limit),
+                    // 32 discrete levels (5-bit: pulse widths 6-37 out of 46-cycle period).
                     pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm",
-                            11025.0, 93.0, 0.35f, pipeline);
+                            22050.0, 32.0, 0.55f, pipeline);
                     break;
                 case "spectrum":
                     pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm",
