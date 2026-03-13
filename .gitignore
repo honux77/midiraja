@@ -12,6 +12,9 @@ conductor/
 staging/
 
 # C/C++ build artifacts (all native libs build to build/native-libs/)
+src/main/c/adlmidi/
+src/main/c/opnmidi/
+src/main/c/munt/
 src/main/c/miniaudio/*.dylib
 src/main/c/miniaudio/*.so
 
