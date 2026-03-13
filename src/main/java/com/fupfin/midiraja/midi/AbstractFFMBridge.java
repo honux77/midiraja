@@ -117,10 +117,17 @@ public abstract class AbstractFFMBridge implements AutoCloseable
         List<String> allPaths = new ArrayList<>(List.of(paths));
         if (fallbackDevDir != null && !fallbackDevDir.isEmpty())
         {
-            // Assume paths are given like "libmt32emu.dylib", "libmt32emu.so", "libmt32emu.dll"
+            String osName = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT);
+            String osFamily = osName.contains("mac") ? "macos"
+                    : (osName.contains("linux") ? "linux" : "windows");
+            String arch = System.getProperty("os.arch").toLowerCase(java.util.Locale.ROOT);
+            if (arch.equals("amd64")) arch = "x86_64";
+            if (arch.equals("arm64")) arch = "aarch64";
+            String nativeTarget = osFamily + "-" + arch;
             for (String path : paths)
             {
-                allPaths.add(projectRoot + "/src/main/c/" + fallbackDevDir + "/" + path);
+                allPaths.add(projectRoot + "/build/native-libs/" + nativeTarget + "/"
+                        + fallbackDevDir + "/" + path);
             }
         }
 

@@ -5,6 +5,16 @@ conductor/
 /*.mid
 /*.wav
 
+# Claude Code session files
+.claude/
+
+# Build staging directories
+staging/
+
+# C/C++ build artifacts (all native libs build to build/native-libs/)
+src/main/c/miniaudio/*.dylib
+src/main/c/miniaudio/*.so
+
 ### STS ###
 .apt_generated
 .classpath
