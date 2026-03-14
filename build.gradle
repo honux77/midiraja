@@ -250,25 +250,15 @@ graalvmNative {
                 // -lstdc++ already added for libADLMIDI above
             }
 
-            // Statically link libmidiraja_audio: gus/beep/psg/opl/opn/munt work without a .dylib/.so
-            def audioLib = "${project.buildDir}/native-libs/${nativeTarget}/miniaudio/libmidiraja_audio.a"
+            // Embed the native-libs directory path into the binary's rpath so that
+            // libmidiraja_audio, libADLMIDI, and libOPNMIDI are found at runtime when
+            // bundled alongside the binary (same directory as the executable).
             if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
-                buildArgs.add("-H:NativeLinkerOption=-force_load")
-                buildArgs.add("-H:NativeLinkerOption=${audioLib}")
-                // miniaudio requires these macOS audio frameworks
-                buildArgs.add("-H:NativeLinkerOption=-framework")
-                buildArgs.add("-H:NativeLinkerOption=CoreAudio")
-                buildArgs.add("-H:NativeLinkerOption=-framework")
-                buildArgs.add("-H:NativeLinkerOption=AudioToolbox")
-                buildArgs.add("-H:NativeLinkerOption=-framework")
-                buildArgs.add("-H:NativeLinkerOption=AudioUnit")
-                buildArgs.add("-H:NativeLinkerOption=-framework")
-                buildArgs.add("-H:NativeLinkerOption=CoreFoundation")
+                // @executable_path resolves to the directory containing the midra binary
+                buildArgs.add("-H:NativeLinkerOption=-Wl,-rpath,@executable_path")
             } else if (org.gradle.internal.os.OperatingSystem.current().isLinux()) {
-                buildArgs.add("-H:NativeLinkerOption=-Wl,--whole-archive")
-                buildArgs.add("-H:NativeLinkerOption=${audioLib}")
-                buildArgs.add("-H:NativeLinkerOption=-Wl,--no-whole-archive")
-                buildArgs.add("-H:NativeLinkerOption=-lasound")
+                // $ORIGIN resolves to the directory containing the midra binary
+                buildArgs.add("-H:NativeLinkerOption=-Wl,-rpath,\$ORIGIN")
             }
         }
     }

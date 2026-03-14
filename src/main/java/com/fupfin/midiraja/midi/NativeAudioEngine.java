@@ -42,7 +42,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
 
     private NativeAudioEngine(Arena arena, String libPath) throws Exception
     {
-        super(arena, loadLib(libPath));
+        super(arena, loadLib(arena, libPath));
 
         midiraja_audio_init = downcall("midiraja_audio_init",
                 FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
@@ -67,12 +67,15 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
-    private static SymbolLookup loadLib(String libPath)
+    private static SymbolLookup loadLib(Arena arena, String libPath)
     {
-        // Empty path means the library was statically linked into the native binary.
-        if (!libPath.isEmpty())
-            System.load(new File(libPath).getAbsolutePath());
-        return SymbolLookup.loaderLookup();
+        if (libPath.isEmpty())
+            // No dylib found: fall back to the process symbol table (covers static linking).
+            return Linker.nativeLinker().defaultLookup();
+        if (libPath.startsWith("/"))
+            return SymbolLookup.libraryLookup(new File(libPath).toPath(), arena);
+        // Name-only path (e.g. "libmidiraja_audio.dylib"): resolved via rpath at runtime.
+        return SymbolLookup.libraryLookup(libPath, arena);
     }
 
     /**

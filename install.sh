@@ -101,6 +101,11 @@ tar -xzf "${TMP_DIR}/${ASSET_NAME}" -C "${TMP_DIR}"
 mkdir -p "${INSTALL_DIR}"
 install -m 755 "${TMP_DIR}/${BINARY_NAME}" "${INSTALL_DIR}/${BINARY_NAME}"
 
+# Install bundled native libraries next to the binary (required for audio and synth engines)
+for lib in "${TMP_DIR}"/*.dylib "${TMP_DIR}"/*.so; do
+    [ -f "$lib" ] && install -m 755 "$lib" "${INSTALL_DIR}/$(basename "$lib")"
+done
+
 # Install man page if man directory is writable
 MAN_DIR="${PREFIX}/share/man/man1"
 if [ -f "${TMP_DIR}/midra.1" ]; then

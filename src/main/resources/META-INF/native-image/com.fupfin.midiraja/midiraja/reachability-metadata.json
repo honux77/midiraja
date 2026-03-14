@@ -1,6 +1,7 @@
 {
     "resources": [
-        {"glob": "com/midiraja/midi/opn-gm.wopn"}
+        {"glob": "com/midiraja/midi/opn-gm.wopn"},
+        {"glob": "gus/freepats/**"}
     ],
     "reflection": [
         {

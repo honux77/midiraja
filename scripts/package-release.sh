@@ -46,11 +46,27 @@ fi
 echo "📦 Packaging ${ARCHIVE_NAME}..."
 mkdir -p "${DIST_DIR}"
 
+# Resolve the native-libs directory (build system uses aarch64/x86_64, not arm64/amd64)
+NATIVE_OS=$(uname -s | tr '[:upper:]' '[:lower:]' | sed 's/darwin/macos/')
+NATIVE_ARCH=$(uname -m)
+[ "$NATIVE_ARCH" = "arm64"  ] && NATIVE_ARCH="aarch64"
+NATIVE_LIBS_DIR="build/native-libs/${NATIVE_OS}-${NATIVE_ARCH}"
+
 STAGING_DIR="$(mktemp -d)"
 trap 'rm -rf "$STAGING_DIR"' EXIT
 cp "${BIN_DIR}/midra" "${STAGING_DIR}/midra"
 cp "src/main/man/midra.1" "${STAGING_DIR}/midra.1"
-tar -czf "${DIST_DIR}/${ARCHIVE_NAME}" -C "${STAGING_DIR}" midra midra.1
+
+# Bundle native libraries alongside the binary so rpath (@executable_path / $ORIGIN) finds them
+LIB_EXT="dylib" ; [ "$(uname -s)" = "Linux" ] && LIB_EXT="so"
+for lib in \
+    "${NATIVE_LIBS_DIR}/miniaudio/libmidiraja_audio.${LIB_EXT}" \
+    "${NATIVE_LIBS_DIR}/adlmidi/libADLMIDI.${LIB_EXT}" \
+    "${NATIVE_LIBS_DIR}/opnmidi/libOPNMIDI.${LIB_EXT}"; do
+    [ -f "$lib" ] && cp "$lib" "${STAGING_DIR}/"
+done
+
+tar -czf "${DIST_DIR}/${ARCHIVE_NAME}" -C "${STAGING_DIR}" .
 
 echo "🔒 Calculating SHA256 Checksum..."
 cd "${DIST_DIR}"
