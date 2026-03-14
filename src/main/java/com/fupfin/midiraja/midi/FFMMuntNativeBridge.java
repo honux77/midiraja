@@ -13,7 +13,6 @@ import java.io.File;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings({"EmptyCatch", "UnusedVariable"})
 public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNativeBridge
@@ -73,8 +72,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 // set_stereo_output_samplerate
                 FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_DOUBLE),
                 // open_synth, get_internal_rendered_sample_count, get_part_states
-                // (set_master_volume_override omitted: optional symbol, looked up at runtime)
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+                // set_master_volume_override (void*, jbyte → jint in ABI)
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE),
                 // set_midi_event_queue_size
                 DESC_PTR_INT,
                 // play_msg_at
@@ -99,8 +99,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
     private final MethodHandle mt32emu_free_context;
     private final MethodHandle mt32emu_add_rom_file;
     private final MethodHandle mt32emu_set_stereo_output_samplerate;
-    // Nullable: added in libmt32emu HEAD (post-2.7.3). Not present in older installs.
-    private final @Nullable MethodHandle mt32emu_set_master_volume_override;
+    private final MethodHandle mt32emu_set_master_volume_override;
     private final MethodHandle mt32emu_open_synth;
     private final MethodHandle mt32emu_close_synth;
     // Resize Munt's internal MIDI event queue. Must be called after create_context,
@@ -150,11 +149,8 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         // void mt32emu_set_master_volume_override(mt32emu_const_context context, mt32emu_bit8u
         // volume_override) value > 100 disables the override; value <= 100 caps master volume to
         // that value.
-        // Optional: added in libmt32emu HEAD (post-2.7.3); absent in Homebrew 2.7.3.
-        mt32emu_set_master_volume_override = lib.find("mt32emu_set_master_volume_override")
-                .map(addr -> linker.downcallHandle(addr,
-                        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE)))
-                .orElse(null);
+        mt32emu_set_master_volume_override = downcall("mt32emu_set_master_volume_override",
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.JAVA_BYTE));
 
         // mt32emu_return_code mt32emu_open_synth(mt32emu_const_context context)
         mt32emu_open_synth = downcall("mt32emu_open_synth",
@@ -282,11 +278,10 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         if (context.equals(MemorySegment.NULL)) return;
         try
         {
-            // Disable the master volume override (only needed for libmt32emu HEAD/2.8.0+).
-            // In that version the Extensions struct is heap-zero-initialized, leaving
-            // masterVolumeOverride=0 which silences output. 0xFF (>100) disables the override.
-            if (mt32emu_set_master_volume_override != null)
-                mt32emu_set_master_volume_override.invokeExact(context, (byte) 0xFF);
+            // Disable the master volume override: the Extensions struct is heap-zero-initialized,
+            // leaving masterVolumeOverride=0 which silences output. 0xFF (>100) disables the
+            // override.
+            mt32emu_set_master_volume_override.invokeExact(context, (byte) 0xFF);
 
             // Set the sample rate to match miniaudio (32000 Hz)
             mt32emu_set_stereo_output_samplerate.invokeExact(context, 32000.0);
@@ -418,11 +413,10 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error closing Munt synth", t);
         }
-        // Re-open exactly as in openSynth(): disable the masterVolumeOverride if available.
+        // Re-open exactly as in openSynth(): disable the masterVolumeOverride.
         try
         {
-            if (mt32emu_set_master_volume_override != null)
-                mt32emu_set_master_volume_override.invokeExact(context, (byte) 0xFF);
+            mt32emu_set_master_volume_override.invokeExact(context, (byte) 0xFF);
             int rc = (int) mt32emu_open_synth.invokeExact(context);
             if (rc != 0) throw new Exception("Failed to reopen Munt synth (rc=" + rc + ")");
         }
