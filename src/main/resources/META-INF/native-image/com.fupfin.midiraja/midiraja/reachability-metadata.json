@@ -110,6 +110,19 @@
             ]
         },
         {
+            "type": "com.midiraja.cli.TsfCommand",
+            "allDeclaredConstructors": true,
+            "allPublicConstructors": true,
+            "allDeclaredMethods": true,
+            "allPublicMethods": true,
+            "fields": [
+                {"name": "soundfont"},
+                {"name": "files"},
+                {"name": "fxOptions"},
+                {"name": "common"}
+            ]
+        },
+        {
             "type": "com.midiraja.cli.ListPortsCommand",
             "allDeclaredConstructors": true,
             "allPublicConstructors": true,
@@ -499,6 +512,41 @@
                 "parameterTypes": [
                     "void*",
                     "void*",
+                    "jint"
+                ],
+                "returnType": "jint"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
+                    "jint",
+                    "jfloat"
+                ],
+                "returnType": "void"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "void*",
+                    "jint",
+                    "jint"
+                ],
+                "returnType": "void"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
+                    "jint",
+                    "jfloat"
+                ],
+                "returnType": "jint"
+            },
+            {
+                "parameterTypes": [
+                    "void*",
+                    "jint",
                     "jint"
                 ],
                 "returnType": "jint"

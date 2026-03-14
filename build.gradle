@@ -253,6 +253,27 @@ graalvmNative {
 
 
 
+task buildTsfLib(type: Exec) {
+    description = 'Builds libtsf (TinySoundFont) as a shared library via a single gcc call.'
+    onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
+
+    def sourceFile = file("src/main/c/tsf/tsf_wrapper.c")
+    def includeDir  = file("ext/TinySoundFont")
+    def outputDir   = file("build/native-libs/${nativeTarget}/tsf")
+    doFirst { outputDir.mkdirs() }
+    inputs.file(sourceFile)
+    inputs.dir(includeDir)
+
+    def libName = org.gradle.internal.os.OperatingSystem.current().isMacOsX() ? "libtsf.dylib" : "libtsf.so"
+    outputs.file(file("${outputDir}/${libName}"))
+
+    workingDir { outputDir }
+    commandLine 'bash', '-c', """
+        gcc -shared -fPIC -O2 -I${includeDir.absolutePath} \
+            -o ${libName} ${sourceFile.absolutePath}
+    """
+}
+
 task buildMiniaudioLib(type: Exec) {
     description = 'Builds libmidiraja_audio as both a static (.a) and shared library.'
     onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
@@ -282,16 +303,16 @@ task buildMiniaudioLib(type: Exec) {
 
 // nativeCompile must have native libraries present before linking
 tasks.named('nativeCompile').configure {
-    dependsOn buildAdlMidiLib, buildOpnMidiLib, buildMiniaudioLib
+    dependsOn buildAdlMidiLib, buildOpnMidiLib, buildMiniaudioLib, buildTsfLib
 }
 
 // Make local dev builds also compile the C libraries automatically
 tasks.named('installDist').configure {
-    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib
+    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib
 }
 
 tasks.named('test').configure {
-    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib
+    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib
 }
 
 checkstyle {

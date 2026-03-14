@@ -85,4 +85,12 @@ cmake -G "Unix Makefiles" \
     "$PROJECT_ROOT/ext/libOPNMIDI"
 make -j"$PARALLEL"
 
+# 5. Build libtsf (TinySoundFont — single-header, no cmake needed)
+echo "==> Building libtsf..."
+TSF_OUT="$NATIVE_LIBS/tsf"
+mkdir -p "$TSF_OUT"
+gcc -shared -fPIC -O2 -I"$PROJECT_ROOT/ext/TinySoundFont" \
+    -o "$TSF_OUT/libtsf.$LIB_EXT" \
+    "$PROJECT_ROOT/src/main/c/tsf/tsf_wrapper.c"
+
 echo "Native libraries built successfully → $NATIVE_LIBS"

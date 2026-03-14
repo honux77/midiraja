@@ -12,6 +12,8 @@ import static java.lang.System.out;
 
 import com.fupfin.midiraja.cli.*;
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
+import com.fupfin.midiraja.midi.TsfSynthProvider;
 import com.fupfin.midiraja.dsp.FloatToShortSink;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
@@ -43,7 +45,7 @@ import picocli.CommandLine.Parameters;
         description = "A fast, cross-platform CLI MIDI player.",
         customSynopsis = {"midra [command] [OPTIONS] [<files>...]"},
         subcommands = {OplCommand.class, OpnCommand.class, MuntCommand.class, FluidCommand.class,
-                GusCommand.class, BeepCommand.class,
+                TsfCommand.class, GusCommand.class, BeepCommand.class,
                 DeviceCommand.class,
                 PsgCommand.class, ListPortsCommand.class,
                 CommandLine.HelpCommand.class, picocli.AutoComplete.GenerateCompletion.class,},
@@ -51,6 +53,7 @@ import picocli.CommandLine.Parameters;
                 "  opn    OPN2 FM       (Sega Genesis / PC-98)",
                 "  munt   MT-32         (Roland MT-32/CM-32L)",
                 "  fluid  FluidSynth    (SoundFont .sf2)",
+                "  tsf    TinySoundFont (SoundFont .sf2/.sf3, no FluidSynth needed)",
                 "  gus    GUS DSP       (Gravis Ultrasound .pat)",
                 "  beep   1-Bit Speaker (Apple II / PC Speaker)",
                 "  device OS Ports      (Hardware/Software MIDI OUT)",

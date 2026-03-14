@@ -7,3 +7,6 @@
 [submodule "ext/libOPNMIDI"]
 	path = ext/libOPNMIDI
 	url = https://github.com/Wohlstand/libOPNMIDI.git
+[submodule "ext/TinySoundFont"]
+	path = ext/TinySoundFont
+	url = https://github.com/schellingb/TinySoundFont
