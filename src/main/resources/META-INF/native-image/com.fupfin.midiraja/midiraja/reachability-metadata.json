@@ -509,18 +509,6 @@
             },
             {
                 "parameterTypes": [
-                    "jint",
-                    "jint",
-                    "jint",
-                    "void*",
-                    "void*"
-                ],
-                "returnType": "void*"
-            }
-        ],
-        "upcalls": [
-            {
-                "parameterTypes": [
                     "void*",
                     "void*",
                     "jint"

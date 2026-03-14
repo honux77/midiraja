@@ -12,28 +12,21 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
     private @Nullable WavFileWriter wavWriter = null;
     private MemorySegment ctx = MemorySegment.NULL;
     private final MethodHandle midiraja_audio_init;
+    private final MethodHandle midiraja_audio_push;
+    private final MethodHandle midiraja_audio_get_queued_frames;
+    private final MethodHandle midiraja_audio_flush;
     private final MethodHandle midiraja_audio_get_device_latency_frames;
     private final MethodHandle midiraja_audio_close;
 
-    // --- Block-based Thread-Safe Queue ---
-    // Instead of a brittle math-heavy ring buffer, we use a simple circular array of blocks.
-    // This is safe because blocks are either completely FULL (ready for C) or EMPTY (ready for
-    // Java).
-    private static final int NUM_BLOCKS = 16;
-    private short[][] blocks = new short[0][0];
-    private int blockSizeSamples;
+    // Ring buffer capacity (mirrors the C constant AUDIO_RING_BUFFER_FRAMES)
+    private static final int RING_BUFFER_FRAMES = 16384;
+    // Max frames per single push call – must fit in the pre-allocated push buffer
+    private static final int MAX_PUSH_FRAMES = 4096;
 
-    // volatile ensures memory visibility without locks
-    private volatile int writeBlockIndex = 0;
-    private volatile int writeOffset = 0; // offset within the current block
-
-    private volatile int readBlockIndex = 0;
-    private volatile int readOffset = 0;
-
-    private volatile int blocksInQueue = 0;
-
-    // Keep a reference to prevent garbage collection of the upcall stub
-    private @Nullable MemorySegment upcallStub;
+    // Pre-allocated native buffer for push(); reused across calls to avoid per-push allocation.
+    // Exclusively used by the render thread, so no synchronisation is needed.
+    private @Nullable MemorySegment pushBuffer = null;
+    private int channels = 2;
 
     public NativeAudioEngine(String libPath) throws Exception
     {
@@ -45,9 +38,18 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
         super(arena, loadLib(arena, libPath));
 
         midiraja_audio_init = downcall("midiraja_audio_init",
-                FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
-                        ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.ADDRESS));
+                FunctionDescriptor.of(ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT));
+
+        midiraja_audio_push = downcall("midiraja_audio_push",
+                FunctionDescriptor.of(ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
+
+        midiraja_audio_get_queued_frames = downcall("midiraja_audio_get_queued_frames",
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS));
+
+        midiraja_audio_flush = downcall("midiraja_audio_flush",
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
 
         midiraja_audio_get_device_latency_frames =
                 downcall("midiraja_audio_get_device_latency_frames",
@@ -60,11 +62,12 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
     public static java.util.List<FunctionDescriptor> allDowncallDescriptors()
     {
         return java.util.List.of(
-            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
-                    ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                    ValueLayout.ADDRESS),
-            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
-            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+                FunctionDescriptor.of(ValueLayout.ADDRESS,
+                        ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_INT),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT,
+                        ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
+                FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
     private static SymbolLookup loadLib(Arena arena, String libPath)
@@ -78,49 +81,6 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
         return SymbolLookup.libraryLookup(libPath, arena);
     }
 
-    /**
-     * The callback method invoked by C (miniaudio thread). CAUTION: This runs on an OS real-time
-     * thread. No locks!
-     */
-    public int onAudioRequest(MemorySegment userData, MemorySegment pOutputRaw,
-            int numSamplesRequested)
-    {
-        MemorySegment pOutput = pOutputRaw.reinterpret(numSamplesRequested * 2L);
-        if (blocks.length == 0 || blocksInQueue == 0) return 0;
-
-        int samplesFulfilled = 0;
-
-        while (samplesFulfilled < numSamplesRequested && blocksInQueue > 0)
-        {
-            short[] currentReadBlock = blocks[readBlockIndex];
-            int availableInBlock = blockSizeSamples - readOffset;
-            int needed = numSamplesRequested - samplesFulfilled;
-
-            int toCopy = Math.min(availableInBlock, needed);
-            toCopy -= (toCopy % 2); // strictly align to frame pairs
-
-            if (toCopy <= 0) break; // Not enough for a full frame
-
-            // Fast native memory copy
-            MemorySegment.copy(currentReadBlock, readOffset, pOutput, ValueLayout.JAVA_SHORT,
-                    samplesFulfilled, toCopy);
-
-            samplesFulfilled += toCopy;
-            readOffset += toCopy;
-
-            if (readOffset >= blockSizeSamples)
-            {
-                // We exhausted this block. Move to next.
-                readOffset = 0;
-                readBlockIndex = (readBlockIndex + 1) % NUM_BLOCKS;
-                blocksInQueue--; // Safe: Only the reader decrements, Writer only increments
-            }
-        }
-
-        return samplesFulfilled;
-    }
-
-
     @Override
     public void enableDump(String filename)
     {
@@ -132,12 +92,12 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             }
             catch (Exception ignored)
             {
-                /* Safe to ignore: optional listener */ }
+                /* Safe to ignore: optional listener */
+            }
         }
         try
         {
-            wavWriter = new WavFileWriter(filename, 44100, 2); // default placeholder, init
-                                                               // overrides
+            wavWriter = new WavFileWriter(filename, 44100, 2);
             System.out.println("[DEBUG] Dumping audio to " + filename);
         }
         catch (Exception e)
@@ -157,40 +117,25 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             }
             catch (Exception ignored)
             {
-                /* Safe to ignore: optional listener */ }
+                /* Safe to ignore: optional listener */
+            }
             try
             {
                 wavWriter = new WavFileWriter("dump.wav", sampleRate, channels);
             }
             catch (Exception ignored)
             {
-                /* Safe to ignore: optional listener */ }
+                /* Safe to ignore: optional listener */
+            }
         }
+
+        this.channels = channels;
+        pushBuffer = arena.allocate((long) MAX_PUSH_FRAMES * channels * Short.BYTES);
+
         try
         {
-            // We slice the total requested capacity into chunks (e.g. 512 samples per block)
-            // This is drastically more robust than a single monolithic byte array math.
-            blockSizeSamples = 512 * channels;
-            blocks = new short[NUM_BLOCKS][blockSizeSamples];
-            writeBlockIndex = 0;
-            writeOffset = 0;
-            readBlockIndex = 0;
-            readOffset = 0;
-            blocksInQueue = 0;
-
-            MethodHandle handle = MethodHandles.lookup()
-                    .findVirtual(NativeAudioEngine.class, "onAudioRequest", MethodType.methodType(
-                            int.class, MemorySegment.class, MemorySegment.class, int.class))
-                    .bindTo(this);
-
-            upcallStub =
-                    Linker.nativeLinker()
-                            .upcallStub(handle, FunctionDescriptor.of(ValueLayout.JAVA_INT,
-                                    ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT),
-                                    arena);
-
             ctx = (MemorySegment) midiraja_audio_init.invokeExact(sampleRate, channels,
-                    bufferFrames, upcallStub, MemorySegment.NULL);
+                    bufferFrames);
 
             if (ctx.equals(MemorySegment.NULL))
             {
@@ -207,13 +152,23 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
     @Override
     public int getQueuedFrames()
     {
-        return (blocksInQueue * blockSizeSamples) / 2;
+        if (ctx.equals(MemorySegment.NULL))
+            return 0;
+        try
+        {
+            return (int) midiraja_audio_get_queued_frames.invokeExact(ctx);
+        }
+        catch (Throwable ignored)
+        {
+            return 0;
+        }
     }
 
     @Override
     public int getDeviceLatencyFrames()
     {
-        if (ctx.equals(MemorySegment.NULL)) return 0;
+        if (ctx.equals(MemorySegment.NULL))
+            return 0;
         try
         {
             return (int) midiraja_audio_get_device_latency_frames.invokeExact(ctx);
@@ -227,14 +182,14 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
     @Override
     public int push(short[] pcmData)
     {
-        if (pcmData == null) return 0;
+        if (pcmData == null)
+            return 0;
         return push(pcmData, 0, pcmData.length);
     }
 
     @Override
     public int push(short[] pcmData, int offset, int length)
     {
-
         if (wavWriter != null)
         {
             try
@@ -249,56 +204,47 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             }
         }
 
-        if (blocks.length == 0 || length <= 0) return 0;
+        if (ctx.equals(MemorySegment.NULL) || pushBuffer == null || length <= 0)
+            return 0;
 
-        // Cannot write if we are completely full
-        if (blocksInQueue >= NUM_BLOCKS) return 0;
+        int frameCount = length / channels;
+        if (frameCount <= 0)
+            return 0;
+        if (frameCount > MAX_PUSH_FRAMES)
+            frameCount = MAX_PUSH_FRAMES;
 
-        int samplesWritten = 0;
+        int samples = frameCount * channels;
+        MemorySegment.copy(pcmData, offset, pushBuffer, ValueLayout.JAVA_SHORT, 0, samples);
 
-        while (samplesWritten < length && blocksInQueue < NUM_BLOCKS)
+        try
         {
-            short[] currentWriteBlock = blocks[writeBlockIndex];
-            int spaceInBlock = blockSizeSamples - writeOffset;
-            int remainingToPush = length - samplesWritten;
-
-            int toCopy = Math.min(spaceInBlock, remainingToPush);
-            toCopy -= (toCopy % 2); // align to frames
-
-            if (toCopy <= 0) break;
-
-            System.arraycopy(pcmData, offset + samplesWritten, currentWriteBlock, writeOffset,
-                    toCopy);
-
-            samplesWritten += toCopy;
-            writeOffset += toCopy;
-
-            if (writeOffset >= blockSizeSamples)
-            {
-                // Block is full, seal it and move to next
-                writeOffset = 0;
-                writeBlockIndex = (writeBlockIndex + 1) % NUM_BLOCKS;
-                blocksInQueue++; // Safe: Only writer increments, reader only decrements
-            }
+            int pushedFrames = (int) midiraja_audio_push.invokeExact(ctx, pushBuffer, frameCount);
+            return pushedFrames * channels;
         }
-
-        return samplesWritten;
+        catch (Throwable ignored)
+        {
+            return 0;
+        }
     }
 
     @Override
     public int getBufferCapacityFrames()
     {
-        return (NUM_BLOCKS * blockSizeSamples) / 2;
+        return RING_BUFFER_FRAMES;
     }
 
     @Override
     public void flush()
     {
-        blocksInQueue = 0;
-        writeBlockIndex = 0;
-        writeOffset = 0;
-        readBlockIndex = 0;
-        readOffset = 0;
+        if (ctx.equals(MemorySegment.NULL))
+            return;
+        try
+        {
+            midiraja_audio_flush.invokeExact(ctx);
+        }
+        catch (Throwable ignored)
+        {
+        }
     }
 
     @Override
@@ -315,7 +261,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             }
             ctx = MemorySegment.NULL;
         }
-        blocks = new short[0][0];
+        pushBuffer = null;
         try
         {
             super.close();

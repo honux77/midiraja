@@ -16,12 +16,15 @@ class NativeAudioEngineTest
 {
     @Test void testAudioEngineInitializationAndClose()
     {
-        // Find the compiled dylib/so/dll
-        File libFile = new File("src/main/c/miniaudio/libmidiraja_audio.dylib");
-        if (!libFile.exists())
-        {
-            libFile = new File("src/main/c/miniaudio/libmidiraja_audio.so");
-        }
+        // Find the compiled dylib/so in the Gradle build output directory
+        String osFamily = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT)
+                .contains("mac") ? "macos" : "linux";
+        String arch = System.getProperty("os.arch").toLowerCase(java.util.Locale.ROOT);
+        if (arch.equals("amd64")) arch = "x86_64";
+        if (arch.equals("arm64")) arch = "aarch64";
+        String ext = osFamily.equals("macos") ? "dylib" : "so";
+        File libFile = new File("build/native-libs/" + osFamily + "-" + arch
+                + "/miniaudio/libmidiraja_audio." + ext);
 
         // If the library isn't compiled yet in this environment, skip the test gracefully.
         if (!libFile.exists())
