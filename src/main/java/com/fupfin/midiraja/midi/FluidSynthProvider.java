@@ -94,10 +94,11 @@ public class FluidSynthProvider implements SoftSynthProvider
                         "libfluidsynth.so.3", "/usr/lib/x86_64-linux-gnu/libfluidsynth.so.3");
             }
         }
-        catch (IllegalArgumentException e)
+        catch (RuntimeException e)
         {
             throw new Exception("FluidSynth native library not found! Please install it (e.g., "
-                    + "'brew install fluidsynth' on Mac). " + e.getMessage(), e);
+                    + "'brew install fluidsynth' on macOS, 'apt install libfluidsynth3' on Linux). "
+                    + e.getMessage(), e);
         }
 
         // --- Bindings ---
