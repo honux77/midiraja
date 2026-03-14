@@ -108,6 +108,10 @@ public class GusSynthProvider implements SoftSynthProvider
     @Override
     public void openPort(int portIndex) throws Exception
     {
+        if (bank == null)
+            throw new IllegalStateException(
+                    "No GUS patch set found. Specify a patch directory with --patch-dir,"
+                    + " or install patches to /usr/share/sounds/eawpats (or similar).");
         if (bank != null)
         {
             if (bank.getRootDir() != null)
