@@ -1,5 +1,6 @@
 package com.fupfin.midiraja.cli;
 
+import com.fupfin.midiraja.dsp.*;
 import java.util.Optional;
 import picocli.CommandLine.Option;
 
@@ -46,42 +47,34 @@ public class FxOptions
             description = "Apply analog vacuum tube saturation. (Range: 0-100%%).")
     public Optional<Float> tubeDrive = Optional.empty();
 
-    public com.fupfin.midiraja.dsp.AudioProcessor wrapFxPipeline(
-            com.fupfin.midiraja.dsp.AudioProcessor pipeline)
+    public AudioProcessor wrapFxPipeline(AudioProcessor pipeline)
     {
         if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || lpfFreq.isPresent()
                 || hpfFreq.isPresent())
         {
-            var eq = new com.fupfin.midiraja.dsp.EqFilter(pipeline);
+            var eq = new EqFilter(pipeline);
             eq.setParams(eqBass, eqMid, eqTreble);
             if (lpfFreq.isPresent()) eq.setLpf(lpfFreq.get());
             if (hpfFreq.isPresent()) eq.setHpf(hpfFreq.get());
             pipeline = eq;
         }
         if (tubeDrive.isPresent())
-        {
-            pipeline = new com.fupfin.midiraja.dsp.TubeSaturationFilter(pipeline,
-                    1.0f + (tubeDrive.get() / 100.0f * 9.0f));
-        }
+            pipeline = new TubeSaturationFilter(pipeline, 1.0f + (tubeDrive.get() / 100.0f * 9.0f));
         if (chorus.isPresent())
-        {
-            pipeline = new com.fupfin.midiraja.dsp.ChorusFilter(pipeline, chorus.get());
-        }
+            pipeline = new ChorusFilter(pipeline, chorus.get());
         if (reverb.isPresent())
         {
             float levelScale = reverbLevel / 100.0f;
             try
             {
-                var preset = com.fupfin.midiraja.dsp.ReverbFilter.Preset
-                        .valueOf(reverb.get().toUpperCase(java.util.Locale.ROOT));
-                pipeline = new com.fupfin.midiraja.dsp.ReverbFilter(pipeline, preset, levelScale);
+                var preset = ReverbFilter.Preset.valueOf(reverb.get().toUpperCase(java.util.Locale.ROOT));
+                pipeline = new ReverbFilter(pipeline, preset, levelScale);
             }
             catch (IllegalArgumentException e)
             {
                 System.err.println(
                         "Warning: Unknown reverb preset '" + reverb.get() + "'. Using HALL.");
-                pipeline = new com.fupfin.midiraja.dsp.ReverbFilter(pipeline,
-                        com.fupfin.midiraja.dsp.ReverbFilter.Preset.HALL, levelScale);
+                pipeline = new ReverbFilter(pipeline, ReverbFilter.Preset.HALL, levelScale);
             }
         }
         return pipeline;

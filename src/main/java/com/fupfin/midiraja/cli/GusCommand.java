@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.cli;
 
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.dsp.*;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.gus.GusSynthProvider;
 import java.io.File;
@@ -55,14 +56,11 @@ public class GusCommand implements Callable<Integer>
             audio.enableDump(common.dumpWav.get());
         }
 
-        com.fupfin.midiraja.dsp.AudioProcessor pipeline =
-                new com.fupfin.midiraja.dsp.FloatToShortSink(audio);
+        AudioProcessor pipeline = new FloatToShortSink(audio);
         pipeline = common.wrapRetroPipeline(pipeline);
         pipeline = java.util.Objects.requireNonNull(fxOptions).wrapFxPipeline(pipeline);
         if (java.util.Objects.requireNonNull(fxOptions).needsFloatConversion(common))
-        {
-            pipeline = new com.fupfin.midiraja.dsp.ShortToFloatFilter(pipeline);
-        }
+            pipeline = new ShortToFloatFilter(pipeline);
 
         String dirPath = patchDir.map(File::getAbsolutePath).orElse(null);
 

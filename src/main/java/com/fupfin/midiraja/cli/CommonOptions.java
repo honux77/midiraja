@@ -7,6 +7,7 @@
 
 package com.fupfin.midiraja.cli;
 
+import com.fupfin.midiraja.dsp.*;
 import java.util.Optional;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
@@ -71,10 +72,9 @@ public class CommonOptions
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     public UiModeOptions uiOptions = new UiModeOptions();
 
-    public com.fupfin.midiraja.dsp.AudioProcessor wrapRetroPipeline(
-            com.fupfin.midiraja.dsp.AudioProcessor sink)
+    public AudioProcessor wrapRetroPipeline(AudioProcessor sink)
     {
-        com.fupfin.midiraja.dsp.AudioProcessor pipeline = sink;
+        AudioProcessor pipeline = sink;
 
         // 1. Acoustic Speaker Simulation (Applied BEFORE final DAC to shape the signal)
         if (speakerProfile.isPresent())
@@ -83,10 +83,9 @@ public class CommonOptions
                     speakerProfile.get().toUpperCase(java.util.Locale.ROOT).replace("-", "_");
             try
             {
-                com.fupfin.midiraja.dsp.AcousticSpeakerFilter.Profile profile =
-                        com.fupfin.midiraja.dsp.AcousticSpeakerFilter.Profile.valueOf(profileStr);
-                pipeline =
-                        new com.fupfin.midiraja.dsp.AcousticSpeakerFilter(true, profile, pipeline);
+                AcousticSpeakerFilter.Profile profile =
+                        AcousticSpeakerFilter.Profile.valueOf(profileStr);
+                pipeline = new AcousticSpeakerFilter(true, profile, pipeline);
             }
             catch (IllegalArgumentException e)
             {
@@ -102,30 +101,28 @@ public class CommonOptions
             switch (mode)
             {
                 case "compactmac":
-                    pipeline = new com.fupfin.midiraja.dsp.CompactMacSimulatorFilter(true, pipeline);
+                    pipeline = new CompactMacSimulatorFilter(true, pipeline);
                     break;
                 case "pc":
                     // Empirically measured from original RealSound demos: 15.2kHz carrier
                     // (1.19318MHz / 78 steps ≈ 15.3kHz), 78 discrete levels (~6.3-bit).
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm",
-                            15200.0, 78.0, 0.45f, pipeline);
+                    pipeline = new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 0.45f, pipeline);
                     break;
                 case "covox":
-                    pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
+                    pipeline = new CovoxDacFilter(true, pipeline);
                     break;
                 case "apple2":
                     // DAC522 technique: each audio sample is encoded as TWO 46-cycle pulses.
                     // Two pulses together (92 cycles) ≈ the original 93-cycle 11kHz sample period,
                     // but the carrier noise is now at 22.05kHz — above the hearing limit.
                     // 32 discrete widths per pulse (6-37 out of 46 cycles, ~5-bit).
-                    pipeline = new com.fupfin.midiraja.dsp.OneBitHardwareFilter(true, "pwm",
-                            22050.0, 32.0, 0.55f, pipeline);
+                    pipeline = new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 0.55f, pipeline);
                     break;
                 case "spectrum":
-                    pipeline = new com.fupfin.midiraja.dsp.SpectrumBeeperFilter(true, pipeline);
+                    pipeline = new SpectrumBeeperFilter(true, pipeline);
                     break;
                 case "disneysound":
-                    pipeline = new com.fupfin.midiraja.dsp.CovoxDacFilter(true, pipeline);
+                    pipeline = new CovoxDacFilter(true, pipeline);
                     break;
                 default:
                     System.err.println("Warning: Unknown retro hardware mode '" + mode
