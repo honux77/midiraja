@@ -249,6 +249,27 @@ graalvmNative {
                 buildArgs.add("-H:NativeLinkerOption=${opnLib}")
                 // -lstdc++ already added for libADLMIDI above
             }
+
+            // Statically link libmidiraja_audio: gus/beep/psg/opl/opn/munt work without a .dylib/.so
+            def audioLib = "${project.buildDir}/native-libs/${nativeTarget}/miniaudio/libmidiraja_audio.a"
+            if (org.gradle.internal.os.OperatingSystem.current().isMacOsX()) {
+                buildArgs.add("-H:NativeLinkerOption=-force_load")
+                buildArgs.add("-H:NativeLinkerOption=${audioLib}")
+                // miniaudio requires these macOS audio frameworks
+                buildArgs.add("-H:NativeLinkerOption=-framework")
+                buildArgs.add("-H:NativeLinkerOption=CoreAudio")
+                buildArgs.add("-H:NativeLinkerOption=-framework")
+                buildArgs.add("-H:NativeLinkerOption=AudioToolbox")
+                buildArgs.add("-H:NativeLinkerOption=-framework")
+                buildArgs.add("-H:NativeLinkerOption=AudioUnit")
+                buildArgs.add("-H:NativeLinkerOption=-framework")
+                buildArgs.add("-H:NativeLinkerOption=CoreFoundation")
+            } else if (org.gradle.internal.os.OperatingSystem.current().isLinux()) {
+                buildArgs.add("-H:NativeLinkerOption=-Wl,--whole-archive")
+                buildArgs.add("-H:NativeLinkerOption=${audioLib}")
+                buildArgs.add("-H:NativeLinkerOption=-Wl,--no-whole-archive")
+                buildArgs.add("-H:NativeLinkerOption=-lasound")
+            }
         }
     }
 }
@@ -256,22 +277,27 @@ graalvmNative {
 
 
 task buildMiniaudioLib(type: Exec) {
-    description = 'Builds libmidiraja_audio shared library.'
+    description = 'Builds libmidiraja_audio as both a static (.a) and shared library.'
     onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
 
     def sourceFile = file("src/main/c/miniaudio/midiraja_audio.c")
     def outputDir  = file("build/native-libs/${nativeTarget}/miniaudio")
     doFirst { outputDir.mkdirs() }
     inputs.file(sourceFile)
-    
+
     def libName = org.gradle.internal.os.OperatingSystem.current().isMacOsX() ? "libmidiraja_audio.dylib" : "libmidiraja_audio.so"
     outputs.file(file("${outputDir}/${libName}"))
+    outputs.file(file("${outputDir}/libmidiraja_audio.a"))
 
     workingDir { outputDir }
     commandLine 'bash', '-c', """
         if [[ "\$OSTYPE" == "darwin"* ]]; then
+            gcc -c -fPIC -O2 -framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreFoundation -o midiraja_audio.o "${sourceFile.absolutePath}"
+            ar rcs libmidiraja_audio.a midiraja_audio.o
             gcc -shared -fPIC -O2 -framework CoreAudio -framework AudioToolbox -framework AudioUnit -framework CoreFoundation -o libmidiraja_audio.dylib "${sourceFile.absolutePath}"
         else
+            gcc -c -fPIC -O2 -o midiraja_audio.o "${sourceFile.absolutePath}"
+            ar rcs libmidiraja_audio.a midiraja_audio.o
             gcc -shared -fPIC -O2 -o libmidiraja_audio.so "${sourceFile.absolutePath}" -lasound
         fi
     """

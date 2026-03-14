@@ -61,6 +61,9 @@ public final class AudioLibResolver
                 }
             }
         }
+        // In a GraalVM native image the library is statically linked; no System.load() needed.
+        if (System.getProperty("org.graalvm.nativeimage.imagecode") != null)
+            return "";
         throw new RuntimeException(
                 "Could not find " + libName + ". Run scripts/build-native-libs.sh first.");
     }

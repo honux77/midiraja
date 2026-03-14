@@ -57,9 +57,21 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
                 downcall("midiraja_audio_close", FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
     }
 
+    public static java.util.List<FunctionDescriptor> allDowncallDescriptors()
+    {
+        return java.util.List.of(
+            FunctionDescriptor.of(ValueLayout.ADDRESS, ValueLayout.JAVA_INT,
+                    ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
+                    ValueLayout.ADDRESS),
+            FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS),
+            FunctionDescriptor.ofVoid(ValueLayout.ADDRESS));
+    }
+
     private static SymbolLookup loadLib(String libPath)
     {
-        System.load(new File(libPath).getAbsolutePath());
+        // Empty path means the library was statically linked into the native binary.
+        if (!libPath.isEmpty())
+            System.load(new File(libPath).getAbsolutePath());
         return SymbolLookup.loaderLookup();
     }
 

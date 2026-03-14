@@ -33,8 +33,9 @@ CHECKSUM_FILE="midra-${OS}-${ARCH}-v${VERSION}.sha256"
 echo "🛠️  Building C/C++ native libraries..."
 ./scripts/build-native-libs.sh
 
-# Build the native binary
+# Build the native binary (force relink so linker options are always applied)
 echo "🛠️  Building native image via GraalVM Native Image..."
+rm -f "${BIN_DIR}/midra" "${BIN_DIR}/midra.exe"
 ./gradlew nativeCompile
 
 if [ ! -f "${BIN_DIR}/midra" ]; then
