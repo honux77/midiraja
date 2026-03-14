@@ -2,11 +2,13 @@ package com.fupfin.midiraja.midi;
 
 import static java.lang.System.err;
 
+import com.fupfin.midiraja.LibraryPaths;
 import java.io.File;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public abstract class AbstractFFMBridge implements AutoCloseable
 {
@@ -114,15 +116,33 @@ public abstract class AbstractFFMBridge implements AutoCloseable
         List<String> failedPaths = new ArrayList<>();
         String projectRoot = new File("").getAbsolutePath();
 
+        String osName = System.getProperty("os.name").toLowerCase(Locale.ROOT);
+        String osFamily = osName.contains("mac") ? "macos"
+                : (osName.contains("linux") ? "linux" : "windows");
+        String arch = System.getProperty("os.arch").toLowerCase(Locale.ROOT);
+        if (arch.equals("amd64")) arch = "x86_64";
+        if (arch.equals("arm64")) arch = "aarch64";
+
+        String[] osFallbackDirs = osName.contains("mac") ? LibraryPaths.DARWIN
+                : (osName.contains("linux") ? LibraryPaths.LINUX : LibraryPaths.WINDOWS);
+
         List<String> allPaths = new ArrayList<>(List.of(paths));
+
+        // Append OS-specific fallback dirs for bare library names (e.g. /opt/homebrew/lib/libfoo.dylib)
+        for (String path : paths)
+        {
+            if (!path.startsWith("/"))
+            {
+                for (String dir : osFallbackDirs)
+                {
+                    allPaths.add(dir + "/" + path);
+                }
+            }
+        }
+
+        // Append dev build paths for local development
         if (fallbackDevDir != null && !fallbackDevDir.isEmpty())
         {
-            String osName = System.getProperty("os.name").toLowerCase(java.util.Locale.ROOT);
-            String osFamily = osName.contains("mac") ? "macos"
-                    : (osName.contains("linux") ? "linux" : "windows");
-            String arch = System.getProperty("os.arch").toLowerCase(java.util.Locale.ROOT);
-            if (arch.equals("amd64")) arch = "x86_64";
-            if (arch.equals("arm64")) arch = "aarch64";
             String nativeTarget = osFamily + "-" + arch;
             for (String path : paths)
             {

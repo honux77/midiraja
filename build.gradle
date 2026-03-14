@@ -13,6 +13,32 @@ version = '0.2.0'
 
 def generatedVersionDir = layout.buildDirectory.dir("generated/sources/version/java")
 
+def fallbackLibDirs = [
+    darwin : ['/opt/homebrew/lib', '/usr/local/lib', '/opt/local/lib'],
+    linux  : ['/usr/local/lib', '/opt/local/lib'],
+    windows: []
+]
+
+task generateLibraryPathsClass {
+    def outputDir = generatedVersionDir.get().asFile
+    def dirs = fallbackLibDirs
+    outputs.dir(outputDir)
+    doLast {
+        def pkgDir = new File(outputDir, "com/midiraja")
+        pkgDir.mkdirs()
+        def fmt = { list -> list.collect { "\"${it}\"" }.join(', ') }
+        new File(pkgDir, "LibraryPaths.java").text = """package com.fupfin.midiraja;
+
+public final class LibraryPaths {
+    public static final String[] DARWIN  = {${fmt(dirs.darwin)}};
+    public static final String[] LINUX   = {${fmt(dirs.linux)}};
+    public static final String[] WINDOWS = {${fmt(dirs.windows)}};
+    private LibraryPaths() {}
+}
+"""
+    }
+}
+
 task generateVersionClass {
     def outputDir = generatedVersionDir.get().asFile
     def projVersion = project.version.toString()
@@ -31,7 +57,7 @@ public final class Version {
 }
 
 sourceSets.main.java.srcDir(generatedVersionDir)
-compileJava.dependsOn(generateVersionClass)
+compileJava.dependsOn(generateVersionClass, generateLibraryPathsClass)
 
 repositories {
     mavenCentral()

@@ -9,7 +9,7 @@ package com.fupfin.midiraja.midi;
 
 import static java.lang.System.err;
 
-import static java.util.Locale.ROOT;
+
 
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
@@ -76,23 +76,9 @@ public class FluidSynthProvider implements SoftSynthProvider
 
         try
         {
-            // Try default system lookup first
-            String os = System.getProperty("os.name").toLowerCase(ROOT);
-            if (os.contains("mac"))
-            {
-                lib = AbstractFFMBridge.tryLoadLibrary(arena, "", "libfluidsynth.dylib",
-                        "/opt/homebrew/lib/libfluidsynth.dylib",
-                        "/usr/local/lib/libfluidsynth.dylib");
-            }
-            else if (os.contains("win"))
-            {
-                lib = AbstractFFMBridge.tryLoadLibrary(arena, "", "libfluidsynth.dll");
-            }
-            else
-            {
-                lib = AbstractFFMBridge.tryLoadLibrary(arena, "", "libfluidsynth.so",
-                        "libfluidsynth.so.3", "/usr/lib/x86_64-linux-gnu/libfluidsynth.so.3");
-            }
+            lib = AbstractFFMBridge.tryLoadLibrary(arena, "",
+                    "libfluidsynth.dylib", "libfluidsynth.so", "libfluidsynth.so.3",
+                    "libfluidsynth.dll");
         }
         catch (RuntimeException e)
         {
