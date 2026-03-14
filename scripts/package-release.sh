@@ -54,16 +54,26 @@ NATIVE_LIBS_DIR="build/native-libs/${NATIVE_OS}-${NATIVE_ARCH}"
 
 STAGING_DIR="$(mktemp -d)"
 trap 'rm -rf "$STAGING_DIR"' EXIT
-cp "${BIN_DIR}/midra" "${STAGING_DIR}/midra"
+mkdir -p "${STAGING_DIR}/bin" "${STAGING_DIR}/lib" "${STAGING_DIR}/share/midra"
+cp "${BIN_DIR}/midra" "${STAGING_DIR}/bin/midra"
 cp "src/main/man/midra.1" "${STAGING_DIR}/midra.1"
+echo "${VERSION}" > "${STAGING_DIR}/VERSION"
 
-# Bundle native libraries alongside the binary so rpath (@executable_path / $ORIGIN) finds them
+# Include freepats in share/midra/ so GusSynthProvider finds them after install
+if [ -d "build/freepats" ]; then
+    mkdir -p "${STAGING_DIR}/share/midra/freepats"
+    cp -r "build/freepats/." "${STAGING_DIR}/share/midra/freepats/"
+else
+    echo "⚠️  Warning: build/freepats not found. Run './gradlew setupFreepats' first."
+fi
+
+# Bundle native libraries in lib/ so rpath (@executable_path/../lib / $ORIGIN/../lib) finds them
 LIB_EXT="dylib" ; [ "$(uname -s)" = "Linux" ] && LIB_EXT="so"
 for lib in \
     "${NATIVE_LIBS_DIR}/miniaudio/libmidiraja_audio.${LIB_EXT}" \
     "${NATIVE_LIBS_DIR}/adlmidi/libADLMIDI.${LIB_EXT}" \
     "${NATIVE_LIBS_DIR}/opnmidi/libOPNMIDI.${LIB_EXT}"; do
-    [ -f "$lib" ] && cp "$lib" "${STAGING_DIR}/"
+    [ -f "$lib" ] && cp "$lib" "${STAGING_DIR}/lib/"
 done
 
 tar -czf "${DIST_DIR}/${ARCHIVE_NAME}" -C "${STAGING_DIR}" .

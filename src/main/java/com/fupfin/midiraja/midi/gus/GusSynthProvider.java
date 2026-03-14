@@ -61,10 +61,18 @@ public class GusSynthProvider implements SoftSynthProvider
         if (userPath != null) return new GusBank(Path.of(userPath));
 
         String homeDir = System.getProperty("user.home");
-        String[] baseDirs = {".", homeDir + "/.midiraja", homeDir + "/.config/midiraja",
-                homeDir + "/.local/share/midiraja", "/opt/homebrew/share/midra",
-                "/opt/homebrew/share/midiraja", "/usr/local/share/midra",
-                "/usr/local/share/midiraja", "/usr/share/midra", "/usr/share/midiraja"};
+        List<String> baseDirs = new ArrayList<>();
+
+        // MIDRA_DATA is set by the install wrapper to point directly to the data directory.
+        String midraData = System.getenv("MIDRA_DATA");
+        if (midraData != null) baseDirs.add(midraData);
+
+        baseDirs.addAll(Arrays.asList(".", homeDir + "/.midiraja", homeDir + "/.config/midiraja",
+                homeDir + "/.local/share/midra", homeDir + "/.local/share/midiraja",
+                "/opt/homebrew/share/midra", "/opt/homebrew/share/midiraja",
+                "/usr/local/share/midra", "/usr/local/share/midiraja",
+                "/usr/share/midra", "/usr/share/midiraja"));
+
         String[] patchSetNames = {"eawpats", "dgguspat", "freepats", "gus", ""};
 
         for (String baseDir : baseDirs)

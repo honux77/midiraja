@@ -56,8 +56,6 @@ public final class AudioLibResolver
                 }
                 catch (Exception ignored)
                 {
-                    // silently ignore and try next
-                    // try next candidate
                 }
             }
         }
