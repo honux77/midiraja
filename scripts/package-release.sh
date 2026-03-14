@@ -13,8 +13,9 @@ MISSING=()
 for cmd in cmake gcc g++ make curl git; do
     command -v "$cmd" &>/dev/null || MISSING+=("$cmd")
 done
-if [ "$(uname -s)" = "Linux" ] && [ ! -f /usr/include/alsa/asoundlib.h ]; then
-    MISSING+=("libasound2-dev")
+if [ "$(uname -s)" = "Linux" ]; then
+    [ ! -f /usr/include/alsa/asoundlib.h ] && MISSING+=("libasound2-dev")
+    [ ! -f /usr/include/zlib.h ] && MISSING+=("zlib1g-dev")
 fi
 if [ ${#MISSING[@]} -gt 0 ]; then
     echo "❌ Missing required dependencies: ${MISSING[*]}"
