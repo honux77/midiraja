@@ -36,6 +36,7 @@ if [ "$OS_FAMILY" = "macos" ]; then
         "$PROJECT_ROOT/src/main/c/miniaudio/midiraja_audio.c"
 else
     gcc -shared -fPIC -O2 \
+        -ldl -lpthread -lm \
         -o "$MINIAUDIO_OUT/libmidiraja_audio.$LIB_EXT" \
         "$PROJECT_ROOT/src/main/c/miniaudio/midiraja_audio.c"
 fi

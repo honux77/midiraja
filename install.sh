@@ -57,9 +57,7 @@ else
             OS_NAME="darwin"
             ;;
         Linux)
-            echo "Linux support is coming soon."
-            echo "Please download manually from: https://github.com/${REPO}/releases"
-            exit 1
+            OS_NAME="linux"
             ;;
         *)
             echo "Unsupported OS: $OS"

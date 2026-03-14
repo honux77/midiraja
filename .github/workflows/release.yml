@@ -16,16 +16,12 @@ jobs:
           - os: macos-15
             artifact_name: midra
             asset_name: midra-darwin-arm64
-          # Linux and Windows will be added in future steps
-          # - os: ubuntu-22.04
-          #   artifact_name: midra
-          #   asset_name: midra-linux-amd64
-          # - os: ubuntu-24.04-arm
-          #   artifact_name: midra
-          #   asset_name: midra-linux-arm64
-          # - os: windows-2022
-          #   artifact_name: midra.exe
-          #   asset_name: midra-windows-amd64.exe
+          - os: ubuntu-22.04
+            artifact_name: midra
+            asset_name: midra-linux-amd64
+          - os: ubuntu-24.04-arm
+            artifact_name: midra
+            asset_name: midra-linux-arm64
 
     runs-on: ${{ matrix.os }}
 
@@ -47,6 +43,10 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
+      - name: Install ALSA dependencies (Linux only)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+
       - name: Build C/C++ Native Libraries
         run: ./scripts/build-native-libs.sh
 
@@ -64,8 +64,9 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           NATIVE_ARCH=$(uname -m)
           [ "$NATIVE_ARCH" = "arm64" ] && NATIVE_ARCH="aarch64"
-          NATIVE_LIBS_DIR="build/native-libs/macos-${NATIVE_ARCH}"
-          LIB_EXT="dylib"
+          OS_FAMILY="macos" ; [ "$(uname -s)" = "Linux" ] && OS_FAMILY="linux"
+          NATIVE_LIBS_DIR="build/native-libs/${OS_FAMILY}-${NATIVE_ARCH}"
+          LIB_EXT="dylib"  ; [ "$OS_FAMILY" = "linux" ] && LIB_EXT="so"
 
           mkdir -p staging/bin staging/lib staging/share/midra/freepats
           cp build/native/nativeCompile/${{ matrix.artifact_name }} staging/bin/midra
