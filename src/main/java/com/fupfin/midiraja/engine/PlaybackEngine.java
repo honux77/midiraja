@@ -233,41 +233,28 @@ public class PlaybackEngine
     {
         if (initialResetType.isEmpty()) return;
         String type = initialResetType.get().trim().toLowerCase(ROOT);
-        byte[] payload = null;
-
-        switch (type)
+        byte[] payload = switch (type)
         {
-            case "gm":
-                payload = new byte[] {(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte) 0xF7};
-                break;
-            case "gm2":
-                payload = new byte[] {(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x03, (byte) 0xF7};
-                break;
-            case "gs":
-                payload = new byte[] {(byte) 0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00,
-                        0x41, (byte) 0xF7};
-                break;
-            case "xg":
-                payload = new byte[] {(byte) 0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E, 0x00,
-                        (byte) 0xF7};
-                break;
-            case "mt32":
-            case "mt-32":
-                payload = new byte[] {(byte) 0xF0, 0x41, 0x10, 0x16, 0x12, 0x7F, 0x00, 0x00, 0x00,
-                        0x01, (byte) 0xF7}; // Correct 11-byte Roland
-                                            // SysEx reset
-                break;
-            default:
+            case "gm"         -> new byte[] {(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x01, (byte) 0xF7};
+            case "gm2"        -> new byte[] {(byte) 0xF0, 0x7E, 0x7F, 0x09, 0x03, (byte) 0xF7};
+            case "gs"         -> new byte[] {(byte) 0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00,
+                                             0x7F, 0x00, 0x41, (byte) 0xF7};
+            case "xg"         -> new byte[] {(byte) 0xF0, 0x43, 0x10, 0x4C, 0x00, 0x00, 0x7E,
+                                             0x00, (byte) 0xF7};
+            case "mt32", "mt-32" -> new byte[] {(byte) 0xF0, 0x41, 0x10, 0x16, 0x12, 0x7F, 0x00,
+                                                0x00, 0x00, 0x01, (byte) 0xF7}; // 11-byte Roland SysEx reset
+            default ->
+            {
                 if (type.matches("^[0-9a-fA-F]+$") && type.length() % 2 == 0)
                 {
-                    payload = new byte[type.length() / 2];
-                    for (int i = 0; i < payload.length; i++)
-                    {
-                        payload[i] = (byte) Integer.parseInt(type.substring(i * 2, i * 2 + 2), 16);
-                    }
+                    byte[] hex = new byte[type.length() / 2];
+                    for (int i = 0; i < hex.length; i++)
+                        hex[i] = (byte) Integer.parseInt(type.substring(i * 2, i * 2 + 2), 16);
+                    yield hex;
                 }
-                break;
-        }
+                yield null;
+            }
+        };
 
         if (payload != null)
         {

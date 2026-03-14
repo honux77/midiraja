@@ -610,25 +610,23 @@ public class PlaybackRunner
     private int handlePlaybackStatus(PlaybackStatus status, int currentTrackIdx,
             List<File> playlist, CommonOptions common)
     {
-        switch (status)
+        return switch (status)
         {
-            case QUIT_ALL:
-                return -1;
-            case PREVIOUS:
-                currentTrackIdx--;
-                if (common.loop && currentTrackIdx < 0) return playlist.size() - 1;
-                return max(0, currentTrackIdx);
-            case FINISHED:
-            case NEXT:
-                currentTrackIdx++;
-                if (common.loop && currentTrackIdx >= playlist.size())
+            case QUIT_ALL -> -1;
+            case PREVIOUS ->
+                    (common.loop && currentTrackIdx == 0) ? playlist.size() - 1
+                                                          : max(0, currentTrackIdx - 1);
+            case FINISHED, NEXT ->
+            {
+                int next = currentTrackIdx + 1;
+                if (common.loop && next >= playlist.size())
                 {
-                    currentTrackIdx = 0;
                     if (common.shuffle) Collections.shuffle(playlist);
+                    yield 0;
                 }
-                return currentTrackIdx;
-            default:
-                return currentTrackIdx;
-        }
+                yield next;
+            }
+            default -> currentTrackIdx;
+        };
     }
 }

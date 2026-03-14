@@ -149,31 +149,15 @@ public class SccChip extends AbstractTrackerChip
     public void setProgram(int ch, int program)
     {
         // Find channels currently playing this midi channel and update their waveform
-        byte[] targetWave;
         int family = program / 8;
-        switch (family)
+        byte[] targetWave = switch (family)
         {
-            case 0: // Piano
-            case 1: // Chrom Perc
-            case 3: // Guitar
-                targetWave = WAVE_PIANO;
-                break;
-            case 4: // Bass
-                targetWave = WAVE_BASS;
-                break;
-            case 5: // Strings
-            case 11: // Synth Pad
-            case 12: // Synth FX
-                targetWave = WAVE_STRINGS;
-                break;
-            case 7: // Brass
-            case 10: // Synth Lead
-                targetWave = WAVE_BRASS;
-                break;
-            default:
-                targetWave = WAVE_SQUARE;
-                break;
-        }
+            case 0, 1, 3 -> WAVE_PIANO;   // Piano, Chrom Perc, Guitar
+            case 4       -> WAVE_BASS;    // Bass
+            case 5, 11, 12 -> WAVE_STRINGS; // Strings, Synth Pad, Synth FX
+            case 7, 10   -> WAVE_BRASS;   // Brass, Synth Lead
+            default      -> WAVE_SQUARE;
+        };
 
         for (int i = 0; i < NUM_CHANNELS; i++)
         {
