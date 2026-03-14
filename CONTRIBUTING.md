@@ -40,11 +40,8 @@ We use a specific blend of styles to keep the code readable and consistent acros
 *   **Zero Dependencies:** Avoid introducing large frameworks. Rely on standard Java APIs (`javax.sound.midi`) and native OS capabilities to keep the binary small.
 
 ### 3. Deployment Architecture
-Midiraja is currently distributed via two pipelines:
-*   **Native (`midra`)**: Built with GraalVM Native Image for the absolute fastest startup times. This is the primary distribution. Currently released for macOS Apple Silicon; Linux and Windows support is planned.
-*   **Cross-Platform (`midrax`)**: The classic "Fat JAR" deployment. It expects the user to provide their own Java 25+ environment. Works on any OS/architecture.
-
-> **Future:** A third **Compatible (`midrac`)** distribution using `jlink` + Project Leyden (AppCDS) is planned to offer near-native startup with broader OS compatibility.
+Midiraja is distributed as a native binary:
+*   **Native (`midra`)**: Built with GraalVM Native Image for the absolute fastest startup times. Available for macOS Apple Silicon, Linux amd64, and Linux arm64.
 
 ### 4. Architecture
 *   **GraalVM Friendly:** Code MUST avoid dynamic features like runtime reflection (`java.lang.reflect`), dynamic class loading, and dynamic proxies unless explicitly registered in the GraalVM configuration files (`reflect-config.json`, etc.).

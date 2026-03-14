@@ -9,7 +9,7 @@ plugins {
 apply plugin: 'checkstyle'
 
 
-version = '0.2.0'
+version = '0.2.1'
 
 def generatedVersionDir = layout.buildDirectory.dir("generated/sources/version/java")
 
@@ -152,6 +152,7 @@ test {
 }
 
 application {
+    applicationName = 'midrax'
     mainClass = 'com.fupfin.midiraja.MidirajaCommand'
     applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED', '--enable-preview']
 }

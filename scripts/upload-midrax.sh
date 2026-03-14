@@ -29,7 +29,7 @@ ZIP_NAME="midrax-v${VERSION}.zip"
 echo "Building midrax JAR (version ${VERSION})..."
 ./gradlew distZip -x buildAdlMidiLib -x buildOpnMidiLib -x buildMiniaudioLib -q
 
-mv build/distributions/midiraja-*.zip "${ZIP_NAME}"
+mv build/distributions/midrax-*.zip "${ZIP_NAME}"
 echo "Built: ${ZIP_NAME}"
 
 echo "Uploading to GitHub release ${TAG}..."

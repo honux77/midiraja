@@ -18,12 +18,12 @@
 
 ### Supported Platforms
 
-| OS | Architecture | Native (`midra`) | Cross-platform JAR (`midrax`) |
-|---|---|---|---|
-| macOS | Apple Silicon (arm64) | Available | Available |
-| macOS | Intel (amd64) | Coming soon | Available |
-| Linux | amd64 / arm64 | Coming soon | Available |
-| Windows | amd64 | Coming soon | Available |
+| OS | Architecture | Native (`midra`) |
+|---|---|---|
+| macOS | Apple Silicon (arm64) | Available |
+| macOS | Intel (amd64) | Coming soon |
+| Linux | amd64 / arm64 | Available |
+| Windows | amd64 | Coming soon |
 
 ### Option 1: Curl (macOS Apple Silicon)
 
@@ -41,8 +41,9 @@ curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bas
 
 Download the latest release from the [Releases](https://github.com/fupfin/midiraja/releases) page:
 
-- `midra-darwin-arm64.tar.gz` — macOS Apple Silicon native binary
-- `midrax-vX.Y.Z.zip` — Cross-platform JAR (requires Java 25+)
+- `midra-darwin-arm64.tar.gz` — macOS Apple Silicon
+- `midra-linux-amd64.tar.gz` — Linux x86_64
+- `midra-linux-arm64.tar.gz` — Linux ARM64
 
 Extract and place `midra` somewhere on your `PATH`.
 
