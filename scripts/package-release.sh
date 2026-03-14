@@ -7,6 +7,26 @@ set -e
 # Move to the project root directory regardless of where the script is called from
 cd "$(dirname "$0")/.."
 
+# Check prerequisites
+echo "🔍 Checking prerequisites..."
+MISSING=()
+for cmd in cmake gcc g++ make curl git; do
+    command -v "$cmd" &>/dev/null || MISSING+=("$cmd")
+done
+if [ "$(uname -s)" = "Linux" ] && [ ! -f /usr/include/alsa/asoundlib.h ]; then
+    MISSING+=("libasound2-dev")
+fi
+if [ ${#MISSING[@]} -gt 0 ]; then
+    echo "❌ Missing required dependencies: ${MISSING[*]}"
+    if [ "$(uname -s)" = "Linux" ]; then
+        echo "   Install with: sudo apt-get install -y ${MISSING[*]}"
+    else
+        echo "   Install with: brew install ${MISSING[*]}"
+    fi
+    exit 1
+fi
+echo "✅ All prerequisites satisfied."
+
 # Extract version dynamically from Gradle
 echo "📦 Extracting project version from Gradle..."
 VERSION=$(./gradlew properties -q | awk '/^version:/ {print $2}')
