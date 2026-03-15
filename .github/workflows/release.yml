@@ -130,34 +130,36 @@ jobs:
 
       - name: Package Artifact (Windows)
         if: runner.os == 'Windows'
-        shell: msys2 {0}
+        shell: pwsh
         run: |
-          if [ -n "${{ github.event.inputs.version }}" ]; then
-            VERSION="${{ github.event.inputs.version }}"
-          elif [[ "${GITHUB_REF_NAME}" == v* ]]; then
-            VERSION="${GITHUB_REF_NAME#v}"
-          else
-            VERSION=$(./gradlew properties -q | awk '/^version:/ {print $2}')
-          fi
-          NATIVE_ARCH=$(uname -m)
-          NATIVE_LIBS_DIR="build/native-libs/windows-${NATIVE_ARCH}"
+          $version = if ("${{ github.event.inputs.version }}" -ne "") {
+            "${{ github.event.inputs.version }}"
+          } elseif ($env:GITHUB_REF_NAME -match '^v') {
+            $env:GITHUB_REF_NAME -replace '^v', ''
+          } else {
+            (./gradlew properties -q | Select-String '^version:').ToString() -replace '^version:\s+', ''
+          }
+          $nativeLibsDir = "build/native-libs/windows-x86_64"
 
-          mkdir -p staging/bin staging/share/midra/freepats
-          cp build/native/nativeCompile/${{ matrix.artifact_name }} staging/bin/midra.exe
-          echo "${VERSION}" > staging/VERSION
+          New-Item -ItemType Directory -Force -Path staging/bin, staging/share/midra/freepats | Out-Null
+          Copy-Item "build/native/nativeCompile/${{ matrix.artifact_name }}" "staging/bin/midra.exe"
+          Set-Content -Path "staging/VERSION" -Value $version -NoNewline
 
           # On Windows, DLLs go in bin/ alongside the executable
-          for lib in \
-            "${NATIVE_LIBS_DIR}/miniaudio/libmidiraja_audio.dll" \
-            "${NATIVE_LIBS_DIR}/adlmidi/libADLMIDI.dll" \
-            "${NATIVE_LIBS_DIR}/opnmidi/libOPNMIDI.dll" \
-            "${NATIVE_LIBS_DIR}/munt/libmt32emu.dll" \
-            "${NATIVE_LIBS_DIR}/tsf/libtsf.dll"; do
-            [ -f "$lib" ] && cp "$lib" staging/bin/
-          done
+          foreach ($lib in @(
+            "$nativeLibsDir/miniaudio/libmidiraja_audio.dll",
+            "$nativeLibsDir/adlmidi/libADLMIDI.dll",
+            "$nativeLibsDir/opnmidi/libOPNMIDI.dll",
+            "$nativeLibsDir/munt/libmt32emu.dll",
+            "$nativeLibsDir/tsf/libtsf.dll"
+          )) {
+            if (Test-Path $lib) { Copy-Item $lib "staging/bin/" }
+          }
 
-          cp -r build/freepats/. staging/share/midra/freepats/
-          (cd staging && 7z a ../${{ matrix.asset_name }}.zip .)
+          Copy-Item -Recurse "build/freepats/*" "staging/share/midra/freepats/"
+          Push-Location staging
+          Compress-Archive -Path "*" -DestinationPath "../${{ matrix.asset_name }}.zip"
+          Pop-Location
 
       - name: Upload as CI Artifact (manual run)
         if: github.event_name == 'workflow_dispatch'
