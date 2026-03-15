@@ -275,6 +275,8 @@ Defined in `.github/workflows/release.yml`.
 
 ## 8. Installed Directory Layout
 
+### macOS / Linux (`install.sh`)
+
 `install.sh` extracts the release archive and assembles the following layout under a configurable prefix (default `~/.local`):
 
 ```
@@ -330,6 +332,30 @@ If `{prefix}/bin` is not already on `PATH`, the installer appends the following 
 ```bash
 export PATH="{prefix}/bin:$PATH"
 ```
+
+### Windows (`install.ps1`)
+
+`install.ps1` installs under `%LOCALAPPDATA%\Programs` by default (configurable via `-Prefix`). Windows has no rpath, so DLLs live alongside the executable — no wrapper script is needed.
+
+```
+{prefix}\midiraja\
+├── {version}\
+│   └── bin\
+│       ├── midra.exe                  ← native binary
+│       ├── libmidiraja_audio.dll
+│       ├── libADLMIDI.dll
+│       ├── libOPNMIDI.dll
+│       ├── libmt32emu.dll
+│       └── libtsf.dll
+└── share\
+    └── midra\
+        └── freepats\                  ← GUS patch set (shared across versions)
+```
+
+The installer:
+- Adds `{prefix}\midiraja\{version}\bin` to the **user PATH** (removes old midiraja entries first)
+- Sets `MIDRA_DATA={prefix}\midiraja\share\midra` as a **user environment variable**
+- FreePats are placed outside the versioned subtree so upgrades don't re-download them
 
 ### Version resolution (packaging step)
 

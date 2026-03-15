@@ -24,11 +24,9 @@
 | macOS | Apple Silicon (arm64) | Available |
 | macOS | Intel (amd64) | Coming soon |
 | Linux | amd64 / arm64 | Available |
-| Windows | amd64 | Coming soon |
+| Windows | amd64 | Available |
 
-### Option 1: Install Script (macOS & Linux)
-
-The installer auto-detects your OS and architecture:
+### macOS & Linux
 
 ```bash
 curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bash
@@ -43,15 +41,30 @@ curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bas
 > **Linux prerequisite:** ALSA is required for audio output.
 > `sudo apt install libasound2` (Debian/Ubuntu) · `sudo dnf install alsa-lib` (Fedora/RHEL)
 
-### Option 2: Manual Download
+### Windows (PowerShell)
+
+```powershell
+irm https://raw.githubusercontent.com/fupfin/midiraja/main/install.ps1 | iex
+```
+
+Install from a locally downloaded zip:
+
+```powershell
+.\install.ps1 -Local .\midra-windows-amd64.zip
+```
+
+Restart your terminal after installation, then run `midra --help`.
+
+### Manual Download
 
 Download the latest release from the [Releases](https://github.com/fupfin/midiraja/releases) page:
 
 - `midra-darwin-arm64.tar.gz` — macOS Apple Silicon
 - `midra-linux-amd64.tar.gz` — Linux x86_64
 - `midra-linux-arm64.tar.gz` — Linux ARM64
+- `midra-windows-amd64.zip` — Windows x86_64
 
-Extract and place `midra` somewhere on your `PATH`.
+Extract and place `midra` (or `midra.exe`) somewhere on your `PATH`.
 
 ---
 
