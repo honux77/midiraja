@@ -5,6 +5,7 @@ PROJECT_ROOT="$(pwd)"
 echo "Building Native Libraries for Midiraja..."
 
 # Detect OS and arch (matches AudioLibResolver / AbstractFFMBridge naming)
+CMAKE_MAKE_FLAG=""
 if [[ "$OSTYPE" == "darwin"* ]]; then
     OS_FAMILY="macos"
     LIB_EXT="dylib"
@@ -23,6 +24,14 @@ elif [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin"* 
     PARALLEL=$NUMBER_OF_PROCESSORS
     CMAKE_GENERATOR="MinGW Makefiles"
     MAKE_CMD="mingw32-make"
+    MAKE_PROGRAM="$(which mingw32-make 2>/dev/null)"
+    if [ -z "$MAKE_PROGRAM" ]; then
+        echo "ERROR: mingw32-make not found in PATH."
+        echo "  Open 'MSYS2 MinGW x64' from the Start menu (NOT 'MSYS2 MSYS')."
+        echo "  Or install: pacman -S mingw-w64-x86_64-cmake make"
+        exit 1
+    fi
+    CMAKE_MAKE_FLAG="-DCMAKE_MAKE_PROGRAM=$MAKE_PROGRAM"
 else
     echo "Unsupported OS: $OSTYPE"
     exit 1
@@ -62,7 +71,7 @@ echo "==> Building libmt32emu..."
 MUNT_BUILD="$NATIVE_LIBS/munt"
 mkdir -p "$MUNT_BUILD"
 cd "$MUNT_BUILD"
-cmake -G "$CMAKE_GENERATOR" -Dmt32emu_SHARED=ON "$PROJECT_ROOT/ext/munt/mt32emu"
+cmake -G "$CMAKE_GENERATOR" $CMAKE_MAKE_FLAG -Dmt32emu_SHARED=ON "$PROJECT_ROOT/ext/munt/mt32emu"
 $MAKE_CMD -j"$PARALLEL"
 
 # 3. Build libADLMIDI
@@ -70,7 +79,7 @@ echo "==> Building libADLMIDI..."
 ADLMIDI_BUILD="$NATIVE_LIBS/adlmidi"
 mkdir -p "$ADLMIDI_BUILD"
 cd "$ADLMIDI_BUILD"
-cmake -G "$CMAKE_GENERATOR" \
+cmake -G "$CMAKE_GENERATOR" $CMAKE_MAKE_FLAG \
     -DCMAKE_BUILD_TYPE=Release \
     -DlibADLMIDI_SHARED=ON \
     -DlibADLMIDI_STATIC=ON \
@@ -88,7 +97,7 @@ echo "==> Building libOPNMIDI..."
 OPNMIDI_BUILD="$NATIVE_LIBS/opnmidi"
 mkdir -p "$OPNMIDI_BUILD"
 cd "$OPNMIDI_BUILD"
-cmake -G "$CMAKE_GENERATOR" \
+cmake -G "$CMAKE_GENERATOR" $CMAKE_MAKE_FLAG \
     -DCMAKE_BUILD_TYPE=Release \
     -DlibOPNMIDI_SHARED=ON \
     -DlibOPNMIDI_STATIC=ON \
