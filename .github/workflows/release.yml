@@ -156,7 +156,7 @@ jobs:
           done
 
           cp -r build/freepats/. staging/share/midra/freepats/
-          (cd staging && zip -r ../${{ matrix.asset_name }}.zip .)
+          (cd staging && 7z a ../${{ matrix.asset_name }}.zip .)
 
       - name: Upload as CI Artifact (manual run)
         if: github.event_name == 'workflow_dispatch'
