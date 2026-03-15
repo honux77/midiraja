@@ -19,32 +19,33 @@ permissions:
   contents: write
 
 jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.filter.outputs.matrix }}
+    steps:
+      - id: filter
+        run: |
+          ALL='[
+            {"os":"macos-15","artifact_name":"midra","asset_name":"midra-darwin-arm64","filter_key":"macos"},
+            {"os":"ubuntu-22.04","artifact_name":"midra","asset_name":"midra-linux-amd64","filter_key":"linux-amd64"},
+            {"os":"ubuntu-24.04-arm","artifact_name":"midra","asset_name":"midra-linux-arm64","filter_key":"linux-arm64"},
+            {"os":"windows-2022","artifact_name":"midra.exe","asset_name":"midra-windows-amd64","filter_key":"windows"}
+          ]'
+          FILTER="${{ github.event.inputs.os_filter }}"
+          if [ -z "$FILTER" ]; then
+            MATRIX=$(echo "$ALL" | jq -c '{include: .}')
+          else
+            MATRIX=$(echo "$ALL" | jq -c --arg f "$FILTER" '{include: [.[] | select(.filter_key == $f)]}')
+          fi
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
   build-native:
+    needs: setup
     strategy:
-      matrix:
-        include:
-          - os: macos-15
-            artifact_name: midra
-            asset_name: midra-darwin-arm64
-            filter_key: macos
-          - os: ubuntu-22.04
-            artifact_name: midra
-            asset_name: midra-linux-amd64
-            filter_key: linux-amd64
-          - os: ubuntu-24.04-arm
-            artifact_name: midra
-            asset_name: midra-linux-arm64
-            filter_key: linux-arm64
-          - os: windows-2022
-            artifact_name: midra.exe
-            asset_name: midra-windows-amd64
-            filter_key: windows
+      matrix: ${{ fromJSON(needs.setup.outputs.matrix) }}
 
     runs-on: ${{ matrix.os }}
-    if: >
-      github.event_name == 'push' ||
-      github.event.inputs.os_filter == '' ||
-      matrix.filter_key == github.event.inputs.os_filter
 
     steps:
       - uses: actions/checkout@v4
