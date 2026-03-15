@@ -51,6 +51,7 @@ Install from a locally downloaded zip (e.g. a CI artifact):
 
 ```powershell
 irm https://raw.githubusercontent.com/fupfin/midiraja/main/install.ps1 -OutFile install.ps1
+Unblock-File .\install.ps1
 .\install.ps1 -Local .\midra-windows-amd64.zip
 ```
 
