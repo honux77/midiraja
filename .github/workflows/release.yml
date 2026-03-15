@@ -10,6 +10,10 @@ on:
         description: 'Version to package (e.g. 0.2.0). Defaults to version in build.gradle.'
         required: false
         default: ''
+      os_filter:
+        description: 'OS to build (macos / linux-amd64 / linux-arm64 / windows). Leave empty for all.'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -22,17 +26,25 @@ jobs:
           - os: macos-15
             artifact_name: midra
             asset_name: midra-darwin-arm64
+            filter_key: macos
           - os: ubuntu-22.04
             artifact_name: midra
             asset_name: midra-linux-amd64
+            filter_key: linux-amd64
           - os: ubuntu-24.04-arm
             artifact_name: midra
             asset_name: midra-linux-arm64
+            filter_key: linux-arm64
           - os: windows-2022
             artifact_name: midra.exe
             asset_name: midra-windows-amd64
+            filter_key: windows
 
     runs-on: ${{ matrix.os }}
+    if: >
+      github.event_name == 'push' ||
+      github.event.inputs.os_filter == '' ||
+      matrix.filter_key == github.event.inputs.os_filter
 
     steps:
       - uses: actions/checkout@v4
