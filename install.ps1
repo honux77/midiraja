@@ -67,10 +67,8 @@ try {
     Expand-Archive -Path "$TmpDir\midra.zip" -DestinationPath "$TmpDir\extracted" -Force
 
     # GitHub Actions wraps artifacts in an extra zip — unwrap if needed
-    $innerZip = Get-ChildItem "$TmpDir\extracted" -Filter "*.zip" |
-                Where-Object { (Get-ChildItem "$TmpDir\extracted").Count -eq 1 } |
-                Select-Object -First 1
-    if ($innerZip) {
+    $innerZip = Get-ChildItem "$TmpDir\extracted" -Filter "*.zip" | Select-Object -First 1
+    if ($innerZip -and -not (Test-Path "$TmpDir\extracted\bin")) {
         Write-Host "Unwrapping CI artifact..."
         Expand-Archive -Path $innerZip.FullName -DestinationPath "$TmpDir\extracted2" -Force
         Remove-Item -Recurse -Force "$TmpDir\extracted"
