@@ -22,11 +22,16 @@ elif [[ "$OSTYPE" == "msys"* || "$OSTYPE" == "mingw"* || "$OSTYPE" == "cygwin"* 
     OS_FAMILY="windows"
     LIB_EXT="dll"
     PARALLEL=$NUMBER_OF_PROCESSORS
-    CMAKE_GENERATOR="MinGW Makefiles"
-    MAKE_CMD="mingw32-make"
-    MAKE_PROGRAM="$(which mingw32-make 2>/dev/null)"
-    if [ -z "$MAKE_PROGRAM" ]; then
-        echo "ERROR: mingw32-make not found in PATH."
+    if command -v mingw32-make &>/dev/null; then
+        CMAKE_GENERATOR="MinGW Makefiles"
+        MAKE_CMD="mingw32-make"
+        MAKE_PROGRAM="$(which mingw32-make)"
+    elif command -v make &>/dev/null; then
+        CMAKE_GENERATOR="MSYS Makefiles"
+        MAKE_CMD="make"
+        MAKE_PROGRAM="$(which make)"
+    else
+        echo "ERROR: neither mingw32-make nor make found in PATH."
         echo "  Open 'MSYS2 MinGW x64' from the Start menu (NOT 'MSYS2 MSYS')."
         echo "  Or install: pacman -S mingw-w64-x86_64-cmake make"
         exit 1
