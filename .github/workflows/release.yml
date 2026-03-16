@@ -30,8 +30,7 @@ jobs:
             {"os":"macos-15","artifact_name":"midra","asset_name":"midra-darwin-arm64","filter_key":"macos"},
             {"os":"ubuntu-22.04","artifact_name":"midra","asset_name":"midra-linux-amd64","filter_key":"linux-amd64"},
             {"os":"ubuntu-24.04-arm","artifact_name":"midra","asset_name":"midra-linux-arm64","filter_key":"linux-arm64"},
-            {"os":"windows-2022","artifact_name":"midra.exe","asset_name":"midra-windows-amd64","filter_key":"windows-amd64","msys2_system":"MINGW64","msys2_packages":"mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make zip","native_libs_arch":"windows-x86_64","cc":"gcc"},
-            {"os":"windows-11-arm","artifact_name":"midra.exe","asset_name":"midra-windows-arm64","filter_key":"windows-arm64","msys2_system":"CLANGARM64","msys2_packages":"mingw-w64-clang-aarch64-clang mingw-w64-clang-aarch64-cmake make zip","native_libs_arch":"windows-aarch64","cc":"clang"}
+            {"os":"windows-2022","artifact_name":"midra.exe","asset_name":"midra-windows-amd64","filter_key":"windows-amd64","msys2_system":"MINGW64","msys2_packages":"mingw-w64-x86_64-gcc mingw-w64-x86_64-cmake make zip","native_libs_arch":"windows-x86_64","cc":"gcc"}
           ]'
           FILTER="${{ github.event.inputs.os_filter }}"
           if [ -z "$FILTER" ]; then

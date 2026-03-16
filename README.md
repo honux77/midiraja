@@ -66,7 +66,6 @@ See the full engine guide in [docs/quickstart.md](docs/quickstart.md).
 | macOS | Apple Silicon (arm64) | Available |
 | Linux | amd64 / arm64 | Available (experimental) |
 | Windows | amd64 | Available (experimental) |
-| Windows | arm64 | Available (experimental) |
 
 > **Linux & Windows** builds are provided but have received limited real-world testing. Please [open an issue](https://github.com/fupfin/midiraja/issues) if you encounter problems.
 
