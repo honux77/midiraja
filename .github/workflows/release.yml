@@ -132,6 +132,8 @@ jobs:
 
           cp -r build/freepats/. staging/share/midra/freepats/
           cp build/soundfonts/FluidR3_GM.sf3 staging/share/midra/soundfonts/
+          mkdir -p staging/share/midra/demomidi
+          cp src/main/resources/demomidi/*.mid src/main/resources/demomidi/CREDITS.md staging/share/midra/demomidi/
           tar -czf ${{ matrix.asset_name }}.tar.gz -C staging .
 
       - name: Package Artifact (Windows)
@@ -164,6 +166,9 @@ jobs:
 
           Copy-Item -Recurse "build/freepats/*" "staging/share/midra/freepats/"
           Copy-Item "build/soundfonts/FluidR3_GM.sf3" "staging/share/midra/soundfonts/"
+          New-Item -ItemType Directory -Force -Path staging/share/midra/demomidi | Out-Null
+          Copy-Item "src/main/resources/demomidi/*.mid" "staging/share/midra/demomidi/"
+          Copy-Item "src/main/resources/demomidi/CREDITS.md" "staging/share/midra/demomidi/"
           Compress-Archive -Path "staging\*" -DestinationPath "${{ matrix.asset_name }}.zip"
 
       - name: Upload as CI Artifact (manual run)
