@@ -209,7 +209,7 @@ public class PlaybackRunner
             PlaybackUI ui = buildUI(common.uiOptions, isInteractive, activeIO.getHeight(), altScreenOut);
             boolean useAltScreen = altScreenOut[0];
 
-            if (useAltScreen && isInteractive)
+            if (useAltScreen && isInteractive && !suppressAltScreenRestore)
             {
                 out.print("\033[?1049h\033[?25l");
                 out.flush();
