@@ -123,14 +123,23 @@ TSF_OUT="$NATIVE_LIBS/tsf"
 mkdir -p "$TSF_OUT"
 cd "$TSF_OUT"
 if [ "$OS_FAMILY" = "windows" ]; then
-    ${CC:-gcc} -shared -O2 -fno-builtin-log -I"$PROJECT_ROOT/ext/TinySoundFont" \
+    ${CC:-gcc} -shared -O2 -I"$PROJECT_ROOT/ext/TinySoundFont" \
         -o "libtsf.$LIB_EXT" \
         "$PROJECT_ROOT/src/main/c/tsf/tsf_wrapper.c"
-else
-    ${CC:-gcc} -shared -fPIC -O2 -fno-builtin-log -I"$PROJECT_ROOT/ext/TinySoundFont" \
+elif [ "$OS_FAMILY" = "macos" ]; then
+    ${CC:-gcc} -shared -fPIC -O2 -I"$PROJECT_ROOT/ext/TinySoundFont" \
         -o "libtsf.$LIB_EXT" \
         "$PROJECT_ROOT/src/main/c/tsf/tsf_wrapper.c" \
         -lm
+else
+    # Linux: force libm.so.6 into DT_NEEDED with --no-as-needed.
+    # Ubuntu 24.04 (glibc 2.39) provides log() in libc.so.6 too, so --as-needed
+    # (the Ubuntu linker default) omits libm from DT_NEEDED. Older glibc only
+    # has log() in libm.so.6, causing "undefined symbol: log" at runtime.
+    ${CC:-gcc} -shared -fPIC -O2 -I"$PROJECT_ROOT/ext/TinySoundFont" \
+        -o "libtsf.$LIB_EXT" \
+        "$PROJECT_ROOT/src/main/c/tsf/tsf_wrapper.c" \
+        -Wl,--no-as-needed -lm
 fi
 
 echo "Native libraries built successfully → $NATIVE_LIBS"
