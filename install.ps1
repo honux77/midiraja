@@ -31,6 +31,7 @@ $ErrorActionPreference = "Stop"
 
 $Repo      = "fupfin/midiraja"
 $AssetName = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "midra-windows-arm64.zip" } else { "midra-windows-amd64.zip" }
+$FallbackAssetName = "midra-windows-amd64.zip"
 
 $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid().ToString())
 New-Item -ItemType Directory -Path $TmpDir | Out-Null
@@ -52,6 +53,11 @@ try {
         Write-Host "Latest release: $LatestTag"
 
         $asset = $release.assets | Where-Object { $_.name -eq $AssetName }
+        if (-not $asset -and $AssetName -ne $FallbackAssetName) {
+            Write-Host "No native ARM64 build found; falling back to x64 (runs via Windows emulation)."
+            $AssetName = $FallbackAssetName
+            $asset = $release.assets | Where-Object { $_.name -eq $AssetName }
+        }
         if (-not $asset) {
             Write-Error ("Release $LatestTag does not contain $AssetName.`n" +
                          "Windows builds may not be available for this version yet.`n" +
