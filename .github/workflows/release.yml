@@ -92,7 +92,7 @@ jobs:
         run: ./gradlew test
 
       - name: Build Native Image
-        run: ./gradlew nativeCompile
+        run: ./gradlew clean nativeCompile
 
       - name: Download FreePats
         run: ./gradlew setupFreepats
@@ -188,6 +188,7 @@ jobs:
         with:
           body: ${{ steps.changelog.outputs.body }}
           files: ${{ matrix.asset_name }}.*
+          overwrite: true
 
       - name: Determine release tag (manual rebuild)
         if: github.event_name == 'workflow_dispatch'
@@ -208,5 +209,6 @@ jobs:
         with:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           files: ${{ matrix.asset_name }}.*
+          overwrite: true
 
   # midrax JAR is built and uploaded locally via scripts/upload-midrax.sh
