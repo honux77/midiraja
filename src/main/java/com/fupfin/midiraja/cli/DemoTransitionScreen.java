@@ -47,7 +47,7 @@ class DemoTransitionScreen
         if (classicMode)
         {
             out.printf("%n---[ Demo %d/%d ]------%n", trackIndex + 1, totalTracks);
-            return PlaybackStatus.NEXT;
+            return PlaybackStatus.FINISHED;
         }
 
         var jlineLog = Logger.getLogger("org.jline.nativ.JLineNativeLoader");

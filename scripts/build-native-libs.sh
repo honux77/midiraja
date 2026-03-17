@@ -132,15 +132,14 @@ elif [ "$OS_FAMILY" = "macos" ]; then
         "$PROJECT_ROOT/src/main/c/tsf/tsf_wrapper.c" \
         -lm
 else
-    # Linux: statically link libm so that log() and other math functions are
-    # resolved at link time. On glibc 2.38+ the shared libm.so.6 is a thin
-    # redirect to libc.so.6, so --no-as-needed still omits libm from DT_NEEDED.
-    # Statically embedding log() removes any runtime dependency on libm.so.6,
-    # ensuring compatibility with older glibc where log() lives only in libm.
+    # Linux: use --no-as-needed to force libm.so.6 into DT_NEEDED so that
+    # log() and other math symbols are resolved at runtime. On glibc 2.38+,
+    # log() lives in libm.so.6 (GLIBC_2.29) and static libm.a no longer
+    # provides it, so dynamic linking is the only reliable approach.
     ${CC:-gcc} -shared -fPIC -O2 -I"$PROJECT_ROOT/ext/TinySoundFont" \
         -o "libtsf.$LIB_EXT" \
         "$PROJECT_ROOT/src/main/c/tsf/tsf_wrapper.c" \
-        -Wl,--push-state,-Bstatic -lm -Wl,--pop-state
+        -Wl,--no-as-needed -lm
 fi
 
 echo "Native libraries built successfully → $NATIVE_LIBS"
