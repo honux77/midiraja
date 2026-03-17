@@ -11,6 +11,7 @@ import static java.lang.System.err;
 import static java.lang.System.out;
 
 import com.fupfin.midiraja.cli.*;
+import com.fupfin.midiraja.ui.Logo;
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.io.File;
 import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
@@ -247,7 +248,7 @@ public class MidirajaCommand implements Callable<Integer>
         if ((files == null || files.isEmpty()) && port.isEmpty() && !hasLegacyOption
                 && provider == null)
         {
-            stdOut.println("A fast, cross-platform CLI MIDI player.");
+            Logo.print(stdOut);
             stdOut.println("Use 'midra <file1.mid>' or 'midra -h' for help.");
             return 0;
         }

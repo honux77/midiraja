@@ -9,6 +9,7 @@ package com.fupfin.midiraja.cli;
 
 import com.fupfin.midiraja.io.JLineTerminalIO;
 import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.ui.Logo;
 import com.fupfin.midiraja.ui.ScreenBuffer;
 import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintStream;
@@ -276,13 +277,26 @@ public class EngineSelector
                 int width = terminal.getWidth();
                 int height = terminal.getHeight();
                 int boxWidth = Math.max(64, Math.min(84, width - 4));
-                int boxHeight = entries.size() + 4;
+                boolean showLogo = width >= Logo.WIDTH + 4;
+                int logoLines = showLogo ? Logo.LINES.length + 1 : 0; // +1 for subtitle
+                int boxHeight = entries.size() + 4 + logoLines;
                 int padLeft = Math.max(0, (width - boxWidth) / 2);
                 int padTop = Math.max(0, (height - boxHeight) / 2);
 
                 var buf = new ScreenBuffer(8192);
                 buf.append(Theme.TERM_CURSOR_HOME).append(Theme.TERM_CLEAR_TO_END);
                 buf.repeat("\n", padTop);
+
+                if (showLogo)
+                {
+                    int logoPad = Math.max(0, (width - Logo.WIDTH) / 2);
+                    for (String line : Logo.LINES)
+                        buf.repeat(" ", logoPad).append(Theme.COLOR_HIGHLIGHT).append(line)
+                                .append(Theme.COLOR_RESET).appendLine();
+                    int subtitlePad = Math.max(0, (width - Logo.SUBTITLE.length()) / 2);
+                    buf.repeat(" ", subtitlePad).append(Theme.COLOR_DIM).append(Logo.SUBTITLE)
+                            .append(Theme.COLOR_RESET).appendLine();
+                }
 
                 String title = " SELECT PLAYBACK ENGINE ";
                 int titlePad = (boxWidth - title.length() - 2) / 2;

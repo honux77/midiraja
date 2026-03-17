@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.cli;
 
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
+import com.fupfin.midiraja.ui.Logo;
 import com.fupfin.midiraja.ui.ScreenBuffer;
 import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintStream;
@@ -88,13 +89,27 @@ class DemoTransitionScreen
                     int height = terminal.getHeight();
                     int boxWidth = Math.max(56, Math.min(76, width - 4));
                     int padLeft = Math.max(0, (width - boxWidth) / 2);
+                    boolean showLogo = width >= Logo.WIDTH + 4;
+                    int logoLines = showLogo ? Logo.LINES.length + 2 : 0; // +2 for subtitle+blank
                     // title + blank + trackSection + trackTitle + blank + engineSection +
                     // engineLabel + blank + sep + footer = 10 lines
-                    int padTop = Math.max(1, (height - 10) / 2);
+                    int padTop = Math.max(1, (height - 10 - logoLines) / 2);
 
                     var buf = new ScreenBuffer();
                     buf.append(Theme.TERM_CURSOR_HOME).append(Theme.TERM_CLEAR_TO_END);
                     buf.repeat("\n", padTop);
+
+                    if (showLogo)
+                    {
+                        int logoPad = Math.max(0, (width - Logo.WIDTH) / 2);
+                        for (String line : Logo.LINES)
+                            buf.repeat(" ", logoPad).append(Theme.COLOR_HIGHLIGHT).append(line)
+                                    .append(Theme.COLOR_RESET).appendLine();
+                        int subtitlePad = Math.max(0, (width - Logo.SUBTITLE.length()) / 2);
+                        buf.repeat(" ", subtitlePad).append(Theme.COLOR_DIM).append(Logo.SUBTITLE)
+                                .append(Theme.COLOR_RESET).appendLine();
+                        buf.appendLine();
+                    }
 
                     // ── Title bar ─────────────────────────────────────────────────────
                     String title = " MIDIRAJA ENGINE TOUR ";
