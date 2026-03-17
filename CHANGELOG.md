@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.3.4] - 2026-03-17
+
+### Fixed
+- **Windows**: passing a path ending with `\` in PowerShell caused a trailing `"` to appear in the argument (Windows command-line quoting artifact) — now stripped automatically
+- **Windows / Linux**: directory arguments were not recognized as directories in GraalVM native image when the path contained spaces or special characters — switched to NIO2 `Files.isDirectory()`
+- **Linux**: `libtsf.so` caused `undefined symbol: log` — fixed by building on a glibc < 2.29 host so that `-Wl,--no-as-needed -lm` correctly records `libm.so.6` in `DT_NEEDED`
+- **`midra demo`**: classic mode (non-TUI terminal) skipped playback and moved to the next track immediately — `DemoTransitionScreen` now returns `FINISHED` instead of `NEXT`
+
+### Changed
+- `midra gus ./dir/` (directory as sole argument) now scans the directory for MIDI files instead of treating it as a GUS patch directory; pass `midra gus ./patches/ file.mid` to use a custom patch directory
+
 ## [0.3.3] - 2026-03-17
 
 ### Fixed
