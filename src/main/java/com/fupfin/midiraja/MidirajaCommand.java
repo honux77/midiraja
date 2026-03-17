@@ -12,6 +12,7 @@ import static java.lang.System.out;
 
 import com.fupfin.midiraja.cli.*;
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import java.io.File;
 import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
 import com.fupfin.midiraja.midi.TsfSynthProvider;
 import com.fupfin.midiraja.dsp.FloatToShortSink;
@@ -150,8 +151,27 @@ public class MidirajaCommand implements Callable<Integer>
 
     // ── Entry point ───────────────────────────────────────────────────────────
 
+    /**
+     * On Windows, JLine extracts jlinenative.dll to the system temp directory.
+     * When the temp path contains non-ASCII characters (e.g. Korean username), the extraction
+     * fails and JLine spams WARNING messages. Fix: redirect {@code jline.tmpdir} to
+     * {@code %ProgramData%\midiraja\tmp} which is always ASCII.
+     */
+    private static void fixJLineTmpDirOnWindows()
+    {
+        if (!System.getProperty("os.name", "").startsWith("Windows")) return;
+        String tmp = System.getProperty("java.io.tmpdir", "");
+        if (tmp.chars().allMatch(c -> c < 128)) return;
+        String pd = System.getenv("ProgramData");
+        if (pd == null) pd = "C:\\ProgramData";
+        File safeDir = new File(pd, "midiraja\\tmp");
+        if (safeDir.mkdirs() || safeDir.exists())
+            System.setProperty("jline.tmpdir", safeDir.getAbsolutePath());
+    }
+
     public static void main(String[] args)
     {
+        fixJLineTmpDirOnWindows();
         var cmd = new CommandLine(new MidirajaCommand())
                 .setParameterExceptionHandler(MidirajaCommand::handleParameterException);
         // Show Commands before Options (matches "midra [command] [OPTIONS]" synopsis order)
