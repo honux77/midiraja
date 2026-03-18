@@ -259,6 +259,7 @@ public class MidirajaCommand implements Callable<Integer>
         {
             for (File file : files)
             {
+                file = PlaylistParser.normalize(file);
                 if (!file.exists())
                 {
                     stdErr.println("Error: The file or directory '" + file.getPath()

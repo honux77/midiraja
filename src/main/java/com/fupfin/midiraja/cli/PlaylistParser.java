@@ -223,7 +223,7 @@ public class PlaylistParser
      * arguments in double-quotes when they end with {@code \}, which the Windows command-line
      * parser then converts to a trailing literal {@code "} in the received string.
      */
-    static File normalize(File f)
+    public static File normalize(File f)
     {
         String path = f.getPath();
         int end = path.length();
