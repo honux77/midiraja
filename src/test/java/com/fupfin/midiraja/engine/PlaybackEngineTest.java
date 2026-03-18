@@ -18,6 +18,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
@@ -218,5 +219,88 @@ class PlaybackEngineTest
             recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0x80 && (m[1] & 0xFF) == 60);
         assertTrue(sawNoteOn, "NoteOn(ch0, key60, vel100) should reach the MIDI provider");
         assertTrue(sawNoteOff, "NoteOff(ch0, key60) should reach the MIDI provider");
+    }
+
+    @Test void testSeekForwardReplaysStateEvents() throws Exception
+    {
+        Sequence seq = new Sequence(Sequence.PPQ, 24);
+        Track track = seq.createTrack();
+        track.add(new MidiEvent(new ShortMessage(0xC0, 0, 5, 0), 0L));      // PC ch0 prog=5
+        track.add(new MidiEvent(new ShortMessage(0xB0, 0, 7, 100), 0L));    // CC ch0 vol=100
+        track.add(new MidiEvent(new ShortMessage(0xE0, 0, 0, 64), 0L));     // PitchBend ch0
+        track.add(new MidiEvent(new ShortMessage(0x90, 0, 60, 100), 0L));   // NoteOn ch0
+        track.add(new MidiEvent(new ShortMessage(0x80, 0, 60, 0), 24L));    // NoteOff ch0
+        // Extend sequence past 2s (96 ticks at 120BPM/PPQ=24) so seek target is ~96, not 24
+        MetaMessage padding = new MetaMessage(0x01, new byte[]{}, 0);
+        track.add(new MidiEvent(padding, 200L));
+
+        RecordingMidiProvider recording = new RecordingMidiProvider();
+        PlaybackEngine engine = new PlaybackEngine(
+            seq, recording, ctx(), 100, 1000.0, Optional.of("0:02"), Optional.empty());
+
+        ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO()).call(() -> {
+            engine.start(new DumbUI());
+            return null;
+        });
+
+        boolean hasPC = recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0xC0);
+        boolean hasCC = recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0xB0);
+        boolean hasPB = recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0xE0);
+        boolean hasNoteOn = recording.messages.stream().anyMatch(
+            m -> (m[0] & 0xF0) == 0x90 && m.length >= 3 && (m[2] & 0xFF) > 0);
+        boolean hasNoteOff = recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0x80);
+
+        assertTrue(hasPC, "ProgramChange should be replayed during chase");
+        assertTrue(hasCC, "ControlChange should be replayed during chase");
+        assertTrue(hasPB, "PitchBend should be replayed during chase");
+        assertFalse(hasNoteOn, "NoteOn should NOT be sent during chase");
+        assertFalse(hasNoteOff, "NoteOff should NOT be sent during chase");
+    }
+
+    @Test void testChannelProgramsUpdatedAfterSeek() throws Exception
+    {
+        Sequence seq = new Sequence(Sequence.PPQ, 24);
+        Track track = seq.createTrack();
+        track.add(new MidiEvent(new ShortMessage(0xC0, 0, 5, 0), 0L));   // PC ch0 prog=5
+        track.add(new MidiEvent(new ShortMessage(0xC0, 3, 42, 0), 12L)); // PC ch3 prog=42
+        // Extend sequence past 2s so seek target is ~96 ticks, not the sequence end
+        MetaMessage padding = new MetaMessage(0x01, new byte[]{}, 0);
+        track.add(new MidiEvent(padding, 200L));
+
+        RecordingMidiProvider recording = new RecordingMidiProvider();
+        PlaybackEngine engine = new PlaybackEngine(
+            seq, recording, ctx(), 100, 1000.0, Optional.of("0:02"), Optional.empty());
+
+        ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO()).call(() -> {
+            engine.start(new DumbUI());
+            return null;
+        });
+
+        assertEquals(5, engine.getChannelPrograms()[0],
+            "channelPrograms[0] should be 5 after seek past PC");
+        assertEquals(42, engine.getChannelPrograms()[3],
+            "channelPrograms[3] should be 42 after seek past PC");
+    }
+
+    @Test void testChannelPressureForwardedDuringChase() throws Exception
+    {
+        Sequence seq = new Sequence(Sequence.PPQ, 24);
+        Track track = seq.createTrack();
+        track.add(new MidiEvent(new ShortMessage(0xD0, 0, 80, 0), 0L)); // ChannelPressure ch0
+        // Extend sequence past 2s so seek target is ~96 ticks, not the sequence end
+        MetaMessage padding = new MetaMessage(0x01, new byte[]{}, 0);
+        track.add(new MidiEvent(padding, 200L));
+
+        RecordingMidiProvider recording = new RecordingMidiProvider();
+        PlaybackEngine engine = new PlaybackEngine(
+            seq, recording, ctx(), 100, 1000.0, Optional.of("0:02"), Optional.empty());
+
+        ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO()).call(() -> {
+            engine.start(new DumbUI());
+            return null;
+        });
+
+        boolean hasCP = recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0xD0);
+        assertTrue(hasCP, "ChannelPressure should be forwarded during chase");
     }
 }
