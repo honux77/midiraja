@@ -7,10 +7,8 @@
 
 package com.fupfin.midiraja;
 
-import static java.lang.System.err;
-import static java.lang.System.out;
-
 import com.fupfin.midiraja.cli.*;
+import com.fupfin.midiraja.io.Console;
 import com.fupfin.midiraja.ui.Logo;
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.io.File;
@@ -110,8 +108,8 @@ public class MidirajaCommand implements Callable<Integer>
     @Nullable
     private TerminalIO terminalIO;
     private boolean isTestMode = false;
-    private PrintStream stdOut = out;
-    private PrintStream stdErr = err;
+    private PrintStream stdOut = Console.out;
+    private PrintStream stdErr = Console.err;
 
     public void setTestEnvironment(MidiOutProvider provider, TerminalIO terminalIO, PrintStream out,
             PrintStream err)
@@ -281,7 +279,7 @@ public class MidirajaCommand implements Callable<Integer>
         }
         else if (legacyMunt.isPresent())
         {
-            err.println("Warning: --munt is deprecated. Use 'midra munt <rom-dir> "
+            stdErr.println("Warning: --munt is deprecated. Use 'midra munt <rom-dir> "
                     + "<files...>' instead.");
             String audioLib = AudioLibResolver.resolve();
             var audio = new NativeAudioEngine(audioLib);
@@ -293,7 +291,7 @@ public class MidirajaCommand implements Callable<Integer>
         }
         else if (legacyOpl.isPresent())
         {
-            err.println("Warning: --opl is deprecated. Use 'midra opl [-b BANK] "
+            stdErr.println("Warning: --opl is deprecated. Use 'midra opl [-b BANK] "
                     + "<files...>' instead.");
             String audioLib = AudioLibResolver.resolve();
             var audio = new NativeAudioEngine(audioLib);
@@ -308,7 +306,7 @@ public class MidirajaCommand implements Callable<Integer>
         }
         else if (legacyOpn.isPresent())
         {
-            err.println("Warning: --opn is deprecated. Use 'midra opn [-b PATH] "
+            stdErr.println("Warning: --opn is deprecated. Use 'midra opn [-b PATH] "
                     + "<files...>' instead.");
             String audioLib = AudioLibResolver.resolve();
             var audio = new NativeAudioEngine(audioLib);
