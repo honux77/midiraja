@@ -38,7 +38,7 @@ public class LineUI implements PlaybackUI
         // next track
         int staticLinesPrinted = 0;
 
-        term.println(String.format("\033[7m Midiraja v%s - Terminal Lover's MIDI Player \033[0m",
+        term.println(String.format("\033[7m MIDIraja v%s - Terminal Lover's MIDI Player\033[0m",
                 Version.VERSION));
         staticLinesPrinted++;
 

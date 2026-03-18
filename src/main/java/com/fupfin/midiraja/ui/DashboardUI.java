@@ -102,7 +102,7 @@ public class DashboardUI implements PlaybackUI
                 ScreenBuffer buffer = new ScreenBuffer(4096);
                 buffer.append(Theme.TERM_CURSOR_HOME);
 
-                String banner = String.format(" Midiraja v%s - Terminal Lover's MIDI Player",
+                String banner = String.format(" MIDIraja v%s - Terminal Lover's MIDI Player",
                         Version.VERSION);
                 int bannerPadding = max(0, termWidth - banner.length());
                 buffer.append(Theme.FORMAT_INVERT).append(banner).append(" ".repeat(bannerPadding))

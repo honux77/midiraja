@@ -9,6 +9,7 @@ package com.fupfin.midiraja;
 
 import com.fupfin.midiraja.cli.*;
 
+import com.fupfin.midiraja.io.AppLogger;
 import com.fupfin.midiraja.ui.Logo;
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.io.File;
@@ -45,7 +46,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "midra", mixinStandardHelpOptions = true,
-        version = {"midiraja " + Version.VERSION + " (" + Version.COMMIT + ")"},
+        version = {"MIDIraja " + Version.VERSION + " (" + Version.COMMIT + ")"},
         description = "Terminal Lover's MIDI Player",
         customSynopsis = {"midra [command] [OPTIONS] [<files>...]"},
         subcommands = {FmCommand.class, MuntCommand.class, FluidCommand.class,
@@ -242,6 +243,7 @@ public class MidirajaCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
+        AppLogger.configure(common.verbose, common.debug);
         boolean hasLegacyOption = legacyMunt.isPresent() || legacyOpl.isPresent()
                 || legacyOpn.isPresent() || legacyFluid.isPresent();
         if ((files == null || files.isEmpty()) && port.isEmpty() && !hasLegacyOption

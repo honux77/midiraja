@@ -36,7 +36,7 @@ public class DumbUI implements PlaybackUI
         if (!headerPrinted)
         {
             term.println(
-                    String.format("\033[7m Midiraja v%s - Terminal Lover's MIDI Player \033[0m",
+                    String.format("\033[7m MIDIraja v%s - Terminal Lover's MIDI Player\033[0m",
                             Version.VERSION));
 
             // 2. 재생 목록 요약
