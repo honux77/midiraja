@@ -28,6 +28,131 @@
 
 ## Ideas
 
+### Audio-Driven VU Meter (Frequency-Band Spectrum Analyser)
+**Goal:** For internal soft-synths (OPL, OPN, Munt, TSF, GUS, PSG, Beep), replace the
+MIDI-event-driven per-channel VU with a real-time spectrum analyser that reflects the actual
+rendered PCM output.
+
+**Problem with current VU:** reads NoteOn velocity from the MIDI stream — shows what *should*
+play, not what *is* playing. Latency, voice stealing, and reverb tails are all invisible.
+
+#### Design decisions
+- **Toggle UI** — `b` key switches between channel VU (current) and frequency-band VU; no new
+  mode flag required, state lives inside `ChannelActivityPanel`
+- **Scale** — logarithmic (dB) with peak-hold markers (~500 ms hold, then decay); matches human
+  auditory perception
+- **Fallback** — native-MIDI path (CoreMIDI / ALSA) has no PCM; channel VU stays as-is and `b`
+  key is disabled / no-op in that mode
+
+#### Implementation sketch
+
+| File | Change |
+|------|--------|
+| `dsp/FFT.java` | NEW — pure-Java radix-2 FFT (1024-point, in-place) |
+| `dsp/SpectrumTapFilter.java` | NEW — `AudioFilter` inserted in the pipeline after FX; runs FFT each frame, maps bins to 7 perceptual bands, stores result in `volatile float[]` reference for lock-free render→UI hand-off |
+| `ui/ChannelActivityPanel.java` | Add toggle mode field; `b` key handler; render frequency bars (dB scale + peak markers) when in band mode |
+| `ui/DashboardUI.java` | Hold `SpectrumTapFilter` reference; wire `b` key to `ChannelActivityPanel`; disable toggle when filter is absent (native MIDI) |
+| `cli/FmSynthOptions.java` | Instantiate `SpectrumTapFilter` and insert it into the `AudioProcessor` pipeline |
+| `*Command.java` (OPL/OPN/Munt/…) | Pass `SpectrumTapFilter` through to `DashboardUI` at startup |
+
+#### Signal path
+```
+render thread → AudioProcessor pipeline → SpectrumTapFilter → sink
+                                               │
+                                         (volatile ref swap)
+                                               ↓
+                                        UI repaint thread → ChannelActivityPanel
+```
+
+#### Band layout (7 bands, log-spaced)
+| Band | Approx. range | Character |
+|------|--------------|-----------|
+| 0 | 20 – 80 Hz | Sub-bass |
+| 1 | 80 – 250 Hz | Bass |
+| 2 | 250 – 800 Hz | Low-mid |
+| 3 | 800 – 2500 Hz | Mid |
+| 4 | 2.5 – 5 kHz | Upper-mid |
+| 5 | 5 – 10 kHz | Presence |
+| 6 | 10 – 20 kHz | Air |
+
+### Chip Emulator Library (`midiraja-chips`)
+**Goal:** Extract pure-Java chip emulators from MIDI logic and develop them into a standalone
+library. The current implementation accepts MIDI events and manages registers internally; the
+library level should expose the hardware register interface directly.
+
+**Common interface**
+```java
+interface ChipEmulator {
+    void write(int address, int value); // register write
+    int  read(int address);             // register read
+    void render(short[] buf, int frames);
+    void reset();
+}
+```
+
+**Target chips and priority**
+
+| Chip | Current file | Remaining work | Priority |
+|------|-------------|----------------|----------|
+| AY-3-8910 / YM2149F | `psg/PsgChip.java` | R0–R15 register interface, 8 envelope shapes, 17-bit LFSR, clock divider | High |
+| Konami SCC / K051649 | `psg/SccChip.java` | Accurate register map, 10-bit period → freq, SCC vs SCC+ waveform-sharing rules | High |
+| 1-bit cluster synth | `beep/BeepSynthProvider.java` | Position as a creative synthesis library rather than strict H/W accuracy — split separately | Medium |
+| GUS / GF1 | `gus/GusEngine.java` | GF1 register map is complex → keep at current level | Low |
+
+The midiraja core should be refactored so it only wraps this library from `MidiOutProvider`.
+
+### Third-Party Synth Library Integration
+
+New library candidates organized by integration pattern.
+
+#### H/W MIDI Synth Emulators (Munt pattern)
+Hardware emulators that receive MIDI messages and render PCM.
+Integrate with the same structure as `FFMMuntNativeBridge` / `MuntSynthProvider`.
+
+| Library | Emulates | Notes |
+|---------|----------|-------|
+| **Nuked-SC55** | Roland Sound Canvas SC-55 / SC-88 | Standard GM timbres of the 90s; has built-in GM so no channel-assignment issues unlike MT-32 |
+
+#### FM Synthesis Libraries (libADLMIDI pattern)
+Libraries that drive chips directly with built-in GM mapping.
+Integrate with the same structure as `FFMAdlMidiNativeBridge` / `AdlMidiSynthProvider`.
+
+| Library | Supported chips | Notes |
+|---------|----------------|-------|
+| **ymfm** (Aaron Giles) | OPL2/3, OPN/OPN2/OPNA, **OPM(YM2151)**, OPLL, OPL4 — full Yamaha FM lineup | See separate item below |
+| **DX7 engine (msfa)** | Yamaha DX7 (6-op sine FM) | Synthesis core from Dexed; 80s FM timbres structurally different from OPL; `.syx` patch loading |
+
+##### OPM Patch Auto-Optimizer (`opm-patch-optimizer`)
+
+An offline tool that takes an OPN `.wopn` bank as a starting point and uses SF2 (FluidSynth) as a
+reference to auto-optimize OPM FM patches, generating a GM 128-instrument bank.
+Follows the same offline optimization pattern as the `BeepSynthProvider` God Table generator.
+Detailed design: [`docs/opm-patch-optimizer.md`](docs/opm-patch-optimizer.md)
+
+##### Two paths for ymfm integration
+
+ymfm provides only the chip emulator core. GM bank mapping, voice allocation, and MIDI event
+handling are currently handled by libADLMIDI / libOPNMIDI.
+
+**Path A — Add only new chips via ymfm (incremental)**
+- Keep libADLMIDI / libOPNMIDI as-is
+- Use ymfm + custom MIDI layer only for chips unsupported by existing libraries (OPM/YM2151, OPLL/YM2413, etc.)
+- Expose as `midra opm`, `midra opll` subcommands
+- **Challenge**: unlike OPL/OPN, there is no GM bank file standard — must design the MIDI→FM patch mapping from scratch
+
+**Path B — Full replacement with a single ymfm core (long-term refactor)**
+- Remove libADLMIDI / libOPNMIDI dependencies; unify OPL, OPN, OPM, and OPLL under ymfm
+- Aligns naturally with the `midiraja-chips` library extraction direction
+- **Challenge**: must re-implement GM mapping, voice stealing, and effects layers from libADLMIDI/libOPNMIDI — considerable effort; hard to preserve existing timbre quality
+- **Challenge**: need bank data to replace libADLMIDI's extensive built-in OPL bank collection (dozens of banks)
+
+#### Chip Emulators (PSG/SCC pattern)
+Register-interface-level emulators. MIDI mapping implemented separately.
+
+| Library | Emulates | Notes |
+|---------|----------|-------|
+| **libsidplayfp** | C64 SID (MOS 6581/8580) | Already planned in TODO; mature API |
+
 ### `midra compare`
 Cycle through all available engines for the same MIDI file, pausing between each — useful for
 evaluating SF2 files or choosing a retro aesthetic.
@@ -73,10 +198,10 @@ Oscillator-based synthesis like `psg`, extended with SID's additional features.
 
 ### YM2151 OPM FM Synthesizer (`midra opm`)
 8-voice, 4-operator FM synthesis — used in arcade boards and the Sharp X68000.
-- **Pro**: follows the same pattern as OPL/OPN; libOPNMIDI may already support OPM output
+- **Pro**: follows the same pattern as OPL/OPN; **ymfm supports OPM (YM2151)** → no separate library needed
 - **Pro**: warm, classic arcade FM sound distinct from Sega/AdLib timbres
-- **Challenge**: verify libOPNMIDI OPM support; may need a separate native library
 - **Challenge**: less name-recognition than OPL/OPN outside Japanese retro computing circles
+- **Path**: OPM comes along automatically when ymfm is integrated — expose as `midra opm` subcommand
 
 ### SNES SPC700 (`midra spc`)
 8-channel ADPCM (BRR) sample playback with hardware echo/reverb and a DSP mixer.
