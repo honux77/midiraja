@@ -47,7 +47,7 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 @Command(name = "midra", mixinStandardHelpOptions = true, version = "midiraja " + Version.VERSION,
-        description = "A fast, cross-platform CLI MIDI player.",
+        description = "Terminal Lover's MIDI Player",
         customSynopsis = {"midra [command] [OPTIONS] [<files>...]"},
         subcommands = {FmCommand.class, MuntCommand.class, FluidCommand.class,
                 TsfCommand.class, GusCommand.class, BeepCommand.class,

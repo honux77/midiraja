@@ -18,8 +18,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
+import org.jline.keymap.BindingReader;
+import org.jline.keymap.KeyMap;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.InfoCmp;
+import org.jline.utils.NonBlockingReader;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -191,7 +195,8 @@ public class EngineSelector
         try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
             terminal.enterRawMode();
-            var reader = terminal.reader();
+            var km = buildNavKeyMap(terminal);
+            var bindingReader = new BindingReader(terminal.reader());
             terminal.writer().print(Theme.TERM_HIDE_CURSOR);
             boolean firstDraw = true;
 
@@ -219,40 +224,26 @@ public class EngineSelector
                 }
                 terminal.writer().flush();
 
-                int ch = reader.read(10);
-                if (ch <= 0) continue;
+                if (terminal.reader().peek(100) == NonBlockingReader.READ_EXPIRED) continue;
+                String action = bindingReader.readBinding(km, null, false);
+                if (action == null) continue;
 
-                if (ch == 'q' || ch == 'Q')
+                switch (action)
                 {
-                    clearLines(terminal, numLines);
-                    terminal.writer().print(Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return null;
-                }
-                if (ch == 13 || ch == 10)
-                {
-                    clearLines(terminal, numLines);
-                    terminal.writer().print(Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return entries.get(selectedIdx).choice();
-                }
-                if (ch == 27)
-                {
-                    int next1 = reader.read(2);
-                    if (next1 == '[')
-                    {
-                        int next2 = reader.read(2);
-                        if (next2 == 'A') selectedIdx = nextSelectable(entries, selectedIdx, -1);
-                        else if (next2 == 'B')
-                            selectedIdx = nextSelectable(entries, selectedIdx, 1);
-                    }
-                    else
-                    {
+                    case "QUIT" -> {
                         clearLines(terminal, numLines);
                         terminal.writer().print(Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
                         return null;
                     }
+                    case "SELECT" -> {
+                        clearLines(terminal, numLines);
+                        terminal.writer().print(Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return entries.get(selectedIdx).choice();
+                    }
+                    case "UP"   -> selectedIdx = nextSelectable(entries, selectedIdx, -1);
+                    case "DOWN" -> selectedIdx = nextSelectable(entries, selectedIdx, 1);
                 }
             }
         }
@@ -268,7 +259,8 @@ public class EngineSelector
         try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
             terminal.enterRawMode();
-            var reader = terminal.reader();
+            var km = buildNavKeyMap(terminal);
+            var bindingReader = new BindingReader(terminal.reader());
             terminal.writer().print(Theme.TERM_ALT_SCREEN_ENABLE + Theme.TERM_HIDE_CURSOR);
             terminal.writer().flush();
 
@@ -290,11 +282,13 @@ public class EngineSelector
                 if (showLogo)
                 {
                     int logoPad = Math.max(0, (width - Logo.WIDTH) / 2);
-                    for (String line : Logo.LINES)
-                        buf.repeat(" ", logoPad).append(Theme.COLOR_HIGHLIGHT).append(line)
+                    for (int li = 0; li < Logo.LINES.length; li++)
+                        buf.repeat(" ", logoPad).append(Logo.LINE_COLORS[li]).append(Logo.LINES[li])
                                 .append(Theme.COLOR_RESET).appendLine();
                     int subtitlePad = Math.max(0, (width - Logo.SUBTITLE.length()) / 2);
-                    buf.repeat(" ", subtitlePad).append(Theme.COLOR_DIM).append(Logo.SUBTITLE)
+                    buf.repeat(" ", subtitlePad)
+                            .append(Theme.COLOR_DIM_FG).append(Logo.VU_BARS)
+                            .append("  ").append(Logo.SUBTITLE_TEXT)
                             .append(Theme.COLOR_RESET).appendLine();
                 }
 
@@ -348,43 +342,44 @@ public class EngineSelector
                 terminal.writer().print(buf.toString());
                 terminal.writer().flush();
 
-                int ch = reader.read(50);
-                if (ch <= 0) continue;
+                if (terminal.reader().peek(50) == NonBlockingReader.READ_EXPIRED) continue;
+                String action = bindingReader.readBinding(km, null, false);
+                if (action == null) continue;
 
-                if (ch == 'q' || ch == 'Q')
+                switch (action)
                 {
-                    terminal.writer()
-                            .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return null;
-                }
-                if (ch == 13 || ch == 10)
-                {
-                    terminal.writer()
-                            .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return entries.get(selectedIdx).choice();
-                }
-                if (ch == 27)
-                {
-                    int next1 = reader.read(2);
-                    if (next1 == '[')
-                    {
-                        int next2 = reader.read(2);
-                        if (next2 == 'A') selectedIdx = nextSelectable(entries, selectedIdx, -1);
-                        else if (next2 == 'B')
-                            selectedIdx = nextSelectable(entries, selectedIdx, 1);
-                    }
-                    else
-                    {
+                    case "QUIT" -> {
                         terminal.writer()
                                 .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
                         return null;
                     }
+                    case "SELECT" -> {
+                        terminal.writer()
+                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return entries.get(selectedIdx).choice();
+                    }
+                    case "UP"   -> selectedIdx = nextSelectable(entries, selectedIdx, -1);
+                    case "DOWN" -> selectedIdx = nextSelectable(entries, selectedIdx, 1);
                 }
             }
         }
+    }
+
+    private static KeyMap<String> buildNavKeyMap(Terminal terminal)
+    {
+        var km = new KeyMap<String>();
+        km.setAmbiguousTimeout(100);
+        String upSeq = KeyMap.key(terminal, InfoCmp.Capability.key_up);
+        if (upSeq != null && !upSeq.isEmpty()) km.bind("UP", upSeq);
+        km.bind("UP", "\033[A", "\033OA");
+        String downSeq = KeyMap.key(terminal, InfoCmp.Capability.key_down);
+        if (downSeq != null && !downSeq.isEmpty()) km.bind("DOWN", downSeq);
+        km.bind("DOWN", "\033[B", "\033OB");
+        km.bind("SELECT", "\r", "\n");
+        km.bind("QUIT", "q", "Q", "\033");
+        return km;
     }
 
     private static int firstSelectable(List<Entry> entries)

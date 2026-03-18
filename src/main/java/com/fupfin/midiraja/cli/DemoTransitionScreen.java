@@ -102,11 +102,13 @@ class DemoTransitionScreen
                     if (showLogo)
                     {
                         int logoPad = Math.max(0, (width - Logo.WIDTH) / 2);
-                        for (String line : Logo.LINES)
-                            buf.repeat(" ", logoPad).append(Theme.COLOR_HIGHLIGHT).append(line)
+                        for (int li = 0; li < Logo.LINES.length; li++)
+                            buf.repeat(" ", logoPad).append(Logo.LINE_COLORS[li]).append(Logo.LINES[li])
                                     .append(Theme.COLOR_RESET).appendLine();
                         int subtitlePad = Math.max(0, (width - Logo.SUBTITLE.length()) / 2);
-                        buf.repeat(" ", subtitlePad).append(Theme.COLOR_DIM).append(Logo.SUBTITLE)
+                        buf.repeat(" ", subtitlePad)
+                                .append(Theme.COLOR_DIM_FG).append(Logo.VU_BARS)
+                                .append("  ").append(Logo.SUBTITLE_TEXT)
                                 .append(Theme.COLOR_RESET).appendLine();
                         buf.appendLine();
                     }
@@ -193,7 +195,7 @@ class DemoTransitionScreen
         bindArrow(km, terminal, InfoCmp.Capability.key_down, PlaybackStatus.NEXT,     "B");
         km.bind(PlaybackStatus.FINISHED, "\r", "\n", " ", "n", "N");
         km.bind(PlaybackStatus.PREVIOUS, "p", "P");
-        km.bind(PlaybackStatus.QUIT_ALL, "q", "Q");
+        km.bind(PlaybackStatus.QUIT_ALL, "q", "Q", "\033");
         return km;
     }
 

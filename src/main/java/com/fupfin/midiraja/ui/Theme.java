@@ -21,6 +21,9 @@ public final class Theme
     // Dim/Gray (for grids and background elements)
     public static final String COLOR_DIM = "\033[38;5;238m";
 
+    // Dimmed foreground relative to terminal theme — readable on both dark and light backgrounds
+    public static final String COLOR_DIM_FG = "\033[2m";
+
     // Invert Colors (for top banner)
     public static final String FORMAT_INVERT = "\033[7m";
 
