@@ -305,9 +305,12 @@ task buildTsfLib(type: Exec) {
         if [[ "\$OSTYPE" == "msys"* || "\$OSTYPE" == "mingw"* || "\$OSTYPE" == "cygwin"* ]]; then
             gcc -shared -O2 -I${includeDir.absolutePath} \\
                 -o ${libName} ${sourceFile.absolutePath}
+        elif [[ "\$(uname -s)" == "Darwin" ]]; then
+            gcc -shared -fPIC -O2 -I${includeDir.absolutePath} \\
+                -o ${libName} ${sourceFile.absolutePath} -lm
         else
             gcc -shared -fPIC -O2 -I${includeDir.absolutePath} \\
-                -o ${libName} ${sourceFile.absolutePath}
+                -o ${libName} ${sourceFile.absolutePath} -Wl,--no-as-needed -lm
         fi
     """
 }
