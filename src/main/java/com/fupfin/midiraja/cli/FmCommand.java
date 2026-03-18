@@ -166,6 +166,7 @@ public class FmCommand implements Callable<Integer>
         var bridge = new FFMAdlMidiNativeBridge();
         var provider = new AdlMidiSynthProvider(bridge, pipeline,
                 fmOptions.emulator, fmOptions.chips, common.retroMode.orElse(null));
+        if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
 
         String soundbankArg =
                 bank.map(v -> v.isEmpty() ? "bank:0" : (v.matches("\\d+") ? "bank:" + v : v))
@@ -181,6 +182,7 @@ public class FmCommand implements Callable<Integer>
         var bridge = new FFMOpnMidiNativeBridge();
         var provider = new OpnMidiSynthProvider(bridge, pipeline,
                 fmOptions.emulator, fmOptions.chips, common.retroMode.orElse(null));
+        if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
 
         String soundbankArg = bank.orElse("");
 

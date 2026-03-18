@@ -7,7 +7,9 @@
 
 package com.fupfin.midiraja.midi;
 
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 import java.util.List;
+import java.util.Optional;
 import javax.sound.midi.Sequence;
 
 /**
@@ -66,6 +68,16 @@ public interface MidiOutProvider extends MidiSink
     default long getAudioLatencyNanos()
     {
         return 0L;
+    }
+
+    /**
+     * Returns the output gain control for this provider, if it owns a DSP pipeline. Absent for
+     * hardware MIDI ports and soft-synths without float conversion. When present, PlaybackEngine
+     * routes volume adjustments through this gain instead of MIDI CC 7.
+     */
+    default Optional<MasterGainFilter> outputGain()
+    {
+        return Optional.empty();
     }
 
     /**

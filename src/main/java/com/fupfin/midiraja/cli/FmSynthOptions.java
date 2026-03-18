@@ -9,7 +9,6 @@ package com.fupfin.midiraja.cli;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.dsp.FloatToShortSink;
-import com.fupfin.midiraja.dsp.ShortToFloatFilter;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import picocli.CommandLine.Option;
 
@@ -38,11 +37,7 @@ public class FmSynthOptions
         }
         AudioProcessor pipeline = new FloatToShortSink(audio);
         pipeline = common.wrapRetroPipeline(pipeline);
-        pipeline = fxOptions.wrapFxPipeline(pipeline);
-        if (fxOptions.needsFloatConversion(common))
-        {
-            pipeline = new ShortToFloatFilter(pipeline);
-        }
+        pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
         return pipeline;
     }
 }

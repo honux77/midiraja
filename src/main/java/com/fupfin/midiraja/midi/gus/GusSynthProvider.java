@@ -9,6 +9,7 @@ package com.fupfin.midiraja.midi.gus;
 
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 import com.fupfin.midiraja.midi.MidiPort;
 import com.fupfin.midiraja.midi.SoftSynthProvider;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import javax.sound.midi.Sequence;
+import java.util.Optional;
 import javax.sound.midi.Track;
 import org.jspecify.annotations.Nullable;
 
@@ -39,6 +41,7 @@ public class GusSynthProvider implements SoftSynthProvider
     private @Nullable Thread renderThread;
     private volatile boolean running = false;
     private volatile boolean renderPaused = false;
+    private @Nullable MasterGainFilter masterGain = null;
 
     /**
      * Constructs a customizable GUS provider with 1-Bit acoustic options.
@@ -54,6 +57,24 @@ public class GusSynthProvider implements SoftSynthProvider
         this.audioOut = audioOut;
         this.engine = new GusEngine(44100);
         this.bank = resolveBank(patchDir);
+    }
+
+    /** GUS uses tanh soft-clipping, so output level is already bounded. No calibration needed. */
+    protected float calibrationGain()
+    {
+        return 1.0f;
+    }
+
+    public void setMasterGain(MasterGainFilter gain)
+    {
+        this.masterGain = gain;
+        gain.setCalibration(calibrationGain());
+    }
+
+    @Override
+    public Optional<MasterGainFilter> outputGain()
+    {
+        return Optional.ofNullable(masterGain);
     }
 
     private @Nullable GusBank resolveBank(@Nullable String userPath)

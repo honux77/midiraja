@@ -135,6 +135,7 @@ public class TsfCommand implements Callable<Integer>
 
         var bridge = new FFMTsfNativeBridge();
         var provider = new TsfSynthProvider(bridge, pipeline);
+        if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
 
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());

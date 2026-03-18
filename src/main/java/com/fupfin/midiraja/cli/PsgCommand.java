@@ -83,14 +83,11 @@ public class PsgCommand implements Callable<Integer>
 
         AudioProcessor pipeline = new FloatToShortSink(audio, 1);
         pipeline = common.wrapRetroPipeline(pipeline);
-        pipeline = fxOptions.wrapFxPipeline(pipeline);
-        if (fxOptions.needsFloatConversion(common))
-        {
-            pipeline = new ShortToFloatFilter(pipeline);
-        }
+        pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
 
         var provider =
                 new PsgSynthProvider(pipeline, finalChips, vibratoDepth, dutySweep, useScc, smooth);
+        if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), false);
         return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common);

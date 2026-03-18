@@ -505,6 +505,13 @@ public class BeepSynthProvider extends AbstractOneBitSynthProvider
         return List.of(new MidiPort(0, String.format("[%d-Unit] 1-Bit Digital Cluster", numUnits)));
     }
 
+    /** Beep renders at full short scale; calibrate to −9 dBFS (0.8 analog headroom × 14540/32767). */
+    @Override
+    protected float calibrationGain()
+    {
+        return 14540f / Short.MAX_VALUE;
+    }
+
     @Override
     protected void renderFrames(short[] pcmBuffer, int framesToRender)
     {
@@ -678,8 +685,7 @@ public class BeepSynthProvider extends AbstractOneBitSynthProvider
 
             // 3. Hard Clip safety
             double finalMix = Math.max(-1.0, Math.min(1.0, lpfState2));
-            // Scale to ~−9 dBFS peak: analogMix is capped at 0.8, so 0.8 × 14540 ≈ 11632 (−9 dBFS)
-            buffer[i] = (short) (finalMix * 14540);
+            buffer[i] = (short) (finalMix * Short.MAX_VALUE);
         }
     }
 

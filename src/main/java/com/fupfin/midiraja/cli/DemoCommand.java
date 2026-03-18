@@ -160,35 +160,39 @@ public class DemoCommand implements Callable<Integer>
     {
         if (fileName.contains("-tsf-")) {
             var pipeline = buildPipeline(2);
-            var bridge = new FFMTsfNativeBridge();
-            var sfPath = findResource("soundfonts/FluidR3_GM.sf3");
-            return new ProviderWithArgs(new TsfSynthProvider(bridge, pipeline), Optional.ofNullable(sfPath));
+            var provider = new TsfSynthProvider(new FFMTsfNativeBridge(), pipeline);
+            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
+            return new ProviderWithArgs(provider, Optional.ofNullable(findResource("soundfonts/FluidR3_GM.sf3")));
         }
         if (fileName.contains("-gus-")) {
             var pipeline = buildPipeline(2);
             var patchDir = findResource("freepats");
-            return new ProviderWithArgs(new GusSynthProvider(pipeline, patchDir), Optional.ofNullable(patchDir));
+            var provider = new GusSynthProvider(pipeline, patchDir);
+            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
+            return new ProviderWithArgs(provider, Optional.ofNullable(patchDir));
         }
         if (fileName.contains("-opl3-")) {
             var pipeline = buildPipeline(2);
-            var bridge = new FFMAdlMidiNativeBridge();
-            var provider = new AdlMidiSynthProvider(bridge, pipeline, 0, 4, common.retroMode.orElse(null));
+            var provider = new AdlMidiSynthProvider(new FFMAdlMidiNativeBridge(), pipeline, 0, 4, common.retroMode.orElse(null));
+            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
             return new ProviderWithArgs(provider, Optional.of("bank:0"));
         }
         if (fileName.contains("-opn2-")) {
             var pipeline = buildPipeline(2);
-            var bridge = new FFMOpnMidiNativeBridge();
-            var provider = new OpnMidiSynthProvider(bridge, pipeline, 0, 4, common.retroMode.orElse(null));
+            var provider = new OpnMidiSynthProvider(new FFMOpnMidiNativeBridge(), pipeline, 0, 4, common.retroMode.orElse(null));
+            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
             return new ProviderWithArgs(provider, Optional.of(""));
         }
         if (fileName.contains("-psg-")) {
             var pipeline = buildPipeline(1);
             var provider = new PsgSynthProvider(pipeline, 4, 5.0, 25.0, false, false);
+            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
             return new ProviderWithArgs(provider, Optional.empty());
         }
         if (fileName.contains("-beep-")) {
             var pipeline = buildPipeline(1);
             var provider = new BeepSynthProvider(pipeline, 2, 1.0, 1.1, 1, "dsd", "square");
+            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
             return new ProviderWithArgs(provider, Optional.empty());
         }
         throw new IllegalArgumentException("Unknown engine tag in demo filename: " + fileName);
@@ -202,10 +206,7 @@ public class DemoCommand implements Callable<Integer>
         }
         AudioProcessor pipeline = new FloatToShortSink(audio, channels);
         pipeline = common.wrapRetroPipeline(pipeline);
-        pipeline = fxOptions.wrapFxPipeline(pipeline);
-        if (fxOptions.needsFloatConversion(common)) {
-            pipeline = new ShortToFloatFilter(pipeline);
-        }
+        pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
         return pipeline;
     }
 

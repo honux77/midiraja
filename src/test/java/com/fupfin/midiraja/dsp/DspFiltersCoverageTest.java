@@ -43,17 +43,62 @@ class DspFiltersCoverageTest {
     void testMasterGainFilter() {
         CaptureSink sink = new CaptureSink();
         MasterGainFilter filter = new MasterGainFilter(sink, 0.5f);
-        
+
         float[] left = {1.0f, -1.0f};
         float[] right = {1.0f, -1.0f};
-        
+
         filter.process(left.clone(), right.clone(), 2);
         assertEquals(0.5f, sink.capturedLeft[0], 0.001f);
         assertEquals(-0.5f, sink.capturedLeft[1], 0.001f);
-        
+
         filter.setGain(2.0f);
         filter.process(left.clone(), right.clone(), 2);
         assertEquals(2.0f, sink.capturedLeft[0], 0.001f);
+    }
+
+    @Test
+    void testMasterGainFilterWithAudioProcessorConstructor() {
+        CaptureSink sink = new CaptureSink();
+        AudioProcessor downstream = (l, r, frames) -> sink.process(l, r, frames);
+        MasterGainFilter filter = new MasterGainFilter(downstream, DspConstants.INTERNAL_LEVEL_INV);
+
+        float[] left = {0.25f, -0.25f};
+        float[] right = {0.25f, -0.25f};
+
+        filter.process(left.clone(), right.clone(), 2);
+        assertEquals(1.0f, sink.capturedLeft[0], 0.001f);
+        assertEquals(-1.0f, sink.capturedLeft[1], 0.001f);
+    }
+
+    @Test
+    void testMasterGainFilterVolumeScale() {
+        CaptureSink sink = new CaptureSink();
+        MasterGainFilter filter = new MasterGainFilter((AudioProcessor)(l, r, f) -> sink.process(l, r, f));
+        filter.setVolumeScale(1.0f);  // 100% → gain = INTERNAL_LEVEL_INV × 1.0 × 1.0 = 4.0
+
+        filter.process(new float[]{0.25f}, new float[]{0.25f}, 1);
+        assertEquals(1.0f, sink.capturedLeft[0], 0.001f);
+
+        filter.setVolumeScale(1.5f);  // 150% cap
+        assertEquals(1.5f, filter.getVolumeScale(), 0.001f);
+
+        filter.setVolumeScale(2.0f);  // clamped to 1.5
+        assertEquals(1.5f, filter.getVolumeScale(), 0.001f);
+    }
+
+    @Test
+    void testMasterGainFilterCalibration() {
+        CaptureSink sink = new CaptureSink();
+        MasterGainFilter filter = new MasterGainFilter((AudioProcessor)(l, r, f) -> sink.process(l, r, f));
+        filter.setVolumeScale(1.0f);       // 100% volume
+        filter.setCalibration(0.5f);       // calibration halves the output
+
+        // volumeScale should still read as 1.0 after calibration change
+        assertEquals(1.0f, filter.getVolumeScale(), 0.001f);
+
+        // effective gain = INTERNAL_LEVEL_INV × 0.5 × 1.0 = 2.0; input 0.25 → output 0.5
+        filter.process(new float[]{0.25f}, new float[]{0.25f}, 1);
+        assertEquals(0.5f, sink.capturedLeft[0], 0.001f);
     }
 
     @Test
@@ -94,26 +139,62 @@ class DspFiltersCoverageTest {
     void testShortToFloatFilter() {
         CaptureSink sink = new CaptureSink();
         ShortToFloatFilter filter = new ShortToFloatFilter(sink);
-        
+
         short[] pcm = { 0, 16383, 32767, -16384, -32768, 0 };
         // 3 frames, 2 channels
         filter.processInterleaved(pcm, 3, 2);
-        
+
+        float level = DspConstants.INTERNAL_LEVEL;
         assertTrue(sink.capturedFrames == 3);
         assertEquals(0.0f, sink.capturedLeft[0], 0.001f);
-        assertEquals(32767f / 32768f, sink.capturedLeft[1], 0.001f);
-        assertEquals(-32768f / 32768f, sink.capturedLeft[2], 0.001f);
+        assertEquals(32767f / 32768f * level, sink.capturedLeft[1], 0.001f);
+        assertEquals(-32768f / 32768f * level, sink.capturedLeft[2], 0.001f);
 
-        assertEquals(16383f / 32768f, sink.capturedRight[0], 0.001f);
-        assertEquals(-16384f / 32768f, sink.capturedRight[1], 0.001f);
+        assertEquals(16383f / 32768f * level, sink.capturedRight[0], 0.001f);
+        assertEquals(-16384f / 32768f * level, sink.capturedRight[1], 0.001f);
         assertEquals(0.0f, sink.capturedRight[2], 0.001f);
-        
+
         // test 1 channel
         filter.processInterleaved(new short[]{16384, -16384}, 2, 1);
-        assertEquals(16384f / 32768f, sink.capturedLeft[0], 0.001f);
-        assertEquals(16384f / 32768f, sink.capturedRight[0], 0.001f);
+        assertEquals(16384f / 32768f * level, sink.capturedLeft[0], 0.001f);
+        assertEquals(16384f / 32768f * level, sink.capturedRight[0], 0.001f);
     }
     
+    @Test
+    void testHeadroomPipelineRoundtrip() {
+        // ShortToFloat(×0.25) → MasterGain(×4) → CaptureSink: full-scale input should be preserved
+        CaptureSink sink = new CaptureSink();
+        AudioProcessor pipeline = new MasterGainFilter(sink, DspConstants.INTERNAL_LEVEL_INV);
+        ShortToFloatFilter stf = new ShortToFloatFilter(pipeline);
+
+        short[] pcm = {32767, 32767, -32768, -32768};
+        stf.processInterleaved(pcm, 2, 2);
+
+        assertEquals(1.0f, sink.capturedLeft[0], 0.002f);
+        assertEquals(-1.0f, sink.capturedLeft[1], 0.002f);
+    }
+
+    @Test
+    void testHeadroomPipelineWithTubeSaturation() {
+        // ShortToFloat(×0.25) → TubeSaturation(drive=5.0) → MasterGain(×4) → CaptureSink
+        // Full-scale input with tube saturation at internal level should not produce extreme clipping
+        CaptureSink sink = new CaptureSink();
+        float drive = 1.0f + (50.0f / 100.0f * 9.0f); // 50% tube = drive 5.5
+        AudioProcessor pipeline = new MasterGainFilter(sink, DspConstants.INTERNAL_LEVEL_INV);
+        pipeline = new TubeSaturationFilter(pipeline, drive);
+        ShortToFloatFilter stf = new ShortToFloatFilter(pipeline);
+
+        short[] pcm = new short[256];
+        for (int i = 0; i < 256; i++) pcm[i] = 32767;
+        stf.processInterleaved(pcm, 128, 2);
+
+        // Output should be bounded — headroom prevents extreme over-saturation
+        for (int i = 0; i < sink.capturedFrames; i++) {
+            assertTrue(Math.abs(sink.capturedLeft[i]) <= 2.0f,
+                    "Output should not be excessively distorted: left[" + i + "] = " + sink.capturedLeft[i]);
+        }
+    }
+
     @Test
     void testLegacyProcessorSink() {
         boolean[] called = {false};

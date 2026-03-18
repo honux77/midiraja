@@ -91,13 +91,13 @@ public class GusCommand implements Callable<Integer>
 
         AudioProcessor pipeline = new FloatToShortSink(audio);
         pipeline = common.wrapRetroPipeline(pipeline);
-        pipeline = Objects.requireNonNull(fxOptions).wrapFxPipeline(pipeline);
-        if (Objects.requireNonNull(fxOptions).needsFloatConversion(common))
-            pipeline = new ShortToFloatFilter(pipeline);
+        pipeline = Objects.requireNonNull(fxOptions).wrapWithFloatConversion(pipeline, common);
 
         var patchDir = patchDir();
         var provider = new GusSynthProvider(pipeline,
                 patchDir != null ? patchDir.getAbsolutePath() : null);
+        var masterGain = Objects.requireNonNull(fxOptions).masterGain;
+        if (masterGain != null) provider.setMasterGain(masterGain);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
         return runner.run(provider, true, Optional.empty(),

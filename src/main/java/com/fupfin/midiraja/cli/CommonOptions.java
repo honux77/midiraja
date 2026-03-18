@@ -17,7 +17,8 @@ import picocli.CommandLine.Option;
  */
 public class CommonOptions
 {
-    @Option(names = {"-v", "--volume"}, description = "Initial volume percentage (0-100).",
+    @Option(names = {"-v", "--volume"},
+            description = "Initial volume percentage. For internal synths with DSP: 0-150 (>100 boosts output, may clip). For external MIDI: 0-100.",
             defaultValue = "100")
     public int volume = 100;
 

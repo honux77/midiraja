@@ -2,6 +2,7 @@ package com.fupfin.midiraja.cli;
 
 import com.fupfin.midiraja.dsp.*;
 import java.util.Optional;
+import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Option;
 
 /**
@@ -47,6 +48,9 @@ public class FxOptions
             description = "Apply analog vacuum tube saturation. (Range: 0-100%%).")
     public Optional<Float> tubeDrive = Optional.empty();
 
+    /** The MasterGainFilter inserted by {@link #wrapWithFloatConversion}; null if DSP is inactive. */
+    public @Nullable MasterGainFilter masterGain = null;
+
     public AudioProcessor wrapFxPipeline(AudioProcessor pipeline)
     {
         if (eqBass != 50 || eqMid != 50 || eqTreble != 50 || lpfFreq.isPresent()
@@ -85,5 +89,24 @@ public class FxOptions
         return eqBass != 50 || eqMid != 50 || eqTreble != 50 || tubeDrive.isPresent()
                 || chorus.isPresent() || reverb.isPresent() || (common != null
                         && (common.retroMode.isPresent() || common.speakerProfile.isPresent()));
+    }
+
+    /**
+     * Wraps the pipeline with ShortToFloat → FX chain → MasterGain if float conversion is needed.
+     * The MasterGain is initialized to {@code INTERNAL_LEVEL_INV × (volume / 100)} so that
+     * {@code --volume} directly controls the PCM output level for internal synths.
+     * The inserted filter is also stored in {@link #masterGain} for runtime adjustment.
+     */
+    public AudioProcessor wrapWithFloatConversion(AudioProcessor pipeline, CommonOptions common)
+    {
+        if (needsFloatConversion(common))
+        {
+            masterGain = new MasterGainFilter(pipeline);
+            masterGain.setVolumeScale(Math.max(0, Math.min(150, common.volume)) / 100.0f);
+            pipeline = masterGain;
+            pipeline = wrapFxPipeline(pipeline);
+            pipeline = new ShortToFloatFilter(pipeline);
+        }
+        return pipeline;
     }
 }

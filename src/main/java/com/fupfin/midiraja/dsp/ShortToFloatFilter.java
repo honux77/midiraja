@@ -1,5 +1,7 @@
 package com.fupfin.midiraja.dsp;
 
+import static com.fupfin.midiraja.dsp.DspConstants.INTERNAL_LEVEL;
+
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -41,7 +43,7 @@ public class ShortToFloatFilter implements AudioProcessor
             {
                 for (int i = 0; i < frames; i++)
                 {
-                    float val = pcm[i] / 32768.0f;
+                    float val = pcm[i] / 32768.0f * INTERNAL_LEVEL;
                     l[i] = val;
                     r[i] = val;
                 }
@@ -50,8 +52,8 @@ public class ShortToFloatFilter implements AudioProcessor
             {
                 for (int i = 0; i < frames; i++)
                 {
-                    l[i] = pcm[i * 2] / 32768.0f;
-                    r[i] = pcm[i * 2 + 1] / 32768.0f;
+                    l[i] = pcm[i * 2] / 32768.0f * INTERNAL_LEVEL;
+                    r[i] = pcm[i * 2 + 1] / 32768.0f * INTERNAL_LEVEL;
                 }
             }
             next.process(l, r, frames);

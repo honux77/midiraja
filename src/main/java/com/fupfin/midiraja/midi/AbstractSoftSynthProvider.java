@@ -8,8 +8,10 @@
 package com.fupfin.midiraja.midi;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.sound.midi.Sequence;
 import org.jspecify.annotations.Nullable;
@@ -30,6 +32,7 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
     protected @Nullable Thread renderThread;
     protected volatile boolean running = false;
     protected volatile boolean renderPaused = false;
+    private @Nullable MasterGainFilter masterGain = null;
 
     protected static final int SAMPLE_RATE = 44100;
     protected static final int FRAMES_PER_RENDER = 512;
@@ -38,6 +41,28 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
     {
         this.bridge = bridge;
         this.audioOut = audioOut;
+    }
+
+    /**
+     * Per-synth output level calibration factor. Override to normalize the native library's raw
+     * output to the project-wide target. Applied once to the {@link MasterGainFilter} when
+     * {@link #setMasterGain} is called. Default is 1.0 (no calibration).
+     */
+    protected float calibrationGain()
+    {
+        return 1.0f;
+    }
+
+    public void setMasterGain(MasterGainFilter gain)
+    {
+        this.masterGain = gain;
+        gain.setCalibration(calibrationGain());
+    }
+
+    @Override
+    public Optional<MasterGainFilter> outputGain()
+    {
+        return Optional.ofNullable(masterGain);
     }
 
     @Override
@@ -142,8 +167,6 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
 
                 bridge.generate(pcmBuffer, FRAMES_PER_RENDER);
 
-                applyRenderGain(pcmBuffer, FRAMES_PER_RENDER);
-
                 if (audioOut != null)
                 {
                     audioOut.processInterleaved(pcmBuffer, FRAMES_PER_RENDER, 2);
@@ -192,32 +215,6 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
             portName += " [" + dacMode.toUpperCase(Locale.ROOT) + "]";
         }
         return List.of(new MidiPort(0, portName));
-    }
-
-    /**
-     * Output gain applied after each {@link MidiNativeBridge#generate} call, before the PCM
-     * buffer is pushed to the audio output.
-     *
-     * <p>Subclasses override this to calibrate their native library's raw output level to the
-     * project-wide target of approximately −6 dBFS peak (linear ≈ 0.5, short ≈ 16 384).
-     *
-     * @return linear gain multiplier (1.0f = unity / no change)
-     */
-    protected float renderGain()
-    {
-        return 1.0f;
-    }
-
-    private void applyRenderGain(short[] buf, int frames)
-    {
-        float gain = renderGain();
-        if (gain == 1.0f) return;
-        int samples = frames * 2;
-        for (int i = 0; i < samples; i++)
-        {
-            int v = Math.round(buf[i] * gain);
-            buf[i] = (short) Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, v));
-        }
     }
 
     /**

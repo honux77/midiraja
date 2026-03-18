@@ -8,6 +8,8 @@
 package com.fupfin.midiraja.midi;
 
 import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
+import java.util.Optional;
 import javax.sound.midi.Sequence;
 import org.jspecify.annotations.Nullable;
 
@@ -26,10 +28,29 @@ public abstract class AbstractOneBitSynthProvider implements SoftSynthProvider
     protected @Nullable Thread renderThread;
     protected volatile boolean running = false;
     protected volatile boolean renderPaused = false;
+    private @Nullable MasterGainFilter masterGain = null;
 
     protected AbstractOneBitSynthProvider(@Nullable AudioProcessor audioOut)
     {
         this.audioOut = audioOut;
+    }
+
+    /** Per-synth calibration factor. Override in subclasses to normalize output level. */
+    protected float calibrationGain()
+    {
+        return 1.0f;
+    }
+
+    public void setMasterGain(MasterGainFilter gain)
+    {
+        this.masterGain = gain;
+        gain.setCalibration(calibrationGain());
+    }
+
+    @Override
+    public Optional<MasterGainFilter> outputGain()
+    {
+        return Optional.ofNullable(masterGain);
     }
 
     @Override

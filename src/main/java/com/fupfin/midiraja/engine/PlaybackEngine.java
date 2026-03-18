@@ -101,7 +101,10 @@ public class PlaybackEngine
         this.provider = provider;
 
         this.currentSpeed.set(initialSpeed);
-        double initVol = max(0, min(100, initialVolumePercent)) / 100.0;
+        // If the provider owns a DSP output gain, volume is controlled there. VolumeFilter is
+        // kept at 1.0 so MIDI CC 7 messages from the song pass through unscaled.
+        double initVol = provider.outputGain().isPresent() ? 1.0
+                : max(0, min(100, initialVolumePercent)) / 100.0;
         this.sysexFilter = new SysexFilter(provider, false);
         this.volumeFilter = new VolumeFilter(this.sysexFilter, initVol);
         this.transposeFilter = new TransposeFilter(this.volumeFilter,
@@ -667,7 +670,9 @@ public class PlaybackEngine
 
     public double getVolumeScale()
     {
-        return volumeFilter.getVolumeScale();
+        return provider.outputGain()
+                .map(g -> (double) g.getVolumeScale())
+                .orElseGet(() -> volumeFilter.getVolumeScale());
     }
 
     public boolean isPlaying()
@@ -683,16 +688,25 @@ public class PlaybackEngine
 
     public void adjustVolume(double delta)
     {
-        volumeFilter.adjust(delta);
-        for (int ch = 0; ch < 16; ch++)
+        var og = provider.outputGain();
+        if (og.isPresent())
         {
-            byte[] msg = new byte[] {(byte) (0xB0 | ch), 7, (byte) 100};
-            try
+            double newScale = max(0.0, min(1.5, og.get().getVolumeScale() + delta));
+            og.get().setVolumeScale((float) newScale);
+        }
+        else
+        {
+            volumeFilter.adjust(delta);
+            for (int ch = 0; ch < 16; ch++)
             {
-                pipelineRoot.sendMessage(msg);
-            }
-            catch (Exception ignored)
-            { /* Ignore */
+                byte[] msg = new byte[] {(byte) (0xB0 | ch), 7, (byte) 100};
+                try
+                {
+                    pipelineRoot.sendMessage(msg);
+                }
+                catch (Exception ignored)
+                { /* Ignore */
+                }
             }
         }
         listeners.forEach(PlaybackEventListener::onPlaybackStateChanged);

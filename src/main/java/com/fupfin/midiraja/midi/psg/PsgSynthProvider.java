@@ -94,13 +94,19 @@ public class PsgSynthProvider extends AbstractOneBitSynthProvider
                 sumOutput += chips[c].render();
             }
 
-            // Normalize to ~−9 dBFS peak (project-wide target, matches TSF/GUS/Beep).
-            // 3 PSG channels at max each contribute 1/3, summing to 1.0; dividing by 2.8 scales
-            // the peak to ≈0.357 (−8.9 dBFS) before the 32767 conversion.
-            sumOutput /= (totalPhysicalChips * 2.8);
+            // Normalize by chip count so polyphony doesn't affect volume.
+            // The −9 dBFS calibration factor (÷2.8) lives in calibrationGain().
+            sumOutput /= totalPhysicalChips;
 
             pcmBuffer[i] = (short) (Math.max(-1.0, Math.min(1.0, sumOutput)) * 32767);
         }
+    }
+
+    /** PSG renders chip-count-normalized; calibrate to −9 dBFS (÷2.8 ≈ 0.357). */
+    @Override
+    protected float calibrationGain()
+    {
+        return 1.0f / 2.8f;
     }
 
     @Override
