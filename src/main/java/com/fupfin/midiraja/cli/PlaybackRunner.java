@@ -25,20 +25,14 @@ import com.fupfin.midiraja.ui.DashboardUI;
 import com.fupfin.midiraja.ui.DumbUI;
 import com.fupfin.midiraja.ui.LineUI;
 import com.fupfin.midiraja.ui.PlaybackUI;
-import com.fupfin.midiraja.ui.ScreenBuffer;
 import com.fupfin.midiraja.ui.Theme;
 import java.io.File;
 import java.io.PrintStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
-import org.jline.terminal.Terminal;
-import org.jline.terminal.TerminalBuilder;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -300,209 +294,13 @@ public class PlaybackRunner
             throws Exception
     {
         if (ports.isEmpty()) return -1;
-
-        var probe = new JLineTerminalIO();
-        probe.init();
-        boolean isInteractive = probe.isInteractive();
-        int termHeight = probe.getHeight();
-        probe.close();
-
-        if (!isInteractive) return fallbackPortSelection(ports);
-
-        boolean willBeFullMode = uiOpts.fullMode || (!uiOpts.miniMode && termHeight >= 10);
-        return willBeFullMode ? fullScreenPortSelection(ports) : dynamicPortSelection(ports);
-    }
-
-    private int dynamicPortSelection(List<MidiPort> ports) throws Exception
-    {
-        int selectedIndex = 0;
-        int numPorts = ports.size();
-
-        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
-        {
-            terminal.enterRawMode();
-            var reader = terminal.reader();
-            terminal.writer().print(Theme.TERM_HIDE_CURSOR);
-            boolean firstDraw = true;
-
-            while (true)
-            {
-                if (!firstDraw) terminal.writer().print("\033[" + (numPorts + 1) + "A");
-                firstDraw = false;
-
-                terminal.writer().println("Available MIDI Output Devices:");
-                for (int i = 0; i < numPorts; i++)
-                {
-                    String prefix = (i == selectedIndex) ? " > " : "   ";
-                    terminal.writer().println(prefix + ports.get(i).name());
-                }
-                terminal.writer().flush();
-
-                int ch = reader.read(10);
-                if (ch <= 0) continue;
-
-                if (ch == 'q' || ch == 'Q')
-                {
-                    clearMenu(terminal, numPorts);
-                    terminal.writer().print(Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return -1;
-                }
-                if (ch == 13 || ch == 10)
-                {
-                    clearMenu(terminal, numPorts);
-                    terminal.writer().print(Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return ports.get(selectedIndex).index();
-                }
-                if (ch == 27)
-                {
-                    int next1 = reader.read(2);
-                    if (next1 == '[')
-                    {
-                        int next2 = reader.read(2);
-                        if (next2 == 'A') selectedIndex = (selectedIndex - 1 + numPorts) % numPorts;
-                        else if (next2 == 'B') selectedIndex = (selectedIndex + 1) % numPorts;
-                    }
-                    else
-                    {
-                        clearMenu(terminal, numPorts);
-                        terminal.writer().print(Theme.TERM_SHOW_CURSOR);
-                        terminal.writer().flush();
-                        return -1;
-                    }
-                }
-            }
-        }
-    }
-
-    private int fullScreenPortSelection(List<MidiPort> ports) throws Exception
-    {
-        int selectedIndex = 0;
-        int numPorts = ports.size();
-
-        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
-        {
-            terminal.enterRawMode();
-            var reader = terminal.reader();
-            terminal.writer().print(Theme.TERM_ALT_SCREEN_ENABLE + Theme.TERM_HIDE_CURSOR);
-            terminal.writer().flush();
-
-            while (true)
-            {
-                int width = terminal.getWidth();
-                int height = terminal.getHeight();
-                int boxWidth = 50;
-                int boxHeight = numPorts + 4;
-                int padLeft = max(0, (width - boxWidth) / 2);
-                int padTop = max(0, (height - boxHeight) / 2);
-
-                ScreenBuffer buffer = new ScreenBuffer(4096);
-                buffer.append(Theme.TERM_CURSOR_HOME).append(Theme.TERM_CLEAR_TO_END);
-                buffer.repeat("\n", padTop);
-
-                String title = " SELECT MIDI TARGET ";
-                int titlePad = (boxWidth - title.length() - 2) / 2;
-                buffer.repeat(" ", padLeft).append(Theme.COLOR_HIGHLIGHT)
-                        .repeat(Theme.DECORATOR_LINE, titlePad).append(Theme.COLOR_RESET)
-                        .append(Theme.FORMAT_INVERT).append(title).append(Theme.COLOR_RESET)
-                        .append(Theme.COLOR_HIGHLIGHT)
-                        .repeat(Theme.DECORATOR_LINE, boxWidth - titlePad - title.length())
-                        .append(Theme.COLOR_RESET).appendLine();
-
-                for (int i = 0; i < numPorts; i++)
-                {
-                    buffer.repeat(" ", padLeft);
-                    String portName = ports.get(i).name();
-                    if (portName.length() > boxWidth - 8)
-                        portName = portName.substring(0, boxWidth - 11) + "...";
-                    if (i == selectedIndex)
-                    {
-                        buffer.append("  ").append(Theme.COLOR_HIGHLIGHT)
-                                .append(Theme.CHAR_ARROW_RIGHT).append(" [")
-                                .append(String.valueOf(i)).append("] ").append(portName)
-                                .append(Theme.COLOR_RESET).appendLine();
-                    }
-                    else
-                    {
-                        buffer.append("    [").append(String.valueOf(i)).append("] ")
-                                .append(portName).appendLine();
-                    }
-                }
-
-                buffer.repeat(" ", padLeft).append(Theme.COLOR_HIGHLIGHT)
-                        .repeat(Theme.BORDER_HORIZONTAL, boxWidth).append(Theme.COLOR_RESET)
-                        .appendLine();
-                String footer = "[▲/▼] Move   [Enter] Select   [Q] Quit";
-                int footerPad = (boxWidth - footer.length()) / 2;
-                buffer.repeat(" ", padLeft + footerPad).append(Theme.COLOR_HIGHLIGHT).append(footer)
-                        .append(Theme.COLOR_RESET).appendLine();
-
-                terminal.writer().print(buffer.toString());
-                terminal.writer().flush();
-
-                int ch = reader.read(50);
-                if (ch <= 0) continue;
-
-                if (ch == 'q' || ch == 'Q')
-                {
-                    terminal.writer().print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return -1;
-                }
-                if (ch == 13 || ch == 10)
-                {
-                    terminal.writer().print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                    terminal.writer().flush();
-                    return ports.get(selectedIndex).index();
-                }
-                if (ch == 27)
-                {
-                    int next1 = reader.read(2);
-                    if (next1 == '[')
-                    {
-                        int next2 = reader.read(2);
-                        if (next2 == 'A') selectedIndex = (selectedIndex - 1 + numPorts) % numPorts;
-                        else if (next2 == 'B') selectedIndex = (selectedIndex + 1) % numPorts;
-                    }
-                    else
-                    {
-                        terminal.writer().print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                        terminal.writer().flush();
-                        return -1;
-                    }
-                }
-            }
-        }
-    }
-
-    private void clearMenu(Terminal terminal, int numPorts)
-    {
-        terminal.writer().print("\033[" + (numPorts + 1) + "A");
-        for (int i = 0; i <= numPorts; i++)
-        {
-            terminal.writer().println(Theme.TERM_CLEAR_TO_EOL);
-        }
-        terminal.writer().print("\033[" + (numPorts + 1) + "A");
-    }
-
-    private int fallbackPortSelection(List<MidiPort> ports)
-    {
-        out.println("Available MIDI Output Devices:");
-        for (var p : ports)
-        {
-            out.println("[" + p.index() + "] " + p.name());
-        }
-        out.print("Select a port index: ");
-        out.flush();
-        var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-        if (scanner.hasNextInt())
-        {
-            int selected = scanner.nextInt();
-            if (ports.stream().anyMatch(p -> p.index() == selected)) return selected;
-        }
-        err.println("Invalid port selection.");
-        return -1;
+        var items = ports.stream()
+                .map(p -> TerminalSelector.Item.of(p.index(), "[" + p.index() + "] " + p.name(), ""))
+                .toList();
+        var config = new TerminalSelector.FullScreenConfig(" SELECT MIDI TARGET ", 50, 50);
+        Integer result = TerminalSelector.select(items, config, uiOpts.fullMode, uiOpts.miniMode,
+                uiOpts.classicMode, err);
+        return result != null ? result : -1;
     }
 
     // ── Utilities ──────────────────────────────────────────────────────────────
@@ -561,7 +359,7 @@ public class PlaybackRunner
         }
     }
 
-    private PlaybackUI buildUI(UiModeOptions uiOpts, boolean isInteractive,
+    PlaybackUI buildUI(UiModeOptions uiOpts, boolean isInteractive,
             int activeIOHeight, boolean[] useAltScreenOut)
     {
         PlaybackUI ui;
@@ -650,7 +448,7 @@ public class PlaybackRunner
         }
     }
 
-    private int handlePlaybackStatus(PlaybackStatus status, int currentTrackIdx,
+    int handlePlaybackStatus(PlaybackStatus status, int currentTrackIdx,
             List<File> playlist, CommonOptions common)
     {
         return switch (status)

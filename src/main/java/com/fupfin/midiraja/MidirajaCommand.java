@@ -46,7 +46,8 @@ import picocli.CommandLine.Mixin;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
-@Command(name = "midra", mixinStandardHelpOptions = true, version = "midiraja " + Version.VERSION,
+@Command(name = "midra", mixinStandardHelpOptions = true,
+        version = {"midiraja " + Version.VERSION, "commit: " + Version.COMMIT},
         description = "Terminal Lover's MIDI Player",
         customSynopsis = {"midra [command] [OPTIONS] [<files>...]"},
         subcommands = {FmCommand.class, MuntCommand.class, FluidCommand.class,
@@ -328,8 +329,7 @@ public class MidirajaCommand implements Callable<Integer>
         else if (!files.isEmpty() && port.isEmpty())
         {
             var nativePorts = MidiProviderFactory.createProvider().getOutputPorts();
-            var choice = EngineSelector.select(nativePorts, common.uiOptions.fullMode,
-                    common.uiOptions.miniMode, common.uiOptions.classicMode, stdErr);
+            var choice = EngineSelector.select(nativePorts, common.uiOptions, stdErr);
             if (choice == null) return 0;
             return switch (choice)
             {
