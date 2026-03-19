@@ -113,7 +113,7 @@ public class ResumeCommand implements Callable<Integer>
         PrintStream errStream = parent != null ? parent.getErr() : System.err;
 
         while (true) {
-            TerminalSelector.SelectResult result;
+            TerminalSelector.SelectResult<Integer> result;
             try {
                 result = TerminalSelector.selectWithActions(items, config, fullMode, miniMode,
                         classicMode, errStream);
@@ -123,9 +123,9 @@ public class ResumeCommand implements Callable<Integer>
                 return 1;
             }
 
-            if (result instanceof TerminalSelector.SelectResult.Cancelled) return 0;
+            if (result instanceof TerminalSelector.SelectResult.Cancelled<Integer>) return 0;
 
-            if (result instanceof TerminalSelector.SelectResult.Chosen chosen) {
+            if (result instanceof TerminalSelector.SelectResult.Chosen<Integer> chosen) {
                 var entry = all.get(chosen.value());
                 err().println("Launching: " + String.join(" ", entry.args()));
                 err().flush();
@@ -133,8 +133,20 @@ public class ResumeCommand implements Callable<Integer>
                         .execute(entry.args().toArray(new String[0]));
             }
 
-            if (result instanceof TerminalSelector.SelectResult.Delete del) {
+            if (result instanceof TerminalSelector.SelectResult.Delete<Integer> del) {
                 int idx = del.value();
+                if (idx >= autoCount) {
+                    // Bookmark deletion requires confirmation
+                    err().print("Delete bookmark? [y/N] ");
+                    err().flush();
+                    var scanner = new java.util.Scanner(System.in, java.nio.charset.StandardCharsets.UTF_8);
+                    String answer = scanner.hasNextLine() ? scanner.nextLine().trim() : "";
+                    if (!answer.equalsIgnoreCase("y")) {
+                        config = config.withInitialIndex(nearestItemsIdx(items, idx));
+                        continue;
+                    }
+                }
+                int deletedItemsIdx = nearestItemsIdx(items, idx);
                 if (idx < autoCount) history.deleteAuto(idx);
                 else history.deleteBookmark(idx - autoCount);
                 all = history.getAll();
@@ -145,20 +157,46 @@ public class ResumeCommand implements Callable<Integer>
                     return 0;
                 }
                 items = buildItems(all, autoCount);
+                int nextIdx = Math.min(deletedItemsIdx, items.size() - 1);
+                while (nextIdx > 0 && items.get(nextIdx).isSeparator()) nextIdx--;
+                config = config.withInitialIndex(nextIdx);
                 continue;
             }
 
-            if (result instanceof TerminalSelector.SelectResult.Promote promote) {
+            if (result instanceof TerminalSelector.SelectResult.Promote<Integer> promote) {
                 int idx = promote.value();
-                if (idx < autoCount) {
-                    history.promoteToBookmark(idx);
-                    all = history.getAll();
-                    autoCount = history.getAutoCount();
-                    items = buildItems(all, autoCount);
+                if (idx >= autoCount) {
+                    err().println("Already bookmarked.");
+                    err().flush();
+                    config = config.withInitialIndex(nearestItemsIdx(items, idx));
+                    continue;
                 }
+                int itemsIdx = nearestItemsIdx(items, idx);
+                history.promoteToBookmark(idx);
+                all = history.getAll();
+                autoCount = history.getAutoCount();
+                items = buildItems(all, autoCount);
+                // After promote, item moves to bookmarks section; find it there
+                int newIdx = idx; // now at end of all list (promoted bookmark)
+                config = config.withInitialIndex(nearestItemsIdx(items, newIdx));
                 continue;
             }
         }
+    }
+
+    /** Returns the items-list index of the first selectable item with value >= targetAllIdx,
+     *  or the last selectable index if none found. */
+    private static int nearestItemsIdx(List<TerminalSelector.Item<Integer>> items, int targetAllIdx)
+    {
+        int lastSelectable = TerminalSelector.firstSelectable(items);
+        for (int i = 0; i < items.size(); i++) {
+            var item = items.get(i);
+            if (!item.isSeparator()) {
+                if (item.requireValue() >= targetAllIdx) return i;
+                lastSelectable = i;
+            }
+        }
+        return lastSelectable;
     }
 
     private ArrayList<TerminalSelector.Item<Integer>> buildItems(List<SessionEntry> all, int autoCount)

@@ -13,6 +13,7 @@ import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.function.BiConsumer;
 import org.jline.keymap.BindingReader;
@@ -45,6 +46,12 @@ public final class TerminalSelector
             return value == null;
         }
 
+        /** Returns the non-null value; throws if called on a separator. */
+        public T requireValue()
+        {
+            return Objects.requireNonNull(value, "separator has no value");
+        }
+
         public static <T> Item<T> of(T value, String label, String description)
         {
             return new Item<>(value, label, description);
@@ -72,12 +79,28 @@ public final class TerminalSelector
             int maxBoxWidth,
             int logoMinWidth,
             int logoLineCount,
-            @Nullable BiConsumer<ScreenBuffer, Integer> logoRenderer)
+            @Nullable BiConsumer<ScreenBuffer, Integer> logoRenderer,
+            int initialIndex)
     {
         /** Convenience constructor for configs without a logo. */
         public FullScreenConfig(String title, int minBoxWidth, int maxBoxWidth)
         {
-            this(title, minBoxWidth, maxBoxWidth, 0, 0, null);
+            this(title, minBoxWidth, maxBoxWidth, 0, 0, null, 0);
+        }
+
+        /** Convenience constructor for configs with a logo but no initial index override. */
+        public FullScreenConfig(String title, int minBoxWidth, int maxBoxWidth,
+                int logoMinWidth, int logoLineCount,
+                @Nullable BiConsumer<ScreenBuffer, Integer> logoRenderer)
+        {
+            this(title, minBoxWidth, maxBoxWidth, logoMinWidth, logoLineCount, logoRenderer, 0);
+        }
+
+        /** Returns a copy with the given initial cursor index. */
+        public FullScreenConfig withInitialIndex(int idx)
+        {
+            return new FullScreenConfig(title, minBoxWidth, maxBoxWidth, logoMinWidth, logoLineCount,
+                    logoRenderer, idx);
         }
     }
 
@@ -88,19 +111,19 @@ public final class TerminalSelector
 
     /**
      * Result of {@link #selectWithActions}: a chosen item, a delete request, a promote request,
-     * or a cancellation.
+     * or a cancellation. Carries the item's value (not the list index).
      */
-    public sealed interface SelectResult
+    public sealed interface SelectResult<T>
             permits SelectResult.Chosen, SelectResult.Delete, SelectResult.Promote,
                     SelectResult.Cancelled
     {
-        record Chosen(int value) implements SelectResult {}
+        record Chosen<T>(T value) implements SelectResult<T> {}
 
-        record Delete(int value) implements SelectResult {}
+        record Delete<T>(T value) implements SelectResult<T> {}
 
-        record Promote(int value) implements SelectResult {}
+        record Promote<T>(T value) implements SelectResult<T> {}
 
-        record Cancelled() implements SelectResult {}
+        record Cancelled<T>() implements SelectResult<T> {}
     }
 
     /**
@@ -142,11 +165,11 @@ public final class TerminalSelector
      * as {@link #select}, but additionally allows {@code D} (delete) and {@code B} (promote) key
      * bindings in interactive modes.
      */
-    public static <T> SelectResult selectWithActions(List<Item<T>> items, FullScreenConfig config,
+    public static <T> SelectResult<T> selectWithActions(List<Item<T>> items, FullScreenConfig config,
             boolean preferFull, boolean preferMini, boolean preferClassic,
             PrintStream err) throws Exception
     {
-        if (items.isEmpty()) return new SelectResult.Cancelled();
+        if (items.isEmpty()) return new SelectResult.Cancelled<>();
 
         var probe = new JLineTerminalIO();
         probe.init();
@@ -284,7 +307,7 @@ public final class TerminalSelector
                         terminal.writer()
                                 .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return items.get(selectedIdx).value();
+                        return items.get(selectedIdx).requireValue();
                     }
                     case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
                     case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
@@ -349,7 +372,7 @@ public final class TerminalSelector
                         clearLines(terminal, numLines);
                         terminal.writer().print(Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return items.get(selectedIdx).value();
+                        return items.get(selectedIdx).requireValue();
                     }
                     case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
                     case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
@@ -388,10 +411,10 @@ public final class TerminalSelector
 
     /** Full-screen alt-buffer menu with D/B action bindings. */
     @SuppressWarnings("EmptyCatch")
-    private static <T> SelectResult fullScreenSelectWithActions(List<Item<T>> items,
+    private static <T> SelectResult<T> fullScreenSelectWithActions(List<Item<T>> items,
             FullScreenConfig config) throws Exception
     {
-        int selectedIdx = firstSelectable(items);
+        int selectedIdx = config.initialIndex() > 0 ? config.initialIndex() : firstSelectable(items);
 
         try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
@@ -466,7 +489,7 @@ public final class TerminalSelector
                 buf.repeat(" ", padLeft).append(Theme.COLOR_HIGHLIGHT)
                         .repeat(Theme.BORDER_HORIZONTAL, boxWidth).append(Theme.COLOR_RESET)
                         .appendLine();
-                String footer = "[▲/▼] Move   [Enter] Select   [D] Delete   [B] Promote   [Q] Quit";
+                String footer = "[▲/▼] Move   [Enter] Select   [D] Delete   [B] Bookmark   [Q] Quit";
                 int footerPad = (boxWidth - footer.length()) / 2;
                 buf.repeat(" ", padLeft + footerPad).append(Theme.COLOR_HIGHLIGHT).append(footer)
                         .append(Theme.COLOR_RESET).appendLine();
@@ -484,25 +507,25 @@ public final class TerminalSelector
                         terminal.writer()
                                 .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Cancelled();
+                        return new SelectResult.Cancelled<>();
                     }
                     case "SELECT" -> {
                         terminal.writer()
                                 .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Chosen(selectedIdx);
+                        return new SelectResult.Chosen<>(items.get(selectedIdx).requireValue());
                     }
                     case "DELETE" -> {
                         terminal.writer()
                                 .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Delete(selectedIdx);
+                        return new SelectResult.Delete<>(items.get(selectedIdx).requireValue());
                     }
                     case "PROMOTE" -> {
                         terminal.writer()
                                 .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Promote(selectedIdx);
+                        return new SelectResult.Promote<>(items.get(selectedIdx).requireValue());
                     }
                     case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
                     case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
@@ -513,11 +536,11 @@ public final class TerminalSelector
 
     /** Arrow-key mini menu with D/B action bindings. */
     @SuppressWarnings("EmptyCatch")
-    private static <T> SelectResult miniSelectWithActions(List<Item<T>> items,
+    private static <T> SelectResult<T> miniSelectWithActions(List<Item<T>> items,
             FullScreenConfig config) throws Exception
     {
         int numLines = items.size() + 1;
-        int selectedIdx = firstSelectable(items);
+        int selectedIdx = config.initialIndex() > 0 ? config.initialIndex() : firstSelectable(items);
 
         try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
@@ -561,25 +584,25 @@ public final class TerminalSelector
                         clearLines(terminal, numLines);
                         terminal.writer().print(Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Cancelled();
+                        return new SelectResult.Cancelled<>();
                     }
                     case "SELECT" -> {
                         clearLines(terminal, numLines);
                         terminal.writer().print(Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Chosen(selectedIdx);
+                        return new SelectResult.Chosen<>(items.get(selectedIdx).requireValue());
                     }
                     case "DELETE" -> {
                         clearLines(terminal, numLines);
                         terminal.writer().print(Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Delete(selectedIdx);
+                        return new SelectResult.Delete<>(items.get(selectedIdx).requireValue());
                     }
                     case "PROMOTE" -> {
                         clearLines(terminal, numLines);
                         terminal.writer().print(Theme.TERM_SHOW_CURSOR);
                         terminal.writer().flush();
-                        return new SelectResult.Promote(selectedIdx);
+                        return new SelectResult.Promote<>(items.get(selectedIdx).requireValue());
                     }
                     case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
                     case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
@@ -589,7 +612,7 @@ public final class TerminalSelector
     }
 
     /** Non-interactive fallback for selectWithActions: only Chosen and Cancelled available. */
-    private static <T> SelectResult classicSelectWithActions(List<Item<T>> items,
+    private static <T> SelectResult<T> classicSelectWithActions(List<Item<T>> items,
             FullScreenConfig config, PrintStream err)
     {
         err.println(config.title().strip() + ":");
@@ -604,17 +627,16 @@ public final class TerminalSelector
         err.print("Enter number (0 to cancel): ");
         err.flush();
         var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
-        if (!scanner.hasNextInt()) return new SelectResult.Cancelled();
+        if (!scanner.hasNextInt()) return new SelectResult.Cancelled<>();
         int sel = scanner.nextInt();
-        if (sel == 0) return new SelectResult.Cancelled();
+        if (sel == 0) return new SelectResult.Cancelled<>();
         int idx = 0;
-        for (int i = 0; i < items.size(); i++)
+        for (var item : items)
         {
-            var item = items.get(i);
             if (item.isSeparator()) continue;
-            if (++idx == sel) return new SelectResult.Chosen(i);
+            if (++idx == sel) return new SelectResult.Chosen<>(item.requireValue());
         }
-        return new SelectResult.Cancelled();
+        return new SelectResult.Cancelled<>();
     }
 
     private static KeyMap<String> buildNavKeyMap(Terminal terminal)
