@@ -84,11 +84,11 @@ public class ResumeCommand implements Callable<Integer>
             var e = all.get(i);
             boolean isBookmark = i >= autoCount;
             String marker = isBookmark ? " \u2605" : "";
-            out.printf("[%d] %s  [%s]%s%n",
+            out.printf("[%d] [%s]%s %s%n",
                     i + 1,
-                    String.join(" ", e.args()),
                     FMT.format(e.savedAt()),
-                    marker);
+                    marker,
+                    String.join(" ", e.args()));
         }
         out.flush();
     }
@@ -98,7 +98,7 @@ public class ResumeCommand implements Callable<Integer>
         int autoCount = history.getAutoCount();
         List<TerminalSelector.Item<Integer>> items = buildItems(all, autoCount);
 
-        var config = new TerminalSelector.FullScreenConfig(" RESUME SESSION ", 60, 60);
+        var config = new TerminalSelector.FullScreenConfig(" RESUME SESSION ", 60, 200);
         boolean fullMode = parent != null && parent.getCommonOptions() != null
                 && parent.getCommonOptions().uiOptions.fullMode;
         boolean miniMode = parent != null && parent.getCommonOptions() != null
@@ -161,10 +161,39 @@ public class ResumeCommand implements Callable<Integer>
         for (int i = 0; i < all.size(); i++) {
             var e = all.get(i);
             boolean isBookmark = i >= autoCount;
-            String label = String.join(" ", e.args());
-            String detail = "[" + FMT.format(e.savedAt()) + "]" + (isBookmark ? "  \u2605" : "");
+            String date = "[" + FMT.format(e.savedAt()) + "]";
+            String mark = isBookmark ? " \u2605" : "";
+            String label = date + mark + " " + formatArgs(e.args());
+            String detail = String.join(" ", e.args());  // full command shown when terminal is wide
             items.add(TerminalSelector.Item.of(i, label, detail));
         }
         return items;
+    }
+
+    /**
+     * Formats arg tokens for single-line display: path tokens are middle-truncated,
+     * other tokens (flags, subcommand name) are kept as-is.
+     */
+    private static String formatArgs(List<String> args)
+    {
+        var sb = new StringBuilder();
+        for (int i = 0; i < args.size(); i++) {
+            if (i > 0) sb.append(' ');
+            String token = args.get(i);
+            sb.append(token.startsWith("-") ? token : truncateMidPath(token, 50));
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Middle-truncates a string, preserving the start and end.
+     * For file system paths, the filename (end) is more recognizable, so we keep more of it.
+     */
+    static String truncateMidPath(String s, int max)
+    {
+        if (s.length() <= max) return s;
+        int keepEnd = (max - 1) * 3 / 5;
+        int keepStart = max - 1 - keepEnd;
+        return s.substring(0, keepStart) + "\u2026" + s.substring(s.length() - keepEnd);
     }
 }
