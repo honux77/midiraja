@@ -26,6 +26,7 @@ public class NowPlayingPanel implements Panel
     private double volumeScale = 1.0;
     private int transpose = 0;
     private boolean isPaused = false;
+    private volatile boolean bookmarked = false;
     @Nullable
     private PlaylistContext context;
     private final List<String> extraMetadata = new ArrayList<>();
@@ -76,13 +77,20 @@ public class NowPlayingPanel implements Panel
     {}
 
     @Override
+    public void onBookmarkChanged(boolean bookmarked)
+    {
+        this.bookmarked = bookmarked;
+    }
+
+    @Override
     public void render(ScreenBuffer buffer)
     {
         if (constraints.height() <= 0 || context == null) return;
 
         String title = context.sequenceTitle() != null ? context.sequenceTitle() : "";
         String fileName = context.files().get(context.currentIndex()).getName();
-        String displayTitle = title.isEmpty() ? fileName : title + " (" + fileName + ")";
+        String displayTitle = (title.isEmpty() ? fileName : title + " (" + fileName + ")")
+                + (bookmarked ? "  \u2605" : "");
 
         boolean incHrs = (totalMicros / 1000000) >= 3600;
         String totStr = formatTime(totalMicros, incHrs);
