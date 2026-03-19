@@ -87,6 +87,23 @@ public final class TerminalSelector
     }
 
     /**
+     * Result of {@link #selectWithActions}: a chosen item, a delete request, a promote request,
+     * or a cancellation.
+     */
+    public sealed interface SelectResult
+            permits SelectResult.Chosen, SelectResult.Delete, SelectResult.Promote,
+                    SelectResult.Cancelled
+    {
+        record Chosen(int value) implements SelectResult {}
+
+        record Delete(int value) implements SelectResult {}
+
+        record Promote(int value) implements SelectResult {}
+
+        record Cancelled() implements SelectResult {}
+    }
+
+    /**
      * Single source of truth for mode decision. Pure function — no terminal access.
      */
     public static SelectionMode resolveMode(boolean isInteractive, int termHeight,
@@ -117,6 +134,31 @@ public final class TerminalSelector
             case FULL -> fullScreenSelect(items, config);
             case MINI -> miniSelect(items, config);
             case CLASSIC -> classicSelect(items, config, err);
+        };
+    }
+
+    /**
+     * Shows the selection menu and returns a {@link SelectResult}. Supports the same display modes
+     * as {@link #select}, but additionally allows {@code D} (delete) and {@code B} (promote) key
+     * bindings in interactive modes.
+     */
+    public static <T> SelectResult selectWithActions(List<Item<T>> items, FullScreenConfig config,
+            boolean preferFull, boolean preferMini, boolean preferClassic,
+            PrintStream err) throws Exception
+    {
+        if (items.isEmpty()) return new SelectResult.Cancelled();
+
+        var probe = new JLineTerminalIO();
+        probe.init();
+        boolean isInteractive = probe.isInteractive();
+        int termHeight = probe.getHeight();
+        probe.close();
+
+        return switch (resolveMode(isInteractive, termHeight, preferFull, preferMini, preferClassic))
+        {
+            case FULL -> fullScreenSelectWithActions(items, config);
+            case MINI -> miniSelectWithActions(items, config);
+            case CLASSIC -> classicSelectWithActions(items, config, err);
         };
     }
 
@@ -344,6 +386,237 @@ public final class TerminalSelector
         return null;
     }
 
+    /** Full-screen alt-buffer menu with D/B action bindings. */
+    @SuppressWarnings("EmptyCatch")
+    private static <T> SelectResult fullScreenSelectWithActions(List<Item<T>> items,
+            FullScreenConfig config) throws Exception
+    {
+        int selectedIdx = firstSelectable(items);
+
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
+        {
+            terminal.enterRawMode();
+            var km = buildNavKeyMapWithActions(terminal);
+            var bindingReader = new BindingReader(terminal.reader());
+            terminal.writer().print(Theme.TERM_ALT_SCREEN_ENABLE + Theme.TERM_HIDE_CURSOR);
+            terminal.writer().flush();
+
+            while (true)
+            {
+                int width = terminal.getWidth();
+                int height = terminal.getHeight();
+                int boxWidth = Math.max(config.minBoxWidth(),
+                        Math.min(config.maxBoxWidth(), width - 4));
+                var logoRenderer = config.logoRenderer();
+                int logoLines =
+                        (logoRenderer != null && width >= config.logoMinWidth())
+                                ? config.logoLineCount()
+                                : 0;
+                int boxHeight = items.size() + 4 + logoLines;
+                int padLeft = Math.max(0, (width - boxWidth) / 2);
+                int padTop = Math.max(0, (height - boxHeight) / 2);
+
+                var buf = new ScreenBuffer(8192);
+                buf.append(Theme.TERM_CURSOR_HOME).append(Theme.TERM_CLEAR_TO_END);
+                buf.repeat("\n", padTop);
+
+                if (logoRenderer != null && width >= config.logoMinWidth())
+                    logoRenderer.accept(buf, width);
+
+                String title = config.title();
+                int titlePad = (boxWidth - title.length() - 2) / 2;
+                buf.repeat(" ", padLeft).append(Theme.COLOR_HIGHLIGHT)
+                        .repeat(Theme.DECORATOR_LINE, titlePad).append(Theme.COLOR_RESET)
+                        .append(Theme.FORMAT_INVERT).append(title).append(Theme.COLOR_RESET)
+                        .append(Theme.COLOR_HIGHLIGHT)
+                        .repeat(Theme.DECORATOR_LINE, boxWidth - titlePad - title.length())
+                        .append(Theme.COLOR_RESET).appendLine();
+
+                for (int i = 0; i < items.size(); i++)
+                {
+                    var item = items.get(i);
+                    buf.repeat(" ", padLeft);
+                    if (item.isSeparator())
+                    {
+                        buf.append("  ").append(Theme.COLOR_HIGHLIGHT).append(item.label())
+                                .append(Theme.COLOR_RESET).appendLine();
+                    }
+                    else
+                    {
+                        String label = item.label();
+                        String desc = item.description();
+                        int maxDesc = boxWidth - label.length() - 8;
+                        if (maxDesc > 0 && desc.length() > maxDesc)
+                            desc = desc.substring(0, maxDesc - 1) + "…";
+                        if (i == selectedIdx)
+                        {
+                            buf.append("  ").append(Theme.COLOR_HIGHLIGHT)
+                                    .append(Theme.CHAR_ARROW_RIGHT).append(" ").append(label)
+                                    .append("  ").append(desc).append(Theme.COLOR_RESET)
+                                    .appendLine();
+                        }
+                        else
+                        {
+                            buf.append("      ").append(label).append("  ").append(desc)
+                                    .appendLine();
+                        }
+                    }
+                }
+
+                buf.repeat(" ", padLeft).append(Theme.COLOR_HIGHLIGHT)
+                        .repeat(Theme.BORDER_HORIZONTAL, boxWidth).append(Theme.COLOR_RESET)
+                        .appendLine();
+                String footer = "[▲/▼] Move   [Enter] Select   [D] Delete   [B] Promote   [Q] Quit";
+                int footerPad = (boxWidth - footer.length()) / 2;
+                buf.repeat(" ", padLeft + footerPad).append(Theme.COLOR_HIGHLIGHT).append(footer)
+                        .append(Theme.COLOR_RESET).appendLine();
+
+                terminal.writer().print(buf.toString());
+                terminal.writer().flush();
+
+                if (terminal.reader().peek(50) == NonBlockingReader.READ_EXPIRED) continue;
+                String action = bindingReader.readBinding(km, null, false);
+                if (action == null) continue;
+
+                switch (action)
+                {
+                    case "QUIT" -> {
+                        terminal.writer()
+                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Cancelled();
+                    }
+                    case "SELECT" -> {
+                        terminal.writer()
+                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Chosen(selectedIdx);
+                    }
+                    case "DELETE" -> {
+                        terminal.writer()
+                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Delete(selectedIdx);
+                    }
+                    case "PROMOTE" -> {
+                        terminal.writer()
+                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Promote(selectedIdx);
+                    }
+                    case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
+                    case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
+                }
+            }
+        }
+    }
+
+    /** Arrow-key mini menu with D/B action bindings. */
+    @SuppressWarnings("EmptyCatch")
+    private static <T> SelectResult miniSelectWithActions(List<Item<T>> items,
+            FullScreenConfig config) throws Exception
+    {
+        int numLines = items.size() + 1;
+        int selectedIdx = firstSelectable(items);
+
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
+        {
+            terminal.enterRawMode();
+            var km = buildNavKeyMapWithActions(terminal);
+            var bindingReader = new BindingReader(terminal.reader());
+            terminal.writer().print(Theme.TERM_HIDE_CURSOR);
+            boolean firstDraw = true;
+
+            while (true)
+            {
+                if (!firstDraw) terminal.writer().print("\033[" + numLines + "A");
+                firstDraw = false;
+
+                terminal.writer().println(config.title().strip() + ":");
+                for (int i = 0; i < items.size(); i++)
+                {
+                    var item = items.get(i);
+                    if (item.isSeparator())
+                    {
+                        terminal.writer().println(
+                                "  " + Theme.COLOR_HIGHLIGHT + item.label() + Theme.COLOR_RESET
+                                        + Theme.TERM_CLEAR_TO_EOL);
+                    }
+                    else
+                    {
+                        String prefix = (i == selectedIdx) ? " > " : "   ";
+                        terminal.writer().println(prefix + item.label() + "  " + item.description()
+                                + Theme.TERM_CLEAR_TO_EOL);
+                    }
+                }
+                terminal.writer().flush();
+
+                if (terminal.reader().peek(100) == NonBlockingReader.READ_EXPIRED) continue;
+                String action = bindingReader.readBinding(km, null, false);
+                if (action == null) continue;
+
+                switch (action)
+                {
+                    case "QUIT" -> {
+                        clearLines(terminal, numLines);
+                        terminal.writer().print(Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Cancelled();
+                    }
+                    case "SELECT" -> {
+                        clearLines(terminal, numLines);
+                        terminal.writer().print(Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Chosen(selectedIdx);
+                    }
+                    case "DELETE" -> {
+                        clearLines(terminal, numLines);
+                        terminal.writer().print(Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Delete(selectedIdx);
+                    }
+                    case "PROMOTE" -> {
+                        clearLines(terminal, numLines);
+                        terminal.writer().print(Theme.TERM_SHOW_CURSOR);
+                        terminal.writer().flush();
+                        return new SelectResult.Promote(selectedIdx);
+                    }
+                    case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
+                    case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
+                }
+            }
+        }
+    }
+
+    /** Non-interactive fallback for selectWithActions: only Chosen and Cancelled available. */
+    private static <T> SelectResult classicSelectWithActions(List<Item<T>> items,
+            FullScreenConfig config, PrintStream err)
+    {
+        err.println(config.title().strip() + ":");
+        int n = 0;
+        for (var item : items)
+        {
+            if (item.isSeparator())
+                err.println("  " + item.label());
+            else
+                err.println("  [" + (++n) + "] " + item.label() + " — " + item.description());
+        }
+        err.print("Enter number (0 to cancel): ");
+        err.flush();
+        var scanner = new Scanner(System.in, StandardCharsets.UTF_8);
+        if (!scanner.hasNextInt()) return new SelectResult.Cancelled();
+        int sel = scanner.nextInt();
+        if (sel == 0) return new SelectResult.Cancelled();
+        int idx = 0;
+        for (int i = 0; i < items.size(); i++)
+        {
+            var item = items.get(i);
+            if (item.isSeparator()) continue;
+            if (++idx == sel) return new SelectResult.Chosen(i);
+        }
+        return new SelectResult.Cancelled();
+    }
+
     private static KeyMap<String> buildNavKeyMap(Terminal terminal)
     {
         var km = new KeyMap<String>();
@@ -356,6 +629,14 @@ public final class TerminalSelector
         km.bind("DOWN", "\033[B", "\033OB");
         km.bind("SELECT", "\r", "\n");
         km.bind("QUIT", "q", "Q", "\033");
+        return km;
+    }
+
+    private static KeyMap<String> buildNavKeyMapWithActions(Terminal terminal)
+    {
+        var km = buildNavKeyMap(terminal);
+        km.bind("DELETE", "d", "D");
+        km.bind("PROMOTE", "b", "B");
         return km;
     }
 
