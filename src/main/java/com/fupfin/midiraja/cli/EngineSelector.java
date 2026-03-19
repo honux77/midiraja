@@ -90,7 +90,7 @@ public class EngineSelector
                 " SELECT PLAYBACK ENGINE ",
                 64, 84,
                 Logo.WIDTH + 4,
-                Logo.LINES.length + 1, // +1 for subtitle
+                Logo.LINES.length + 2, // +1 for subtitle, +1 for blank line
                 (buf, width) -> {
                     int logoPad = Math.max(0, (width - Logo.WIDTH) / 2);
                     for (int li = 0; li < Logo.LINES.length; li++)
@@ -101,6 +101,7 @@ public class EngineSelector
                             .append(Theme.COLOR_VU).append(Logo.VU_BARS)
                             .append(Theme.COLOR_DIM_FG).append("  ").append(Logo.SUBTITLE_TEXT)
                             .append(Theme.COLOR_RESET).appendLine();
+                    buf.appendLine();
                 });
 
         return TerminalSelector.select(items, config, uiOpts.fullMode, uiOpts.miniMode,
