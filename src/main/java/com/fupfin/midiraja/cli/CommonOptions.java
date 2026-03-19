@@ -101,7 +101,8 @@ public class CommonOptions
             }
             catch (IllegalArgumentException e)
             {
-                log.warning("Unknown speaker profile '" + profileStr + "'. Ignoring.");
+                throw new IllegalArgumentException(
+                        "Unknown speaker profile '" + speakerProfile.get() + "'. Valid values: tin-can, warm-radio");
             }
         }
 
@@ -122,12 +123,9 @@ public class CommonOptions
                 case "apple2" -> new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 0.55f, pipeline);
                 case "spectrum" -> new SpectrumBeeperFilter(true, pipeline);
                 case "covox", "disneysound" -> new CovoxDacFilter(true, pipeline);
-                default ->
-                {
-                    log.warning("Unknown retro hardware mode '" + mode
-                            + "'. Falling back to clean output.");
-                    yield pipeline;
-                }
+                default -> throw new IllegalArgumentException(
+                        "Unknown retro hardware mode '" + retroMode.get()
+                        + "'. Valid values: compactmac, pc, apple2, spectrum, covox, disneysound");
             };
         }
         return pipeline;

@@ -174,7 +174,8 @@ public class MidirajaCommand implements Callable<Integer>
     {
         fixJLineTmpDirOnWindows();
         var cmd = new CommandLine(new MidirajaCommand())
-                .setParameterExceptionHandler(MidirajaCommand::handleParameterException);
+                .setParameterExceptionHandler(MidirajaCommand::handleParameterException)
+                .setExecutionExceptionHandler(MidirajaCommand::handleExecutionException);
         // Show Commands before Options (matches "midra [command] [OPTIONS]" synopsis order)
         cmd.setHelpSectionKeys(List.of(
                 "headerHeading", "header", "descriptionHeading", "description",
@@ -214,6 +215,17 @@ public class MidirajaCommand implements Callable<Integer>
             sb.append(System.lineSeparator());
         }
         return sb.toString();
+    }
+
+    private static int handleExecutionException(
+            Exception ex, CommandLine cmd, CommandLine.ParseResult parseResult)
+    {
+        if (ex instanceof IllegalArgumentException)
+        {
+            cmd.getErr().println("Error: " + ex.getMessage());
+            return 2;
+        }
+        throw new RuntimeException(ex);
     }
 
     private static int handleParameterException(CommandLine.ParameterException ex, String[] args)
