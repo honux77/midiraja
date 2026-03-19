@@ -47,7 +47,7 @@ import picocli.CommandLine.Parameters;
 
 @Command(name = "midra", mixinStandardHelpOptions = true,
         version = {"MIDIraja " + Version.VERSION + " (" + Version.COMMIT + ")"},
-        description = "Terminal Lover's MIDI Player",
+        description = "MIDIraja \u2014 " + Logo.TAGLINE,
         customSynopsis = {"midra [command] [OPTIONS] [<files>...]"},
         subcommands = {FmCommand.class, MuntCommand.class, FluidCommand.class,
                 TsfCommand.class, GusCommand.class, BeepCommand.class,
@@ -177,8 +177,8 @@ public class MidirajaCommand implements Callable<Integer>
                 .setParameterExceptionHandler(MidirajaCommand::handleParameterException);
         // Show Commands before Options (matches "midra [command] [OPTIONS]" synopsis order)
         cmd.setHelpSectionKeys(List.of(
-                "headerHeading", "header", "synopsisHeading", "synopsis",
-                "descriptionHeading", "description",
+                "headerHeading", "header", "descriptionHeading", "description",
+                "synopsisHeading", "synopsis",
                 "parameterListHeading", "parameterList",
                 "commandListHeading", "commandList",
                 "optionListHeading", "optionList",

@@ -33,6 +33,7 @@ public final class Logo
         "╚═╝     ╚═╝ ╚═╝ ╚═════╝  ╚═╝ ╚═╝     ╚═══╝ ═╝╚████╔╝ ╚═══╝ ═╝"
     };
 
+    public static final String TAGLINE = "Terminal Lover's MIDI Player";
     public static final String VU_BARS = "[▃▅▇▅▆▄]";
     public static final String SUBTITLE_TEXT = "Play MIDI anywhere, any way";
     public static final String SUBTITLE = VU_BARS + "  " + SUBTITLE_TEXT;
