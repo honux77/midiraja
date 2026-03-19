@@ -55,6 +55,7 @@ midra device song.mid
 | OPN2 (Sega Genesis / PC-98) | Console / Japanese PC | `midra opn song.mid` |
 | PSG (MSX / ZX Spectrum / Atari ST) | 8-bit home computers | `midra psg song.mid` |
 | 1-bit (Apple II / PC Speaker) | Extreme lo-fi | `midra 1bit song.mid` |
+| Amiga Paula (A500 / A1200) | Amiga 500 / 1200 | `midra opl --retro amiga song.mid` |
 
 See the full engine guide in [docs/quickstart.md](docs/quickstart.md).
 

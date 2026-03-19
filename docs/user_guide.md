@@ -206,9 +206,30 @@ Applies an `AcousticSpeakerFilter` that models the acoustic frequency response o
 * *Example:* `midra fluidsynth piano.sf2 --speaker tin-can song.mid`
 
 > ⚠️ **Do not combine `--speaker` with `--retro`:**
-> Every `--retro` mode already contains a physically accurate model of its hardware speaker — the Mac's 2-inch cone, the Spectrum's 22mm beeper, the IBM PC's paper cone. Adding `--speaker` on top applies a second filter stage with no physical basis, producing an over-filtered result that does not match any real hardware. Use `--speaker` only when not using `--retro`. For the full technical explanation, see [The Retro Hardware Audio Simulation reference](retro-audio-engineering.md#7-the---speaker-option-and-retro-modes).
+> Every `--retro` mode already contains a physically accurate model of its hardware speaker — the Mac's 2-inch cone, the Spectrum's 22mm beeper, the IBM PC's paper cone. Adding `--speaker` on top applies a second filter stage with no physical basis, producing an over-filtered result that does not match any real hardware. Use `--speaker` only when not using `--retro`. For the full technical explanation, see [The Retro Hardware Audio Simulation reference](retro-audio-engineering.md#8-the---speaker-option-and-retro-modes).
 
-**5. 3-Band EQ & Filters**
+**5. Amiga Paula Stereo Width (`--paula-width <0-300>`)**
+Controls the M/S stereo widening applied by the Amiga Paula retro filter. This option is only effective when `--retro amiga`, `--retro a500`, or `--retro a1200` is active; it has no effect with other modes.
+
+The Amiga Paula chip drove four independent 8-bit DAC channels with hard panning (channels 0 and 3 fully left, channels 1 and 2 fully right). `--paula-width` approximates this channel separation on a pre-mixed stereo source using M/S processing.
+
+* **`0`**: No widening — output matches the filtered mono-mix of the input.
+* **`60`** *(default)*: Recreates the pronounced channel separation of authentic Amiga music. Recommended starting point.
+* **`100`**: Maximum safe widening — extreme stereo spread without clipping risk.
+* **`101–300`**: Hyper-wide; may cause clipping on dense mixes. Use with care.
+
+```bash
+# A500 profile with default Paula widening (60%)
+midra opl --retro a500 song.mid
+
+# A1200 profile, emphasise stereo spread
+midra opl --retro a1200 --paula-width 80 song.mid
+
+# Narrow the hard-pan effect (mono-compatible mix)
+midra opl --retro amiga --paula-width 20 song.mid
+```
+
+**6. 3-Band EQ & Filters**
 Sculpt the frequency response using precision RBJ Biquad filters.
 * **EQ (0-100%):** `--bass`, `--mid`, `--treble` (Default is 50 for neutral. Set to 100 for maximum boost, 0 to cut completely).
 * **Cutoffs (Hz):** `--lpf <freq>` (Low-pass, cuts high frequencies), `--hpf <freq>` (High-pass, cuts low frequencies).
@@ -375,6 +396,8 @@ Not sure which engine to pick? Use the decision table below.
 | 8-bit MSX / ZX Spectrum / Atari ST sound | `psg` | Add `--scc` for richer MSX sound |
 | Apple II / PC Speaker lo-fi | `1bit` | Add `--synth xor --mux xor` for Tim Follin–style buzzing |
 | Extreme low-fi (PC Speaker "RealSound") | `patch --realsound` | 15 kHz PWM through a paper cone |
+| Amiga 500 warm retro sound | any engine + `--retro amiga` or `--retro a500` | A500 RC LPF (~4.5 kHz) + LED filter; stereo hard-pan feel |
+| Amiga 1200 bright retro sound | any engine + `--retro a1200` | AGA DAC filter (~28 kHz, near-transparent) + LED filter |
 
 ### Quick comparison: TinySoundFont (`soundfont`) vs FluidSynth (`fluidsynth`)
 
@@ -394,6 +417,8 @@ Use **`fluidsynth`** when you need the best SF2 compatibility, lower audio laten
 | `patch` (`gus`) | 1994 Gravis Ultrasound | 32 wavetable voices | FreePats (bundled) |
 | `soundfont` (`tsf`) | Modern SoundFont | Polyphonic (SF2 limit) | FluidR3 GM SF3 (bundled) |
 | `mt32` | 1987 Roland MT-32 | 32 partial generators | Required ROM files |
+| `retro amiga` (A500) | Amiga 500 | Warm stereo, hard-panned | None |
+| `retro a1200` (A1200) | Amiga 1200 | Bright stereo, hard-panned | None |
 
 ---
 

@@ -72,8 +72,14 @@ public class CommonOptions
     public Optional<String> dumpWav = Optional.empty();
 
     @Option(names = {"--retro"},
-            description = "Retro hardware physical acoustic simulation (compactmac, pc, apple2, spectrum, covox, disneysound)")
+            description = "Retro hardware physical acoustic simulation (compactmac, pc, apple2, spectrum, covox, disneysound, amiga/a500, a1200)")
     public Optional<String> retroMode = Optional.empty();
+
+    @Option(names = {"--paula-width"}, paramLabel = "PCT",
+            description = "Stereo width for Amiga Paula modes (0-300). "
+                    + "0=original stereo, 60=default (Paula hard-pan feel), 100=maximum safe. "
+                    + "Values above 100 may cause clipping.")
+    public Optional<Integer> paulaWidth = Optional.empty();
 
     @Option(names = {"--speaker"},
             description = "Vintage speaker acoustic simulation (tin-can, warm-radio, none)")
@@ -83,6 +89,15 @@ public class CommonOptions
 
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     public UiModeOptions uiOptions = new UiModeOptions();
+
+    private float resolvePaulaWidth()
+    {
+        int pct = paulaWidth.orElse(60);
+        if (pct < 0 || pct > 300)
+            throw new IllegalArgumentException(
+                    "--paula-width must be between 0 and 300, got: " + pct);
+        return 1.0f + pct / 100.0f;
+    }
 
     public AudioProcessor wrapRetroPipeline(AudioProcessor sink)
     {
@@ -123,9 +138,13 @@ public class CommonOptions
                 case "apple2" -> new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 0.55f, pipeline);
                 case "spectrum" -> new SpectrumBeeperFilter(true, pipeline);
                 case "covox", "disneysound" -> new CovoxDacFilter(true, pipeline);
+                case "amiga", "a500" -> new AmigaPaulaFilter(true, AmigaPaulaFilter.Profile.A500,
+                        resolvePaulaWidth(), pipeline);
+                case "a1200" -> new AmigaPaulaFilter(true, AmigaPaulaFilter.Profile.A1200,
+                        resolvePaulaWidth(), pipeline);
                 default -> throw new IllegalArgumentException(
                         "Unknown retro hardware mode '" + retroMode.get()
-                        + "'. Valid values: compactmac, pc, apple2, spectrum, covox, disneysound");
+                        + "'. Valid values: compactmac, pc, apple2, spectrum, covox, disneysound, amiga/a500, a1200");
             };
         }
         return pipeline;

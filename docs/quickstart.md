@@ -69,6 +69,7 @@ The `patch` engine uses the FreePats wavetable set — bundled with Midiraja, no
 | OPN2 (Sega Genesis / PC-98) | Console / Japanese PC | `midra opn song.mid` |
 | PSG (MSX / ZX Spectrum / Atari ST) | 8-bit home computers | `midra psg song.mid` |
 | 1-bit (Apple II / PC Speaker) | Extreme lo-fi | `midra 1bit song.mid` |
+| Amiga Paula (A500 / A1200) | Amiga 500 / 1200 | `midra opl --retro amiga song.mid` |
 
 The `patch` and `soundfont` engines bundle their instrument data (FreePats and FluidR3 GM SF3 respectively) — no downloads needed. To use a custom SoundFont:
 ```bash

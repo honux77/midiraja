@@ -12,8 +12,10 @@ This document is the unified engineering reference for all `--retro` hardware si
 | `--retro spectrum` | — | `SpectrumBeeperFilter` | N/A (direct toggle) | 128 (7-bit) | Buzzy Z80 texture, beeper resonance |
 | `--retro covox` | — | `CovoxDacFilter` | 11 kHz ZOH | 256 (8-bit) | R-2R harmonic warmth |
 | `--retro disneysound` | — | `CovoxDacFilter` | 11 kHz ZOH | 256 (8-bit) | Parallel port DAC (LPT) |
+| `--retro amiga`, `--retro a500` | — | `AmigaPaulaFilter` | 22 kHz ZOH | 256 (8-bit) | Warm stereo, LED-filtered, hard-pan |
+| `--retro a1200` | — | `AmigaPaulaFilter` | 22 kHz ZOH | 256 (8-bit) | Bright stereo, AGA near-transparent |
 
-> **Note on `--speaker`:** All retro modes incorporate their hardware speaker model internally. Do not combine with `--speaker` — see [Section 7](#7-the---speaker-option-and-retro-modes) for the technical rationale.
+> **Note on `--speaker`:** All retro modes incorporate their hardware speaker model internally. Do not combine with `--speaker` — see [Section 8](#8-the---speaker-option-and-retro-modes) for the technical rationale.
 
 ---
 
@@ -195,7 +197,105 @@ The Covox was mono. Both channels receive the same mixed-down signal.
 
 ---
 
-## 6. Common Engineering Challenges
+## 6. Amiga Paula (`--retro amiga`, `--retro a500`, `--retro a1200`)
+
+### 6.1 Hardware Background
+
+The Commodore Amiga's Paula chip (MOS 8364) provided four independent 8-bit PCM playback channels. Each channel had its own dedicated R-2R ladder DAC — four separate 8-bit resistor networks in a single chip. The channels were hard-panned at the factory: channels 0 and 3 were routed to the left audio output, channels 1 and 2 to the right.
+
+The hard panning was a deliberate hardware design choice that defined the Amiga's characteristic stereo sound: instruments were assigned to physical left or right channels, not panned in software. Classic Amiga game music and demoscene compositions were composed and mixed with this constraint in mind — a wide, ping-pong stereo image with no centre channel.
+
+Both the Amiga 500 (OCS chipset, 1987) and the Amiga 1200 (AGA chipset, 1992) used Paula, but their analog output circuitry differed significantly:
+
+- **Amiga 500:** Paula's raw R-2R output fed through a single passive RC low-pass filter (~4.5 kHz cutoff) on the audio board. This heavy filtering gave the A500 its warm, almost muffled character — the DAC's high-frequency aliasing products and staircase edges were suppressed before the signal reached the amplifier or headphone output.
+- **Amiga 1200:** The AGA chipset revision improved the analog path. The RC filter was replaced by a near-transparent stage (~28 kHz cutoff), relying instead on the LED filter (enabled by the front-panel LED power button) for any intentional tonal shaping. The result is a significantly brighter, more detailed sound compared to the A500.
+
+Both machines included a secondary **LED filter** — a two-pole active low-pass Sallen-Key stage with a ~3.3 kHz cutoff — that could be engaged by the software. `AmigaPaulaFilter` includes this stage in the signal chain for both profiles.
+
+### 6.2 Signal Chain
+
+Each channel (L and R) passes through the following stages independently:
+
+```
+Input (L or R)
+  → ZOH at ~22 kHz          (hold for 2 samples at 44.1 kHz)
+  → R-2R DAC LUT (256 levels, ±3% tolerance, seed=1985)
+  → Static RC LPF            (A500: α=0.39, ~4.5 kHz / A1200: α=0.80, ~28 kHz)
+  → LED filter (2-pole)      (α=0.32 × 2 cascades, ~3.3 kHz)
+  → M/S stereo widening      (default width=1.6, i.e. 60%)
+Output (L or R)
+```
+
+**ZOH (Zero-Order Hold):** Paula's DMA hardware fetched one 8-bit sample from chip RAM and held it for the duration of the DMA period before the next fetch. At typical Amiga playback rates (~22 kHz), this means each value was held for approximately two 44.1 kHz output samples. ZOH introduces a gentle ~sinc-shaped roll-off — a hallmark of Paula's sound.
+
+**R-2R DAC LUT:** A pre-computed 256-entry lookup table maps each 8-bit quantization level to a slightly non-ideal voltage, simulating the gain mismatch inherent in real R-2R resistor ladders with ±3% component tolerances. The seed value (1985 — Amiga's launch year) ensures a reproducible, deterministic DAC nonlinearity. This produces gentle harmonic distortion that is characteristic of Paula's texture.
+
+**Static RC LPF:** The profile-specific first-order low-pass filter that differentiates the A500 from the A1200:
+- **A500 (α=0.39):** Aggressive roll-off, strongly attenuates above ~4.5 kHz. Produces the classic warm, bassy A500 character.
+- **A1200 (α=0.80):** Near-transparent; passes almost all audio content up to ~28 kHz. Retains the ZOH and DAC texture without heavy tonal shaping.
+
+**LED filter (2-pole cascade):** Two cascaded first-order stages, each with α=0.32, approximating the hardware Sallen-Key circuit. The combined response rolls off steeply above ~3.3 kHz. Applied equally to both profiles.
+
+**M/S stereo widening:** See [Section 6.4](#64-stereo-model) and [Section 6.6](#66---paula-width).
+
+### 6.3 A500 vs A1200 Profiles
+
+| Aspect | A500 | A1200 |
+| :--- | :--- | :--- |
+| RC LPF cutoff | ~4.5 kHz (α=0.39) | ~28 kHz (α=0.80) |
+| Character | Warm, bassy, muffled | Bright, detailed, near-transparent |
+| LED filter | Yes (both profiles) | Yes (both profiles) |
+| DAC model | 8-bit R-2R, ±3% | 8-bit R-2R, ±3% |
+| ZOH | 2 samples | 2 samples |
+| CLI flag | `--retro amiga` or `--retro a500` | `--retro a1200` |
+
+The A500 profile is the default `amiga` alias because the warm, filtered sound is the one most associated with classic Amiga game music. Use `--retro a1200` when you want the cleaner AGA presentation, or when combining with other DSP effects where the A500's heavy roll-off would over-darken the signal.
+
+### 6.4 Stereo Model
+
+Real Amiga music is produced by assigning individual MIDI voices or tracker channels to physical Paula channels. Voices on channels 0 and 3 appear only in the left speaker; voices on channels 1 and 2 appear only in the right speaker. The hard-panning is part of the composition.
+
+`AmigaPaulaFilter` receives a pre-mixed stereo signal (not four separate MIDI voices), so a literal four-channel simulation is not possible. Instead, the filter applies the ZOH → R-2R → RC LPF → LED chain to the left and right channels **independently** — matching Paula's hardware reality where each DAC path is completely separate — and then applies M/S stereo widening to approximate the pronounced channel separation of the original hard-panned output.
+
+The M/S model encodes the input into Mid (L+R) and Side (L−R) components, scales the Side component by a width factor, then decodes back to L/R. With the default `width=1.6` (60%), the stereo image is broadened to resemble the hard-panned feel of authentic Amiga music without artificially inverting phase or creating mono-incompatible output.
+
+### 6.5 Parameters
+
+| Parameter | A500 value | A1200 value | Purpose |
+| :--- | :--- | :--- | :--- |
+| ZOH hold | 2 samples | 2 samples | Paula DMA fetch rate (~22 kHz) |
+| DAC levels | 256 (8-bit) | 256 (8-bit) | R-2R ladder resolution |
+| DAC tolerance | ±3%, seed=1985 | ±3%, seed=1985 | Resistor mismatch nonlinearity |
+| RC LPF α | 0.39 | 0.80 | ~4.5 kHz / ~28 kHz hardware cutoff |
+| LED filter α | 0.32 × 2 | 0.32 × 2 | 2-pole ~3.3 kHz Sallen-Key stage |
+| Default width | 1.6 (60%) | 1.6 (60%) | M/S stereo widening |
+| Channel mode | Independent L/R | Independent L/R | Matches separate Paula DAC paths |
+
+### 6.6 `--paula-width`
+
+The `--paula-width <PCT>` option (0–300) controls the M/S stereo widening as a percentage. It is only effective when `--retro amiga`, `--retro a500`, or `--retro a1200` is active.
+
+| Value | Behaviour |
+| :--- | :--- |
+| `0` | No widening — output matches the filtered signal without M/S expansion |
+| `60` *(default)* | Default Paula hard-pan approximation |
+| `100` | Maximum safe widening — strong stereo image without clipping risk |
+| `101–300` | Hyper-wide; may cause clipping on dense mixes |
+
+```bash
+# A500 profile, default widening
+midra opl --retro a500 song.mid
+
+# A1200 profile, strong stereo spread
+midra opl --retro a1200 --paula-width 80 song.mid
+
+# Narrow the widening for a more mono-compatible output
+midra opl --retro amiga --paula-width 20 song.mid
+```
+
+---
+
+## 7. Common Engineering Challenges
 
 ### Aliasing at 44.1 kHz
 
@@ -219,7 +319,7 @@ The apple2 mode's exact `carrierStep=0.5` is what makes the two-pulse encoding n
 
 ---
 
-## 7. The `--speaker` Option and Retro Modes
+## 8. The `--speaker` Option and Retro Modes
 
 The `--speaker` flag applies an `AcousticSpeakerFilter` — a post-processing acoustic coloration stage that models the frequency response of vintage speaker cabinets. It is a useful standalone effect for modern synthesis engines, but it interacts badly with `--retro` modes.
 
@@ -234,6 +334,8 @@ Every `--retro` mode already models its physical speaker as an integral part of 
 | `pc` | Smooth α = 0.45 (`OneBitHardwareFilter`) models the IBM PC's unshielded paper cone |
 | `apple2` | Smooth α = 0.55 models the Apple II speaker's natural cone rolloff |
 | `covox` / `disneysound` | RC LPF (α = 0.26, ~2.12 kHz) models the parallel-port analog circuit |
+| `amiga` / `a500` | Static RC LPF (~4.5 kHz) + LED 2-pole (~3.3 kHz) models Paula's analog output stage |
+| `a1200` | AGA DAC filter (~28 kHz, near-transparent) + LED 2-pole (~3.3 kHz) |
 
 Applying `--speaker` on top of any of these chains a second EQ/filter stage with no physical basis. The result is an over-filtered signal. For example:
 
