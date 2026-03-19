@@ -356,7 +356,7 @@ public class MidirajaCommand implements Callable<Integer>
                     var runner = new PlaybackRunner(stdOut, stdErr, terminalIO, isTestMode);
                     yield runner.run(MidiProviderFactory.createProvider(), false,
                             Optional.of(String.valueOf(p.portIndex())), Optional.empty(), files,
-                            common);
+                            common, List.of());
                 }
             };
         }
@@ -370,7 +370,7 @@ public class MidirajaCommand implements Callable<Integer>
                 || (provider != null && isTestMode);
 
         var runner = new PlaybackRunner(stdOut, stdErr, terminalIO, isTestMode);
-        return runner.run(resolvedProvider, isSoftSynth, port, soundbankArg, files, common);
+        return runner.run(resolvedProvider, isSoftSynth, port, soundbankArg, files, common, List.of());
     }
 
     private int runBuiltinEngine(String engine, List<File> files, CommonOptions common)
@@ -432,6 +432,6 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         var runner = new PlaybackRunner(stdOut, stdErr, terminalIO, isTestMode);
-        return runner.run(builtinProvider, true, Optional.empty(), soundbankArg, files, common);
+        return runner.run(builtinProvider, true, Optional.empty(), soundbankArg, files, common, List.of());
     }
 }

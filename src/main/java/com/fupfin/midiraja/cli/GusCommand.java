@@ -104,6 +104,6 @@ public class GusCommand implements Callable<Integer>
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
         return runner.run(provider, true, Optional.empty(),
                 Optional.ofNullable(patchDir).map(File::getPath), files(),
-                Objects.requireNonNull(common));
+                Objects.requireNonNull(common), List.of());
     }
 }

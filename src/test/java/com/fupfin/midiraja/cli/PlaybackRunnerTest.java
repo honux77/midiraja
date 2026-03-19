@@ -75,7 +75,7 @@ class PlaybackRunnerTest {
         mockIO.injectKey(TerminalKey.QUIT);
 
         // Run as SoftSynth (skips port selection)
-        int exitCode = runner.run(provider, true, Optional.empty(), Optional.empty(), List.of(midiFile), common);
+        int exitCode = runner.run(provider, true, Optional.empty(), Optional.empty(), List.of(midiFile), common, List.of());
 
         assertEquals(0, exitCode, "Exit code should be 0 on normal quit");
         assertTrue(provider.isOpen, "Provider should have been opened");
@@ -89,7 +89,7 @@ class PlaybackRunnerTest {
         MockMidiProvider provider = new MockMidiProvider();
         PlaybackRunner runner = new PlaybackRunner(new PrintStream(outBytes), new PrintStream(errBytes), mockIO, true);
 
-        int exitCode = runner.run(provider, true, Optional.empty(), Optional.empty(), new ArrayList<>(), common);
+        int exitCode = runner.run(provider, true, Optional.empty(), Optional.empty(), new ArrayList<>(), common, List.of());
 
         assertEquals(1, exitCode, "Exit code should be 1 if no files are found");
         String errOutput = errBytes.toString(java.nio.charset.StandardCharsets.UTF_8);

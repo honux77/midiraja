@@ -115,7 +115,7 @@ public class DemoCommand implements Callable<Integer>
                 runner.setSuppressHoldAtEnd(true);
                 runner.setExitOnNavBoundary(true);
 
-                int exitCode = runner.run(pwa.provider, true, Optional.empty(), pwa.soundbank, List.of(file), common);
+                int exitCode = runner.run(pwa.provider, true, Optional.empty(), pwa.soundbank, List.of(file), common, List.of());
 
                 if (exitCode != 0 || MidirajaCommand.SHUTTING_DOWN)
                 {

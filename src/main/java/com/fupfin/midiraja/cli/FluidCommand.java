@@ -60,6 +60,6 @@ public class FluidCommand implements Callable<Integer>
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
         return runner.run(provider, true, Optional.empty(), Optional.of(soundfont.getPath()), files,
-                common);
+                common, List.of());
     }
 }

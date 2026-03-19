@@ -175,7 +175,7 @@ public class FmCommand implements Callable<Integer>
                         .orElse("bank:0");
 
         return runner.run(provider, true, Optional.empty(), Optional.of(soundbankArg), files,
-                common);
+                common, List.of());
     }
 
     private Integer callOpn(com.fupfin.midiraja.dsp.AudioProcessor pipeline, PlaybackRunner runner,
@@ -189,6 +189,6 @@ public class FmCommand implements Callable<Integer>
         String soundbankArg = bank.orElse("");
 
         return runner.run(provider, true, Optional.empty(), Optional.of(soundbankArg), files,
-                common);
+                common, List.of());
     }
 }

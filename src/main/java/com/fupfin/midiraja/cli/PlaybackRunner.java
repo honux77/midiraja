@@ -105,7 +105,8 @@ public class PlaybackRunner
      * @return picocli exit code (0 = success, 1 = error)
      */
     public int run(MidiOutProvider provider, boolean isSoftSynth, Optional<String> portQuery,
-            Optional<String> soundbankArg, List<File> rawFiles, CommonOptions common)
+            Optional<String> soundbankArg, List<File> rawFiles, CommonOptions common,
+            List<String> originalArgs)
             throws Exception
     {
         // FAIL-FAST VALIDATION
@@ -126,6 +127,11 @@ public class PlaybackRunner
             err.println("Error: No MIDI files specified. Use 'midra <file1.mid>' "
                     + "or 'midra -h' for help.");
             return 1;
+        }
+
+        // Auto-save session to history
+        if (!originalArgs.isEmpty()) {
+            new SessionHistory().recordAuto(originalArgs);
         }
 
         if (common.shuffle)
@@ -220,7 +226,7 @@ public class PlaybackRunner
             try
             {
                 playPlaylistLoop(playlist, provider, ports.get(portIndex), common, ui, activeIO,
-                        currentStartTime);
+                        currentStartTime, originalArgs);
             }
             finally
             {
@@ -405,7 +411,7 @@ public class PlaybackRunner
 
     private void playPlaylistLoop(List<File> playlist, MidiOutProvider provider, MidiPort port,
             CommonOptions common, PlaybackUI ui, TerminalIO activeIO,
-            Optional<String> initialStartTime) throws Exception
+            Optional<String> initialStartTime, List<String> originalArgs) throws Exception
     {
         int currentTrackIdx = 0;
         Optional<String> currentStartTime = initialStartTime;
@@ -431,6 +437,11 @@ public class PlaybackRunner
                 if (common.ignoreSysex) engine.setIgnoreSysex(true);
                 if (common.resetType.isPresent()) engine.setInitialResetType(common.resetType);
                 if (wasPaused) engine.setInitiallyPaused();
+
+                engine.setBookmarkCallback(() -> {
+                    new SessionHistory().saveBookmark(originalArgs);
+                    err.println("[Bookmarked]");
+                });
 
                 boolean isLastTrack = (currentTrackIdx == playlist.size() - 1);
                 if (!suppressHoldAtEnd && isLastTrack && !common.loop && (ui instanceof DashboardUI))

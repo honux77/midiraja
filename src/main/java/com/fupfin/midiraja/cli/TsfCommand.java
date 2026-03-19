@@ -141,6 +141,6 @@ public class TsfCommand implements Callable<Integer>
 
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
-        return runner.run(provider, true, Optional.empty(), Optional.of(sfPath), files(), common);
+        return runner.run(provider, true, Optional.empty(), Optional.of(sfPath), files(), common, List.of());
     }
 }

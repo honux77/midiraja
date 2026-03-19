@@ -111,7 +111,7 @@ public class BeepCommand implements Callable<Integer>
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
         int result = runner.run(provider, true, Optional.empty(), Optional.empty(), files,
-                requireNonNull(common));
+                requireNonNull(common), List.of());
 
         provider.closePort();
         return result;

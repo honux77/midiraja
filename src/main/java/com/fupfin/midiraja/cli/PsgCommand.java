@@ -92,6 +92,6 @@ public class PsgCommand implements Callable<Integer>
         if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
 
         var runner = new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), false);
-        return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common);
+        return runner.run(provider, true, Optional.empty(), Optional.empty(), files, common, List.of());
     }
 }
