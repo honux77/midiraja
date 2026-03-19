@@ -55,7 +55,7 @@ public class DemoCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         var p = requireNonNull(parent);
         File demoDir = findDemoDirectory();
         if (demoDir == null)
@@ -65,7 +65,7 @@ public class DemoCommand implements Callable<Integer>
             return 1;
         }
 
-        List<File> allFiles = new PlaylistParser(p.getErr(), common.verbose).parse(List.of(demoDir), common);
+        List<File> allFiles = new PlaylistParser(p.getErr(), common.isVerbose()).parse(List.of(demoDir), common);
         if (allFiles.isEmpty())
         {
             p.getErr().println("Error: No MIDI files found in " + demoDir.getPath());

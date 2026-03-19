@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.io;
 
 import java.io.IOException;
+import org.jspecify.annotations.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -45,12 +46,20 @@ public final class AppLogger
     /**
      * Configure logging. Call once at the start of each command's {@code call()} method.
      *
-     * @param verbose {@code true} for INFO-level logging
-     * @param debug   {@code true} for FINE-level logging with stderr echo (implies verbose)
+     * @param levelStr log level string from {@code --log}: {@code error}, {@code warn},
+     *                 {@code info}, {@code debug}, or {@code null} for warnings only
      */
-    public static void configure(boolean verbose, boolean debug)
+    public static void configure(@Nullable String levelStr)
     {
-        Level level = debug ? Level.FINE : verbose ? Level.INFO : Level.WARNING;
+        boolean debug = "debug".equalsIgnoreCase(levelStr);
+        Level level = switch (levelStr == null ? "" : levelStr.toLowerCase(java.util.Locale.ROOT))
+        {
+            case "error" -> Level.SEVERE;
+            case "warn"  -> Level.WARNING;
+            case "info"  -> Level.INFO;
+            case "debug" -> Level.FINE;
+            default      -> Level.WARNING;
+        };
 
         Logger root = Logger.getLogger("");
         for (Handler h : root.getHandlers())

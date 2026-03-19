@@ -44,7 +44,7 @@ public class DeviceCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         var p = requireNonNull(parent);
         MidiOutProvider provider = MidiProviderFactory.createProvider();
 

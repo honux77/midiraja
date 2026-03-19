@@ -82,7 +82,7 @@ public class BeepCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         if (files.isEmpty())
         {
             System.err.println("Error: No MIDI files specified.");

@@ -81,7 +81,7 @@ public class GusCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         var p = Objects.requireNonNull(parent);
         String audioLib = AudioLibResolver.resolve();
         NativeAudioEngine audio = new NativeAudioEngine(audioLib);

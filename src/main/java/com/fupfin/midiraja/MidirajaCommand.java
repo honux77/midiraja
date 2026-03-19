@@ -243,7 +243,7 @@ public class MidirajaCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         boolean hasLegacyOption = legacyMunt.isPresent() || legacyOpl.isPresent()
                 || legacyOpn.isPresent() || legacyFluid.isPresent();
         if ((files == null || files.isEmpty()) && port.isEmpty() && !hasLegacyOption

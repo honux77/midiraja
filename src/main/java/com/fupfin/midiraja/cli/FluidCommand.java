@@ -52,7 +52,7 @@ public class FluidCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         var p = requireNonNull(parent);
 
         var provider = new FluidSynthProvider(driver.orElse(null));

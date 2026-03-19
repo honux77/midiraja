@@ -118,7 +118,7 @@ public class PlaybackRunner
         var ports = provider.getOutputPorts();
 
         // ── Playlist ──────────────────────────────────────────────────────────
-        PlaylistParser parser = new PlaylistParser(err, common.verbose);
+        PlaylistParser parser = new PlaylistParser(err, common.isVerbose());
         List<File> playlist = parser.parse(rawFiles, common);
 
         if (playlist.isEmpty())
@@ -142,14 +142,14 @@ public class PlaybackRunner
         {
             int finalPortIndex = portIndex;
             ports.stream().filter(p -> p.index() == finalPortIndex).findFirst()
-                    .ifPresent(p -> logVerbose(common.verbose,
+                    .ifPresent(p -> logVerbose(common.isVerbose(),
                             "Opening MIDI Output Port [" + p.index() + "]: \"" + p.name() + "\""));
             provider.openPort(portIndex);
 
             if (soundbankArg.isPresent() && provider instanceof SoftSynthProvider softSynth)
             {
                 softSynth.loadSoundbank(soundbankArg.get());
-                logVerbose(common.verbose, "Soundbank loaded: " + soundbankArg.get());
+                logVerbose(common.isVerbose(), "Soundbank loaded: " + soundbankArg.get());
             }
 
             Optional<String> currentStartTime = common.startTime;
@@ -244,7 +244,7 @@ public class PlaybackRunner
         {
             log.warning("Error during playback: " + e.getMessage());
             err.println("Error during playback: " + e.getMessage());
-            if (common.verbose) e.printStackTrace(err);
+            if (common.isVerbose()) e.printStackTrace(err);
             return 1;
         }
         finally
@@ -417,7 +417,7 @@ public class PlaybackRunner
             try
             {
                 var sequence = MidiUtils.loadSequence(file);
-                logVerbose(common.verbose,
+                logVerbose(common.isVerbose(),
                         String.format("Loaded '%s' - Resolution: %d PPQ, Microsecond Length: %d",
                                 file.getName(), sequence.getResolution(),
                                 sequence.getMicrosecondLength()));

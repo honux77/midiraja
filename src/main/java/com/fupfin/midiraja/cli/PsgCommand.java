@@ -64,7 +64,7 @@ public class PsgCommand implements Callable<Integer>
     @Override
     public Integer call() throws Exception
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         var p = requireNonNull(parent);
 
         // If SCC is requested and chips was left at default (4), change it to 2.

@@ -47,11 +47,16 @@ public class CommonOptions
             description = "Recursively search for MIDI files in given directories.")
     public boolean recursive;
 
-    @Option(names = {"--verbose"}, description = "Show verbose error messages and stack traces.")
-    public boolean verbose;
+    @Option(names = {"--log"}, paramLabel = "LEVEL",
+            description = "Enable logging at the given level (error, warn, info, debug). "
+                    + "Written to the midiraja log file; debug also echoes to stderr.")
+    public Optional<String> logLevel = Optional.empty();
 
-    @Option(names = {"--debug"}, description = "Write debug-level log to the midiraja log file and echo to stderr.")
-    public boolean debug;
+    /** Returns true when log level is info or debug (enables stack traces and detailed messages). */
+    public boolean isVerbose()
+    {
+        return logLevel.map(l -> l.equals("info") || l.equals("debug")).orElse(false);
+    }
 
     @Option(names = {"--ignore-sysex"},
             description = "Filter out hardware-specific System Exclusive (SysEx) messages.")

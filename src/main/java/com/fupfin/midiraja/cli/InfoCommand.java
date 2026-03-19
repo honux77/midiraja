@@ -40,7 +40,7 @@ public class InfoCommand implements Callable<Integer>
     @Override
     public Integer call()
     {
-        AppLogger.configure(common.verbose, common.debug);
+        AppLogger.configure(common.logLevel.orElse(null));
         var p = requireNonNull(parent);
 
         String version = Version.VERSION;
