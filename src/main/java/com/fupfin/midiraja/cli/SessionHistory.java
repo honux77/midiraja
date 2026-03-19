@@ -55,6 +55,7 @@ public class SessionHistory {
     }
 
     public void saveBookmark(List<String> args) {
+        if (args.isEmpty()) return;
         bookmarks.removeIf(e -> e.args().equals(args));
         bookmarks.add(0, new SessionEntry(List.copyOf(args), Instant.now()));
         bookmarks = trimToLimit(bookmarks, BOOKMARK_LIMIT);
