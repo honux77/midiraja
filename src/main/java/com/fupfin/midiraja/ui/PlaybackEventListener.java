@@ -7,6 +7,8 @@
 
 package com.fupfin.midiraja.ui;
 
+import com.fupfin.midiraja.engine.PlaylistContext;
+
 /**
  * Listener interface for receiving real-time playback events from the PlaybackEngine.
  */
@@ -45,4 +47,9 @@ public interface PlaybackEventListener
      * @param bookmarked {@code true} if the session was just bookmarked, {@code false} if removed.
      */
     default void onBookmarkChanged(boolean bookmarked) {}
+
+    /**
+     * Called when the playlist play order changes (e.g. shuffle toggled mid-song).
+     */
+    default void onPlayOrderChanged(PlaylistContext ctx) {}
 }

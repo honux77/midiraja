@@ -53,9 +53,9 @@ public class DashboardUI implements PlaybackUI
 
     static String playlistTag(boolean loopActive, boolean shuffleActive)
     {
-        String loopIcon    = (loopActive    ? Theme.COLOR_HIGHLIGHT : Theme.COLOR_DIM_FG) + "↺" + Theme.COLOR_RESET;
-        String shuffleIcon = (shuffleActive ? Theme.COLOR_HIGHLIGHT : Theme.COLOR_DIM_FG) + "⇆" + Theme.COLOR_RESET;
-        return loopIcon + shuffleIcon;
+        String loopIcon    = (loopActive    ? Theme.COLOR_HIGHLIGHT : Theme.COLOR_DIM_FG) + Theme.ICON_LOOP    + Theme.COLOR_RESET;
+        String shuffleIcon = (shuffleActive ? Theme.COLOR_HIGHLIGHT : Theme.COLOR_DIM_FG) + Theme.ICON_SHUFFLE + Theme.COLOR_RESET;
+        return "(" + loopIcon + shuffleIcon + ")";
     }
 
     @Override
@@ -67,6 +67,7 @@ public class DashboardUI implements PlaybackUI
         engine.addPlaybackEventListener(nowPlayingPanel);
         engine.addPlaybackEventListener(rawChannelPanel);
         engine.addPlaybackEventListener(controlsPanel);
+        engine.addPlaybackEventListener(rawPlaylistPanel);
 
         rawPlaylistPanel.updateContext(engine.getContext());
         rawChannelPanel.updatePrograms(engine.getChannelPrograms());
@@ -107,7 +108,8 @@ public class DashboardUI implements PlaybackUI
                         .append(" ".repeat(bannerPadding)).append(savedTag)
                         .append("\033[0m\n");
 
-                titledPlaylistPanel.setRightTag(playlistTag(engine.isLoopEnabled(), engine.isShuffleEnabled()), 2);
+                String tag = playlistTag(engine.isLoopEnabled(), engine.isShuffleEnabled());
+                titledPlaylistPanel.setRightTag(tag, UIUtils.visibleWidth(tag));
                 titledNowPlayingPanel.render(buffer);
 
                 Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = layoutManager

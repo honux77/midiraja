@@ -75,6 +75,12 @@ public class PlaylistPanel implements Panel
     {}
 
     @Override
+    public void onPlayOrderChanged(com.fupfin.midiraja.engine.PlaylistContext ctx)
+    {
+        updateContext(ctx);
+    }
+
+    @Override
     public void onTick(long currentMicroseconds)
     {}
 

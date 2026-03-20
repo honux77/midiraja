@@ -485,8 +485,17 @@ public class PlaybackRunner
                 });
 
                 // Wire shuffle callback: mutates remaining slice of playOrderHolder[0] live
-                engine.setShuffleCallback(
-                        newState -> reshuffleRemaining(playOrderHolder[0], currentIdxHolder[0], newState));
+                // and immediately updates the playlist panel display.
+                engine.setShuffleCallback(newState -> {
+                    reshuffleRemaining(playOrderHolder[0], currentIdxHolder[0], newState);
+                    var newOrdered = java.util.stream.IntStream.of(playOrderHolder[0])
+                            .mapToObj(playlist::get).toList();
+                    var newCtx = new com.fupfin.midiraja.engine.PlaylistContext(
+                            newOrdered, currentIdxHolder[0], port,
+                            engine.getContext().sequenceTitle(),
+                            engine.isLoopEnabled(), newState);
+                    engine.firePlayOrderChanged(newCtx);
+                });
 
                 boolean isLastTrack = (currentIdxHolder[0] == playlist.size() - 1);
                 if (!suppressHoldAtEnd && isLastTrack && !common.loop && (ui instanceof DashboardUI))

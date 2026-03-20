@@ -7,6 +7,8 @@
 
 package com.fupfin.midiraja.ui;
 
+import org.jline.utils.WCWidth;
+
 public class UIUtils
 {
     private UIUtils()
@@ -20,6 +22,38 @@ public class UIUtils
         long seconds = totalSeconds % 60;
         if (includeHours) return String.format("%02d:%02d:%02d", hours, minutes, seconds);
         return String.format("%02d:%02d", minutes, seconds);
+    }
+
+    /**
+     * Returns the number of terminal columns a string occupies, ignoring ANSI escape sequences
+     * and using {@link WCWidth#wcwidth} to correctly account for wide (2-column) and ambiguous
+     * Unicode characters.
+     */
+    public static int visibleWidth(String str)
+    {
+        int width = 0;
+        boolean inAnsi = false;
+        for (int i = 0; i < str.length(); )
+        {
+            int cp = str.codePointAt(i);
+            i += Character.charCount(cp);
+            if (cp == '\033')
+            {
+                inAnsi = true;
+            }
+            else if (inAnsi)
+            {
+                if (cp == 'm' || cp == 'K' || cp == 'J' || cp == 'H'
+                        || cp == 'A' || cp == 'l' || cp == 'h')
+                    inAnsi = false;
+            }
+            else if (cp != '\r' && cp != '\n')
+            {
+                int w = WCWidth.wcwidth(cp);
+                if (w > 0) width += w;
+            }
+        }
+        return width;
     }
 
     public static String truncateAnsi(String str, int maxWidth)

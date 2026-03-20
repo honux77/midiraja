@@ -31,6 +31,8 @@ public final class Theme
     public static final String FORMAT_INVERT = "\033[7m";
 
     // --- UI Magic Characters ---
+    public static final String ICON_LOOP    = "↺"; // U+21BA ANTICLOCKWISE OPEN CIRCLE ARROW
+    public static final String ICON_SHUFFLE = "⇅"; // U+21C5 UPWARDS ARROW LEFTWARDS OF DOWNWARDS ARROW
     public static final String CHAR_BLOCK_FULL = "█";
     public static final String CHAR_BLOCK_EMPTY = "░";
     public static final String CHAR_GRID_DOT = "·"; // Subtle dot for meter backgrounds

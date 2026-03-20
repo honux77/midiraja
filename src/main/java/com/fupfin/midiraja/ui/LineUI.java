@@ -101,11 +101,11 @@ public class LineUI implements PlaybackUI
                         engine.getCurrentTranspose(), (int) (engine.getVolumeScale() * 100)));
 
                 String loopIcon    = engine.isLoopEnabled()
-                        ? Theme.COLOR_HIGHLIGHT + "↺" + Theme.COLOR_RESET
-                        : Theme.COLOR_DIM_FG + "↺" + Theme.COLOR_RESET;
+                        ? Theme.COLOR_HIGHLIGHT + Theme.ICON_LOOP    + Theme.COLOR_RESET
+                        : Theme.COLOR_DIM_FG    + Theme.ICON_LOOP    + Theme.COLOR_RESET;
                 String shuffleIcon = engine.isShuffleEnabled()
-                        ? Theme.COLOR_HIGHLIGHT + "⇆" + Theme.COLOR_RESET
-                        : Theme.COLOR_DIM_FG + "⇆" + Theme.COLOR_RESET;
+                        ? Theme.COLOR_HIGHLIGHT + Theme.ICON_SHUFFLE + Theme.COLOR_RESET
+                        : Theme.COLOR_DIM_FG    + Theme.ICON_SHUFFLE + Theme.COLOR_RESET;
                 buffer.append(" ").append(loopIcon).append(shuffleIcon);
 
                 String rawLine = buffer.toString();

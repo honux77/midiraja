@@ -101,6 +101,11 @@ public class PlaybackEngine
     public boolean isShuffleEnabled() { return shuffleEnabled; }
     public void setShuffleCallback(java.util.function.Consumer<Boolean> cb) { shuffleCallback = cb; }
 
+    public void firePlayOrderChanged(PlaylistContext ctx)
+    {
+        for (var listener : listeners) listener.onPlayOrderChanged(ctx);
+    }
+
     private final double[] channelLevels = new double[16];
     private final List<MidiEvent> sortedEvents;
     private final int resolution;
