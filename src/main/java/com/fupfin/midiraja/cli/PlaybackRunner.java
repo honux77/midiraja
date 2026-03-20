@@ -165,6 +165,10 @@ public class PlaybackRunner
                         (MidirajaCommand.ALT_SCREEN_ACTIVE ? Theme.TERM_ALT_SCREEN_DISABLE : "")
                                 + Theme.TERM_MOUSE_DISABLE + Theme.COLOR_RESET + "\033[?7h"
                                 + Theme.TERM_SHOW_CURSOR + "\r\033[K\n";
+                if (isInteractive)
+                {
+                    activeIO.print(safeRestore); // restore via JLine before it closes
+                }
                 try
                 {
                     activeIO.close();
@@ -173,8 +177,6 @@ public class PlaybackRunner
                 {
                     log.warning("Error closing terminal IO: " + e.getMessage());
                 }
-                out.print(safeRestore);
-                out.flush();
                 try
                 {
                     if (portClosed.compareAndSet(false, true))
