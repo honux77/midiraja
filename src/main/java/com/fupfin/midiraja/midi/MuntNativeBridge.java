@@ -66,6 +66,19 @@ public interface MuntNativeBridge extends AutoCloseable
      */
     void renderAudio(short[] buffer, int frames);
 
+    // --- ROM Info ---
+
+    /**
+     * Returns the control ROM description string (e.g. "MT-32 Control v1.07"), or {@code null} if
+     * not available. The ROM must have been loaded via {@link #loadRoms} before calling this.
+     * Default is {@code null} for implementations that do not support this query.
+     */
+    @org.jspecify.annotations.Nullable
+    default String getRomDescription()
+    {
+        return null;
+    }
+
     // --- Diagnostic / State Polling ---
 
     /**

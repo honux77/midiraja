@@ -24,6 +24,8 @@ public class MuntSynthProvider implements SoftSynthProvider
     // ensuring close_synth / open_synth are never called concurrently with rendering.
     private volatile boolean renderPaused = false;
 
+    private String portName = "MT-32";
+
     public MuntSynthProvider(MuntNativeBridge bridge, @Nullable AudioProcessor audioOut)
     {
         this.bridge = bridge;
@@ -48,7 +50,7 @@ public class MuntSynthProvider implements SoftSynthProvider
     @Override
     public List<MidiPort> getOutputPorts()
     {
-        return List.of(new MidiPort(0, "Munt MT-32 Emulator (Embedded)"));
+        return List.of(new MidiPort(0, portName));
     }
 
     @Override
@@ -139,6 +141,8 @@ public class MuntSynthProvider implements SoftSynthProvider
     public void loadSoundbank(String path) throws Exception
     {
         bridge.loadRoms(path);
+        String desc = bridge.getRomDescription();
+        if (desc != null) portName = desc.replace(" Control", "");
         bridge.openSynth();
 
         if (audioOut != null)

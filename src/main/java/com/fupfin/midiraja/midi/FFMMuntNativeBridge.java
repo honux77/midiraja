@@ -12,6 +12,8 @@ import static java.lang.System.err;
 import java.io.File;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.util.List;
 
 @SuppressWarnings({"EmptyCatch", "UnusedVariable"})
@@ -91,7 +93,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS),
                 // get_playing_notes (JAVA_BYTE param → "jint" in metadata after ABI widening)
                 FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS,
-                        ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+                        ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS, ValueLayout.ADDRESS),
+                // get_rom_info (void context, void* rom_info_out)
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
     }
 
     // FFM Method Handles
@@ -114,6 +118,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
     private final MethodHandle mt32emu_play_sysex_at;
     private final MethodHandle mt32emu_get_internal_rendered_sample_count;
     private final MethodHandle mt32emu_render_bit16s;
+
+    // --- ROM Info ---
+    private final MethodHandle mt32emu_get_rom_info;
 
     // --- Diagnostic / State Polling ---
     private final MethodHandle mt32emu_has_active_partials;
@@ -183,6 +190,10 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         mt32emu_render_bit16s = downcall("mt32emu_render_bit16s", FunctionDescriptor
                 .ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS, ValueLayout.JAVA_INT));
 
+        // void mt32emu_get_rom_info(mt32emu_const_context context, mt32emu_rom_info *rom_info)
+        mt32emu_get_rom_info = downcall("mt32emu_get_rom_info",
+                FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS));
+
         // mt32emu_boolean mt32emu_has_active_partials(context) — 0=inactive, non-zero=active
         mt32emu_has_active_partials = downcall("mt32emu_has_active_partials",
                 FunctionDescriptor.of(ValueLayout.JAVA_BYTE, ValueLayout.ADDRESS));
@@ -198,12 +209,65 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
     }
 
 
+    // --- Upcall callbacks for the no-op report handler ---
+
+    // Returns MT32EMU_REPORT_HANDLER_VERSION_0 (= 0), telling Munt we only implement v0 callbacks.
+    // Signature: mt32emu_report_handler_version getVersionID(mt32emu_report_handler_i handler)
+    // where mt32emu_report_handler_i is a pointer-sized union → ADDRESS.
+    @SuppressWarnings("unused")
+    private static int reportHandlerGetVersionId(MemorySegment handler)
+    {
+        return 0; // MT32EMU_REPORT_HANDLER_VERSION_0
+    }
+
+    // No-op printDebug: suppresses "Rhythm: Attempted to play unmapped key N" and other debug
+    // messages that Munt's default handler prints to stdout via vprintf, causing terminal flicker.
+    // Signature: void printDebug(void *instance_data, const char *fmt, va_list list)
+    // On AArch64/x86-64 C ABI, va_list is passed by pointer → ADDRESS.
+    @SuppressWarnings("unused")
+    private static void reportHandlerPrintDebug(MemorySegment instanceData, MemorySegment fmt,
+            MemorySegment vaList)
+    {
+    }
+
+    /**
+     * Builds a minimal {@code mt32emu_report_handler_i_v0} struct in the given arena with only
+     * {@code getVersionID} and {@code printDebug} populated. All other callback slots are NULL so
+     * Munt's {@code DelegatingReportHandlerAdapter} falls back to its default (no-op) behaviour for
+     * those. The returned segment IS the v0 struct; pass its address as the
+     * {@code mt32emu_report_handler_i} union argument to {@code mt32emu_create_context}.
+     */
+    private MemorySegment buildNoopReportHandler() throws Exception
+    {
+        var lookup = MethodHandles.lookup();
+        var getVersionIdMH = lookup.findStatic(FFMMuntNativeBridge.class,
+                "reportHandlerGetVersionId",
+                MethodType.methodType(int.class, MemorySegment.class));
+        var printDebugMH = lookup.findStatic(FFMMuntNativeBridge.class,
+                "reportHandlerPrintDebug",
+                MethodType.methodType(void.class, MemorySegment.class, MemorySegment.class,
+                        MemorySegment.class));
+
+        // mt32emu_report_handler_i_v0 has 15 function pointer slots (each 8 bytes on 64-bit).
+        // We populate only slots 0 (getVersionID) and 1 (printDebug); the rest stay NULL.
+        MemorySegment struct = arena.allocate(15 * 8);
+        struct.set(ValueLayout.ADDRESS, 0,
+                linker.upcallStub(getVersionIdMH,
+                        FunctionDescriptor.of(ValueLayout.JAVA_INT, ValueLayout.ADDRESS), arena));
+        struct.set(ValueLayout.ADDRESS, 8,
+                linker.upcallStub(printDebugMH,
+                        FunctionDescriptor.ofVoid(ValueLayout.ADDRESS, ValueLayout.ADDRESS,
+                                ValueLayout.ADDRESS), arena));
+        return struct;
+    }
+
     @Override
     public void createSynth() throws Exception
     {
         try
         {
-            context = (MemorySegment) mt32emu_create_context.invokeExact(MemorySegment.NULL,
+            MemorySegment reportHandler = buildNoopReportHandler();
+            context = (MemorySegment) mt32emu_create_context.invokeExact(reportHandler,
                     MemorySegment.NULL);
             if (context.equals(MemorySegment.NULL))
             {
@@ -269,6 +333,30 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         {
             err.println("[NativeBridge Error] " +t.getMessage());
             throw new Exception("Error invoking Munt ROM API", t);
+        }
+    }
+
+    /**
+     * Returns the control ROM description (e.g. "MT-32 Control v1.07") by reading the
+     * {@code mt32emu_rom_info} struct. Must be called after {@link #loadRoms}. The struct is 6
+     * consecutive pointer fields (48 bytes on 64-bit); {@code control_rom_description} is at offset
+     * 8 (second field).
+     */
+    @Override
+    public @org.jspecify.annotations.Nullable String getRomDescription()
+    {
+        if (context.equals(MemorySegment.NULL)) return null;
+        try (Arena temp = Arena.ofConfined())
+        {
+            MemorySegment romInfo = temp.allocate(48); // 6 × 8-byte pointers
+            mt32emu_get_rom_info.invokeExact(context, romInfo);
+            MemorySegment descPtr = romInfo.get(ValueLayout.ADDRESS, 8); // offset 8 = control_rom_description
+            if (descPtr.equals(MemorySegment.NULL)) return null;
+            return descPtr.reinterpret(256).getString(0);
+        }
+        catch (Throwable ignored)
+        {
+            return null;
         }
     }
 
