@@ -100,6 +100,14 @@ public class LineUI implements PlaybackUI
                         timeStr, engine.getCurrentSpeed(), effectiveBpm,
                         engine.getCurrentTranspose(), (int) (engine.getVolumeScale() * 100)));
 
+                String loopIcon    = engine.isLoopEnabled()
+                        ? Theme.COLOR_HIGHLIGHT + "↺" + Theme.COLOR_RESET
+                        : Theme.COLOR_DIM_FG + "↺" + Theme.COLOR_RESET;
+                String shuffleIcon = engine.isShuffleEnabled()
+                        ? Theme.COLOR_HIGHLIGHT + "⇆" + Theme.COLOR_RESET
+                        : Theme.COLOR_DIM_FG + "⇆" + Theme.COLOR_RESET;
+                buffer.append(" ").append(loopIcon).append(shuffleIcon);
+
                 String rawLine = buffer.toString();
                 int termWidth = term.getWidth();
                 if (termWidth > 0)
@@ -141,6 +149,6 @@ public class LineUI implements PlaybackUI
     @Override
     public void runInputLoop(PlaybackEngine engine)
     {
-        InputLoopRunner.run(engine, InputHandler::handleCommonInput);
+        InputLoopRunner.run(engine, InputHandler::handleMiniInput);
     }
 }

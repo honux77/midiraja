@@ -32,11 +32,24 @@ public class InputHandler
             case SEEK_BACKWARD -> engine.seekRelative(-10_000_000); // -10 seconds
             case PAUSE -> engine.togglePause();
             case BOOKMARK -> engine.fireBookmark();
+            case TOGGLE_LOOP -> engine.toggleLoop();
+            case TOGGLE_SHUFFLE -> engine.toggleShuffle();
             case QUIT -> engine.requestStop(PlaybackStatus.QUIT_ALL);
             case RESUME_SESSION -> engine.requestStop(PlaybackStatus.RESUME_SESSION);
             default ->
             {
             }
+        }
+    }
+
+    public static void handleMiniInput(PlaybackEngine engine, TerminalKey key)
+    {
+        switch (key)
+        {
+            case TOGGLE_LOOP, TOGGLE_SHUFFLE ->
+            {
+            } // not available in mini mode
+            default -> handleCommonInput(engine, key);
         }
     }
 }

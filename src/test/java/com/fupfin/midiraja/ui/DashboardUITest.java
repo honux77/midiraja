@@ -4,16 +4,29 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class DashboardUITest {
-    @Test void playlistTitle_noneActive() {
-        assertEquals("PLAYLIST", DashboardUI.playlistTitle(false, false));
+    @Test void playlistTag_bothOff_bothDim() {
+        String tag = DashboardUI.playlistTag(false, false);
+        assertTrue(tag.contains(Theme.COLOR_DIM_FG + "↺"));
+        assertTrue(tag.contains(Theme.COLOR_DIM_FG + "⇆"));
+        assertFalse(tag.contains(Theme.COLOR_HIGHLIGHT + "↺"));
+        assertFalse(tag.contains(Theme.COLOR_HIGHLIGHT + "⇆"));
     }
-    @Test void playlistTitle_loopOnly() {
-        assertEquals("PLAYLIST \u21A9", DashboardUI.playlistTitle(true, false));
+
+    @Test void playlistTag_loopOnly_loopAmber() {
+        String tag = DashboardUI.playlistTag(true, false);
+        assertTrue(tag.contains(Theme.COLOR_HIGHLIGHT + "↺"));
+        assertTrue(tag.contains(Theme.COLOR_DIM_FG + "⇆"));
     }
-    @Test void playlistTitle_shuffleOnly() {
-        assertEquals("PLAYLIST \u21C4", DashboardUI.playlistTitle(false, true));
+
+    @Test void playlistTag_shuffleOnly_shuffleAmber() {
+        String tag = DashboardUI.playlistTag(false, true);
+        assertTrue(tag.contains(Theme.COLOR_DIM_FG + "↺"));
+        assertTrue(tag.contains(Theme.COLOR_HIGHLIGHT + "⇆"));
     }
-    @Test void playlistTitle_both() {
-        assertEquals("PLAYLIST \u21A9 \u21C4", DashboardUI.playlistTitle(true, true));
+
+    @Test void playlistTag_both_bothAmber() {
+        String tag = DashboardUI.playlistTag(true, true);
+        assertTrue(tag.contains(Theme.COLOR_HIGHLIGHT + "↺"));
+        assertTrue(tag.contains(Theme.COLOR_HIGHLIGHT + "⇆"));
     }
 }

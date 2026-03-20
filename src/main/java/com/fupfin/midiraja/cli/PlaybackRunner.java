@@ -29,7 +29,6 @@ import com.fupfin.midiraja.ui.Theme;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -132,11 +131,6 @@ public class PlaybackRunner
         // Auto-save session to history
         if (!originalArgs.isEmpty()) {
             new SessionHistory().recordAuto(originalArgs);
-        }
-
-        if (common.shuffle)
-        {
-            Collections.shuffle(playlist);
         }
 
         // ── Port selection ────────────────────────────────────────────────────
@@ -416,13 +410,17 @@ public class PlaybackRunner
             CommonOptions common, PlaybackUI ui, TerminalIO activeIO,
             Optional<String> initialStartTime, List<String> originalArgs) throws Exception
     {
-        int currentTrackIdx = 0;
+        // Use int[][] so the lambda can capture playOrderHolder (effectively final reference)
+        // while playOrderHolder[0] can be reassigned on loop wrap-around.
+        int[][] playOrderHolder = { buildPlayOrder(playlist.size(), common.shuffle) };
+        int[] currentIdxHolder = {0};
         Optional<String> currentStartTime = initialStartTime;
         boolean wasPaused = false;
+        PlaybackStatus prevStatus = PlaybackStatus.FINISHED;
 
-        while (currentTrackIdx >= 0 && currentTrackIdx < playlist.size())
+        while (currentIdxHolder[0] >= 0 && currentIdxHolder[0] < playlist.size())
         {
-            var file = playlist.get(currentTrackIdx);
+            var file = playlist.get(playOrderHolder[0][currentIdxHolder[0]]);
             try
             {
                 var sequence = MidiUtils.loadSequence(file);
@@ -432,7 +430,11 @@ public class PlaybackRunner
                                 sequence.getMicrosecondLength()));
 
                 var title = MidiUtils.extractSequenceTitle(sequence);
-                var context = new PlaylistContext(playlist, currentTrackIdx, port, title,
+
+                // Build ordered file view for display (snapshot at track-start time)
+                List<File> orderedFiles =
+                        java.util.stream.IntStream.of(playOrderHolder[0]).mapToObj(playlist::get).toList();
+                var context = new PlaylistContext(orderedFiles, currentIdxHolder[0], port, title,
                         common.loop, common.shuffle);
 
                 var engine = new PlaybackEngine(sequence, provider, context, common.volume,
@@ -454,7 +456,11 @@ public class PlaybackRunner
                     }
                 });
 
-                boolean isLastTrack = (currentTrackIdx == playlist.size() - 1);
+                // Wire shuffle callback: mutates remaining slice of playOrderHolder[0] live
+                engine.setShuffleCallback(
+                        newState -> reshuffleRemaining(playOrderHolder[0], currentIdxHolder[0], newState));
+
+                boolean isLastTrack = (currentIdxHolder[0] == playlist.size() - 1);
                 if (!suppressHoldAtEnd && isLastTrack && !common.loop && (ui instanceof DashboardUI))
                 {
                     engine.setHoldAtEnd(true);
@@ -462,22 +468,74 @@ public class PlaybackRunner
 
                 var status = ScopedValue.where(TerminalIO.CONTEXT, activeIO).call(() -> engine.start(ui));
                 lastRawStatus = status;
+                prevStatus = status;
 
                 currentStartTime = Optional.empty();
                 common.volume = (int) (engine.getVolumeScale() * 100);
                 common.speed = engine.getCurrentSpeed();
                 common.transpose = Optional.of(engine.getCurrentTranspose());
+                common.loop = engine.isLoopEnabled();
+                common.shuffle = engine.isShuffleEnabled();
                 wasPaused = engine.isPaused();
 
-                currentTrackIdx = handlePlaybackStatus(status, currentTrackIdx, playlist, common);
+                int nextIdx = handlePlaybackStatus(status, currentIdxHolder[0], playlist, common);
+
+                // Rebuild play order when loop wraps around to the beginning
+                if (prevStatus == PlaybackStatus.FINISHED && nextIdx == 0
+                        && currentIdxHolder[0] == playlist.size() - 1)
+                {
+                    playOrderHolder[0] = buildPlayOrder(playlist.size(), engine.isShuffleEnabled());
+                }
+
+                currentIdxHolder[0] = nextIdx;
             }
             catch (Exception e)
             {
                 err.println("\n[Error] Failed to load MIDI file: " + file.getName());
                 err.println("        Reason: " + e.getMessage());
                 err.println("        Skipping to the next track...");
-                currentTrackIdx++;
+                currentIdxHolder[0]++;
             }
+        }
+    }
+
+    static int[] buildPlayOrder(int size, boolean shuffle)
+    {
+        int[] order = new int[size];
+        for (int i = 0; i < size; i++) order[i] = i;
+        if (shuffle)
+        {
+            var rng = new java.util.Random();
+            for (int i = size - 1; i > 0; i--)
+            {
+                int j = rng.nextInt(i + 1);
+                int tmp = order[i];
+                order[i] = order[j];
+                order[j] = tmp;
+            }
+        }
+        return order;
+    }
+
+    static void reshuffleRemaining(int[] playOrder, int currentIdx, boolean shuffleOn)
+    {
+        int start = currentIdx + 1;
+        int end = playOrder.length;
+        if (start >= end) return;
+        if (shuffleOn)
+        {
+            var rng = new java.util.Random();
+            for (int i = end - 1; i > start; i--)
+            {
+                int j = start + rng.nextInt(i - start + 1);
+                int tmp = playOrder[i];
+                playOrder[i] = playOrder[j];
+                playOrder[j] = tmp;
+            }
+        }
+        else
+        {
+            java.util.Arrays.sort(playOrder, start, end);
         }
     }
 
@@ -507,7 +565,6 @@ public class PlaybackRunner
                 {
                     if (common.loop)
                     {
-                        if (common.shuffle) Collections.shuffle(playlist);
                         yield 0;
                     }
                     yield next; // exits the loop

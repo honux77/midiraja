@@ -271,7 +271,8 @@ need updating.
 | `io/TerminalIO.java` | Add `TOGGLE_LOOP`, `TOGGLE_SHUFFLE` to `TerminalKey` enum |
 | `io/JLineTerminalIO.java` | Bind `l`/`L` → `TOGGLE_LOOP`, `s`/`S` → `TOGGLE_SHUFFLE` |
 | `engine/PlaybackEngine.java` | Add `loopEnabled`, `shuffleEnabled`, toggle methods, shuffle callback |
-| `ui/InputHandler.java` | Handle `TOGGLE_LOOP`, `TOGGLE_SHUFFLE` |
+| `ui/InputHandler.java` | Handle `TOGGLE_LOOP`, `TOGGLE_SHUFFLE`; add `handleMiniInput()` |
+| `ui/LineUI.java` | Add loop/shuffle indicator to dynamic line; switch to `handleMiniInput` |
 | `ui/TitledPanel.java` | Add `setRightTag(String, int)`, update `render()` width calculation |
 | `ui/DashboardUI.java` | Replace `playlistTitle()` with `playlistTag()`, update render loop |
 | `ui/ControlsPanel.java` | Add `[L]Loop [S]Shuf` to all height variants |
@@ -282,8 +283,54 @@ need updating.
 
 ---
 
+## Mini Mode (LineUI)
+
+Mini mode shows loop/shuffle state but does **not** support live toggling.
+
+### Display
+
+Add loop/shuffle indicators to the dynamic single-line update (end of the status line):
+
+```java
+String loopIcon    = engine.isLoopEnabled()    ? Theme.COLOR_HIGHLIGHT + "↺" + Theme.COLOR_RESET
+                                                : Theme.COLOR_DIM_FG   + "↺" + Theme.COLOR_RESET;
+String shuffleIcon = engine.isShuffleEnabled() ? Theme.COLOR_HIGHLIGHT + "⇆" + Theme.COLOR_RESET
+                                                : Theme.COLOR_DIM_FG   + "⇆" + Theme.COLOR_RESET;
+buffer.append(" ").append(loopIcon).append(shuffleIcon);
+```
+
+This reflects live engine state each frame (even though toggling is not available in mini mode,
+the state set by CLI flags is shown correctly).
+
+### Input Handling
+
+`LineUI.runInputLoop()` uses `InputHandler::handleMiniInput` instead of `handleCommonInput`:
+
+```java
+// InputHandler.java
+public static void handleMiniInput(PlaybackEngine engine, TerminalKey key) {
+    switch (key) {
+        case TOGGLE_LOOP, TOGGLE_SHUFFLE -> {} // not available in mini mode
+        default -> handleCommonInput(engine, key);
+    }
+}
+```
+
+`LineUI`:
+```java
+@Override
+public void runInputLoop(PlaybackEngine engine) {
+    InputLoopRunner.run(engine, InputHandler::handleMiniInput);
+}
+```
+
+No key guide change needed in `LineUI` (the existing controls line does not list L/S).
+
+---
+
 ## Non-Goals
 
 - Persisting loop/shuffle toggle state across sessions (CLI flags remain the source of truth for initial state)
-- Showing toggled state in `LineUI` or `DumbUI`
+- Loop/shuffle toggling in `DumbUI` or `LineUI`
+- Loop/shuffle display in `DumbUI`
 - Reordering the playlist display in real-time mid-track (display updates at next track start)

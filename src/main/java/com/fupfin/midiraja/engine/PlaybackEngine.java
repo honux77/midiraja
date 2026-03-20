@@ -58,6 +58,11 @@ public class PlaybackEngine
     @SuppressWarnings("NullAway")
     private volatile java.util.function.Consumer<Boolean> bookmarkCallback = null;
 
+    private volatile boolean loopEnabled = false;
+    private volatile boolean shuffleEnabled = false;
+    @SuppressWarnings("NullAway")
+    private volatile java.util.function.Consumer<Boolean> shuffleCallback = null;
+
     private final AtomicBoolean holdAtEnd = new AtomicBoolean(false);
     private final AtomicReference<PlaybackStatus> endStatus =
             new AtomicReference<>(PlaybackStatus.FINISHED);
@@ -83,6 +88,18 @@ public class PlaybackEngine
     {
         this.holdAtEnd.set(hold);
     }
+
+    public void toggleLoop() { loopEnabled = !loopEnabled; }
+    public boolean isLoopEnabled() { return loopEnabled; }
+
+    public void toggleShuffle()
+    {
+        shuffleEnabled = !shuffleEnabled;
+        var cb = shuffleCallback;
+        if (cb != null) cb.accept(shuffleEnabled);
+    }
+    public boolean isShuffleEnabled() { return shuffleEnabled; }
+    public void setShuffleCallback(java.util.function.Consumer<Boolean> cb) { shuffleCallback = cb; }
 
     private final double[] channelLevels = new double[16];
     private final List<MidiEvent> sortedEvents;
@@ -118,6 +135,8 @@ public class PlaybackEngine
         this.pipelineRoot = this.transposeFilter;
         this.resolution = sequence.getResolution();
         this.context = context;
+        this.loopEnabled = context.loop();
+        this.shuffleEnabled = context.shuffle();
 
         this.sortedEvents = Arrays.stream(sequence.getTracks())
                 .flatMap(track -> IntStream.range(0, track.size()).mapToObj(track::get))

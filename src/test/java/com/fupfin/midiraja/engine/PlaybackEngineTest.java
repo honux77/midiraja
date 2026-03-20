@@ -303,4 +303,45 @@ class PlaybackEngineTest
         boolean hasCP = recording.messages.stream().anyMatch(m -> (m[0] & 0xF0) == 0xD0);
         assertTrue(hasCP, "ChannelPressure should be forwarded during chase");
     }
+
+    @Test void testToggleLoop() {
+        PlaybackEngine engine = new PlaybackEngine(
+            mockSequence, mockProvider, ctx(), 100, 1.0, Optional.empty(), Optional.empty());
+
+        assertTrue(engine.isLoopEnabled() == false); // default: loop off
+        engine.toggleLoop();
+        assertTrue(engine.isLoopEnabled());
+        engine.toggleLoop();
+        assertFalse(engine.isLoopEnabled());
+    }
+
+    @Test void testLoopInitializedFromContext() {
+        var ctxWithLoop = new PlaylistContext(
+            List.of(new File("test.mid")), 0, new MidiPort(0, "Mock"), null, true, false);
+        PlaybackEngine engine = new PlaybackEngine(
+            mockSequence, mockProvider, ctxWithLoop, 100, 1.0, Optional.empty(), Optional.empty());
+        assertTrue(engine.isLoopEnabled());
+    }
+
+    @Test void testToggleShuffle() {
+        PlaybackEngine engine = new PlaybackEngine(
+            mockSequence, mockProvider, ctx(), 100, 1.0, Optional.empty(), Optional.empty());
+
+        assertFalse(engine.isShuffleEnabled());
+        engine.toggleShuffle();
+        assertTrue(engine.isShuffleEnabled());
+    }
+
+    @Test void testShuffleCallbackFired() {
+        PlaybackEngine engine = new PlaybackEngine(
+            mockSequence, mockProvider, ctx(), 100, 1.0, Optional.empty(), Optional.empty());
+
+        List<Boolean> received = new ArrayList<>();
+        engine.setShuffleCallback(received::add);
+
+        engine.toggleShuffle(); // false → true
+        engine.toggleShuffle(); // true → false
+
+        assertEquals(List.of(true, false), received);
+    }
 }

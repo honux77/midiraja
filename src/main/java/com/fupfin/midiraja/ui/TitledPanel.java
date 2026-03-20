@@ -13,6 +13,8 @@ public class TitledPanel implements Panel
     private final Panel content;
     private LayoutConstraints constraints = new LayoutConstraints(80, 0, false, false);
     private final boolean noBottomBorder;
+    private String rightTag = "";
+    private int rightTagVisibleLength = 0;
 
     public TitledPanel(String title, Panel content)
     {
@@ -31,6 +33,12 @@ public class TitledPanel implements Panel
     public void setTitle(String title)
     {
         this.title = title;
+    }
+
+    public void setRightTag(String tag, int visibleLength)
+    {
+        this.rightTag = tag;
+        this.rightTagVisibleLength = visibleLength;
     }
 
     @Override
@@ -76,8 +84,18 @@ public class TitledPanel implements Panel
 
         // Draw Header
         String header = " ≡≡[ " + title + " ]";
-        int padding = Math.max(0, constraints.width() - header.length() - 1);
-        buffer.append(header).append("≡".repeat(padding)).append(" \n");
+        if (rightTagVisibleLength > 0)
+        {
+            int padding = Math.max(0,
+                    constraints.width() - header.length() - rightTagVisibleLength - 3);
+            buffer.append(header).append("≡".repeat(padding))
+                  .append(rightTag).append("≡≡").append(" \n");
+        }
+        else
+        {
+            int padding = Math.max(0, constraints.width() - header.length() - 1);
+            buffer.append(header).append("≡".repeat(padding)).append(" \n");
+        }
 
         // Draw Content
         if (constraints.height() > 1)

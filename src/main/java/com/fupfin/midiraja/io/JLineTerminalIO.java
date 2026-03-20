@@ -80,6 +80,8 @@ public class JLineTerminalIO implements TerminalIO
         km.bind(TerminalKey.SPEED_DOWN,     ",", "<");
         km.bind(TerminalKey.BOOKMARK,        "*");
         km.bind(TerminalKey.RESUME_SESSION,  "r", "R");
+        km.bind(TerminalKey.TOGGLE_LOOP,    "l", "L");
+        km.bind(TerminalKey.TOGGLE_SHUFFLE, "s", "S");
 
         return km;
     }

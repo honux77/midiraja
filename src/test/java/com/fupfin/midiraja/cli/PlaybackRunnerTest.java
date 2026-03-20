@@ -95,4 +95,65 @@ class PlaybackRunnerTest {
         String errOutput = errBytes.toString(java.nio.charset.StandardCharsets.UTF_8);
         assertTrue(errOutput.contains("No MIDI files specified"), "Should print error about missing files");
     }
+
+    @Test void buildPlayOrder_notShuffled_isSequential() {
+        int[] order = PlaybackRunner.buildPlayOrder(4, false);
+        assertArrayEquals(new int[]{0, 1, 2, 3}, order);
+    }
+
+    @Test void buildPlayOrder_shuffled_containsAllIndices() {
+        int[] order = PlaybackRunner.buildPlayOrder(5, true);
+        assertEquals(5, order.length);
+        // All indices 0-4 present
+        int sum = 0;
+        for (int v : order) sum += v;
+        assertEquals(0 + 1 + 2 + 3 + 4, sum);
+    }
+
+    @Test void buildPlayOrder_sizeZero_returnsEmpty() {
+        assertArrayEquals(new int[0], PlaybackRunner.buildPlayOrder(0, false));
+        assertArrayEquals(new int[0], PlaybackRunner.buildPlayOrder(0, true));
+    }
+
+    @Test void buildPlayOrder_sizeOne_returnsSingleElement() {
+        assertArrayEquals(new int[]{0}, PlaybackRunner.buildPlayOrder(1, true));
+    }
+
+    @Test void reshuffleRemaining_shuffleOn_remainingNotInOriginalOrder() {
+        // Use a large enough slice that the probability of staying sorted is negligible
+        int[] order = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+        PlaybackRunner.reshuffleRemaining(order, 0, true);
+        // The remaining slice [1..9] should not be in original order (with overwhelming probability)
+        boolean stillSorted = true;
+        for (int i = 1; i < order.length - 1; i++) {
+            if (order[i] > order[i + 1]) { stillSorted = false; break; }
+        }
+        // index 0 is untouched
+        assertEquals(0, order[0]);
+        // All values 1-9 still present
+        int sum = 0;
+        for (int i = 1; i < order.length; i++) sum += order[i];
+        assertEquals(1+2+3+4+5+6+7+8+9, sum);
+        // At least one element is out of order (not all 9 in sequence)
+        assertFalse(stillSorted, "Shuffled slice should not remain sorted");
+    }
+
+    @Test void reshuffleRemaining_shuffleOff_restoresAscendingOrder() {
+        int[] order = {0, 4, 2, 1, 3}; // remaining [1..4] is unsorted
+        PlaybackRunner.reshuffleRemaining(order, 0, false);
+        assertArrayEquals(new int[]{0, 1, 2, 3, 4}, order);
+    }
+
+    @Test void reshuffleRemaining_atLastTrack_isNoOp() {
+        int[] order = {0, 1, 2};
+        int[] before = order.clone();
+        PlaybackRunner.reshuffleRemaining(order, 2, true); // currentIdx = last
+        assertArrayEquals(before, order);
+    }
+
+    @Test void reshuffleRemaining_idempotentSortOff() {
+        int[] order = {0, 1, 2, 3}; // already sorted
+        PlaybackRunner.reshuffleRemaining(order, 0, false);
+        assertArrayEquals(new int[]{0, 1, 2, 3}, order);
+    }
 }

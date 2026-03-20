@@ -51,12 +51,11 @@ public class DashboardUI implements PlaybackUI
         return null;
     }
 
-    static String playlistTitle(boolean loop, boolean shuffle)
+    static String playlistTag(boolean loopActive, boolean shuffleActive)
     {
-        var sb = new StringBuilder("PLAYLIST");
-        if (loop)    sb.append(" \u21A9");
-        if (shuffle) sb.append(" \u21C4");
-        return sb.toString();
+        String loopIcon    = (loopActive    ? Theme.COLOR_HIGHLIGHT : Theme.COLOR_DIM_FG) + "↺" + Theme.COLOR_RESET;
+        String shuffleIcon = (shuffleActive ? Theme.COLOR_HIGHLIGHT : Theme.COLOR_DIM_FG) + "⇆" + Theme.COLOR_RESET;
+        return loopIcon + shuffleIcon;
     }
 
     @Override
@@ -71,10 +70,6 @@ public class DashboardUI implements PlaybackUI
 
         rawPlaylistPanel.updateContext(engine.getContext());
         rawChannelPanel.updatePrograms(engine.getChannelPrograms());
-
-        // Loop/shuffle are CLI flags — set title once before the render loop
-        var ctx = engine.getContext();
-        titledPlaylistPanel.setTitle(playlistTitle(ctx.loop(), ctx.shuffle()));
 
         nowPlayingPanel.setCopyright(extractCopyright(engine.getSequence()));
 
@@ -112,6 +107,7 @@ public class DashboardUI implements PlaybackUI
                         .append(" ".repeat(bannerPadding)).append(savedTag)
                         .append("\033[0m\n");
 
+                titledPlaylistPanel.setRightTag(playlistTag(engine.isLoopEnabled(), engine.isShuffleEnabled()), 2);
                 titledNowPlayingPanel.render(buffer);
 
                 Map<DashboardLayoutManager.PanelId, LayoutConstraints> layout = layoutManager
