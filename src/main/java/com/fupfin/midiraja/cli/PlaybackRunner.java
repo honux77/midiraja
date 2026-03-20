@@ -471,6 +471,7 @@ public class PlaybackRunner
                 if (common.ignoreSysex) engine.setIgnoreSysex(true);
                 if (common.resetType.isPresent()) engine.setInitialResetType(common.resetType);
                 if (wasPaused) engine.setInitiallyPaused();
+                engine.setFilterDescription(buildFilterDescription(common));
 
                 boolean initiallyBookmarked =
                         !originalArgs.isEmpty() && new SessionHistory().isBookmarked(originalArgs);
@@ -621,5 +622,24 @@ public class PlaybackRunner
             }
             default -> currentTrackIdx;
         };
+    }
+
+    static String buildFilterDescription(CommonOptions common)
+    {
+        var parts = new java.util.ArrayList<String>();
+        addFilterPart(parts, "retro", common.retroMode.orElse(null));
+        addFilterPart(parts, "speaker", common.speakerProfile.orElse(null));
+        return String.join("  |  ", parts);
+    }
+
+    private static void addFilterPart(java.util.List<String> parts, String label,
+            @Nullable String value)
+    {
+        String display = value != null
+                ? com.fupfin.midiraja.ui.Theme.COLOR_HIGHLIGHT + value
+                        + com.fupfin.midiraja.ui.Theme.COLOR_RESET
+                : com.fupfin.midiraja.ui.Theme.COLOR_DIM_FG + "off"
+                        + com.fupfin.midiraja.ui.Theme.COLOR_RESET;
+        parts.add(label + ": " + display);
     }
 }

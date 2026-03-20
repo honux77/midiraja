@@ -8,6 +8,7 @@
 package com.fupfin.midiraja.ui;
 
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
+import static com.fupfin.midiraja.ui.UIUtils.truncateAnsi;
 import static java.lang.Math.*;
 
 import com.fupfin.midiraja.engine.PlaylistContext;
@@ -29,6 +30,7 @@ public class NowPlayingPanel implements Panel
     private PlaylistContext context;
     @Nullable
     private String copyright = null;
+    private String filterInfo = "";
 
     @Override
     public void onLayoutUpdated(LayoutConstraints bounds)
@@ -52,6 +54,11 @@ public class NowPlayingPanel implements Panel
     public void setCopyright(@Nullable String copyright)
     {
         this.copyright = copyright;
+    }
+
+    public void setFilterInfo(String filterInfo)
+    {
+        this.filterInfo = filterInfo;
     }
 
     @Override
@@ -125,6 +132,9 @@ public class NowPlayingPanel implements Panel
                 truncate(portInfo, constraints.width() - 15));
         String settingsLine = String.format("Vol: %d%% | Tempo: %3.0f BPM (%.1fx) | Trans: %+d",
                 (int) (volumeScale * 100), bpm, speed, transpose);
+        String filterLine = filterInfo.isEmpty() ? null
+                : String.format("%-10s %s", "Filters:", truncateAnsi(filterInfo,
+                        max(10, constraints.width() - 11)));
 
         if (h <= 2)
         {
@@ -142,7 +152,7 @@ public class NowPlayingPanel implements Panel
             String packed = String.format("Port: %s | %s", portInfo, settingsLine);
             buffer.append(truncate(packed, constraints.width())).append("\n");
         }
-        else if (h == 4 || (h >= 5 && copyright == null))
+        else if (h == 4 || (h >= 5 && copyright == null && filterLine == null))
         {
             buffer.append(titleLine).append("\n");
             buffer.append(
@@ -152,9 +162,21 @@ public class NowPlayingPanel implements Panel
             buffer.append(truncate(settingsLine, constraints.width())).append("\n");
             for (int i = 4; i < h; i++) buffer.append("\n");
         }
-        else
+        else if (copyright == null)
         {
-            // h >= 5 && copyright != null
+            // h >= 5, filterLine != null: Title + Time + Port + Settings + Filters [+ padding]
+            buffer.append(titleLine).append("\n");
+            buffer.append(
+                    String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent))
+                    .append("\n");
+            buffer.append(portLine).append("\n");
+            buffer.append(truncate(settingsLine, constraints.width())).append("\n");
+            buffer.append(java.util.Objects.requireNonNull(filterLine)).append("\n");
+            for (int i = 5; i < h; i++) buffer.append("\n");
+        }
+        else if (h == 5 || filterLine == null)
+        {
+            // h >= 5, with copyright, not enough room for filter line
             String copyrightText = java.util.Objects.requireNonNull(copyright);
             String copyrightLine = String.format(fmtTitle, "Copyright:",
                     truncate(copyrightText, max(10, constraints.width() - 11)));
@@ -166,6 +188,22 @@ public class NowPlayingPanel implements Panel
             buffer.append(portLine).append("\n");
             buffer.append(truncate(settingsLine, constraints.width())).append("\n");
             for (int i = 5; i < h; i++) buffer.append("\n");
+        }
+        else
+        {
+            // h >= 6, with copyright: Title + Copyright + Time + Port + Settings + Filters [+ padding]
+            String copyrightText = java.util.Objects.requireNonNull(copyright);
+            String copyrightLine = String.format(fmtTitle, "Copyright:",
+                    truncate(copyrightText, max(10, constraints.width() - 11)));
+            buffer.append(titleLine).append("\n");
+            buffer.append(copyrightLine).append("\n");
+            buffer.append(
+                    String.format(fmtTime, "Time:", pauseIndicator, curStr, totStr, bar, percent))
+                    .append("\n");
+            buffer.append(portLine).append("\n");
+            buffer.append(truncate(settingsLine, constraints.width())).append("\n");
+            buffer.append(java.util.Objects.requireNonNull(filterLine)).append("\n");
+            for (int i = 6; i < h; i++) buffer.append("\n");
         }
     }
 }

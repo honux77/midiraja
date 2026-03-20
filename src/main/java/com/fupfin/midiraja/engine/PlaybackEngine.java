@@ -58,6 +58,8 @@ public class PlaybackEngine
     @SuppressWarnings("NullAway")
     private volatile java.util.function.Consumer<Boolean> bookmarkCallback = null;
 
+    private String filterDescription = "";
+
     private volatile boolean loopEnabled = false;
     private volatile boolean shuffleEnabled = false;
     @SuppressWarnings("NullAway")
@@ -100,6 +102,9 @@ public class PlaybackEngine
     }
     public boolean isShuffleEnabled() { return shuffleEnabled; }
     public void setShuffleCallback(java.util.function.Consumer<Boolean> cb) { shuffleCallback = cb; }
+
+    public void setFilterDescription(String desc) { this.filterDescription = desc; }
+    public String getFilterDescription() { return filterDescription; }
 
     public void firePlayOrderChanged(PlaylistContext ctx)
     {

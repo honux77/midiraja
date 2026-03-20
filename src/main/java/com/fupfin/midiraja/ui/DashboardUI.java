@@ -73,6 +73,7 @@ public class DashboardUI implements PlaybackUI
         rawChannelPanel.updatePrograms(engine.getChannelPrograms());
 
         nowPlayingPanel.setCopyright(extractCopyright(engine.getSequence()));
+        nowPlayingPanel.setFilterInfo(engine.getFilterDescription());
 
         int lastWidth = -1;
         int lastHeight = -1;
