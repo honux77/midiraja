@@ -306,15 +306,90 @@ class RetroFiltersTest {
         CovoxDacFilter filter = new CovoxDacFilter(true, mock);
         float[] left = {1.0f, 1.0f};
         float[] right = {1.0f, 1.0f};
-        
+
         filter.process(left, right, 2);
         filter.reset();
         assertTrue(mock.resetCalled);
-        
+
         // After reset, processing silence should not have "tails" from previous 1.0 input
         float[] silence = {0.0f, 0.0f};
         filter.process(silence, silence, 2);
         // Expect output near 0 (R-2R center)
         assertTrue(Math.abs(mock.lastLeft[0]) < 0.1f);
+    }
+
+    /**
+     * Computes the DFT magnitude at a target frequency by dot-product with
+     * a complex exponential. O(N) per frequency point — good enough for a few spot checks.
+     *
+     * @param signal  mono float signal at 44100 Hz
+     * @param freqHz  target frequency in Hz
+     * @return magnitude (not normalised by N — use ratio comparisons only)
+     */
+    private static double fftMagnitudeAt(float[] signal, double freqHz) {
+        double re = 0, im = 0;
+        double w = 2.0 * Math.PI * freqHz / 44100.0;
+        for (int n = 0; n < signal.length; n++) {
+            re += signal[n] * Math.cos(w * n);
+            im += signal[n] * Math.sin(w * n);
+        }
+        return Math.sqrt(re * re + im * im);
+    }
+
+    @Test
+    void testApple2ProducesAudibleHarmonics() {
+        int n = 44100; // 1 second at 44100 Hz
+        float[] left  = new float[n];
+        float[] right = new float[n];
+        for (int i = 0; i < n; i++) {
+            float s = (float)(Math.sin(2.0 * Math.PI * 440.0 * i / 44100.0) * 0.8);
+            left[i] = right[i] = s;
+        }
+
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(
+                true, "pwm", 22050.0, 32.0, 28.4, null, mock);
+        filter.process(left, right, n);
+
+        float[] out = mock.lastLeft;
+        double fund  = fftMagnitudeAt(out, 440.0);
+        double harm2 = fftMagnitudeAt(out, 880.0);
+        double ratio = harm2 / fund;
+
+        assertTrue(fund > 0, "440 Hz fundamental must be present");
+        assertTrue(ratio >= 0.0103,
+                String.format("2nd harmonic should be ≥1%% of fundamental. fund=%.1f harm2=%.1f ratio=%.4f",
+                        fund, harm2, ratio));
+    }
+
+    @Test
+    void testPcResonancePeaksExceedApple2() {
+        int n = 44100;
+        float[] leftApple2  = new float[n];
+        float[] rightApple2 = new float[n];
+        float[] leftPc      = new float[n];
+        float[] rightPc     = new float[n];
+        for (int i = 0; i < n; i++) {
+            float s = (float)(Math.sin(2.0 * Math.PI * 440.0 * i / 44100.0) * 0.8);
+            leftApple2[i] = rightApple2[i] = leftPc[i] = rightPc[i] = s;
+        }
+
+        MockProcessor mockA2 = new MockProcessor();
+        MockProcessor mockPc = new MockProcessor();
+
+        new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, null, mockA2)
+                .process(leftApple2, rightApple2, n);
+        new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9,
+                new double[]{2500.0, 3.0, 3.0, 6700.0, 4.0, 4.0}, mockPc)
+                .process(leftPc, rightPc, n);
+
+        double apple2At2500 = fftMagnitudeAt(mockA2.lastLeft, 2500.0);
+        double pcAt2500     = fftMagnitudeAt(mockPc.lastLeft, 2500.0);
+        double apple2At6700 = fftMagnitudeAt(mockA2.lastLeft, 6700.0);
+        double pcAt6700     = fftMagnitudeAt(mockPc.lastLeft, 6700.0);
+
+        assertTrue(pcAt2500 > apple2At2500,
+                "PC should have more energy at 2.5kHz than Apple II due to resonance peak");
+        assertTrue(pcAt6700 > apple2At6700,
+                "PC should have more energy at 6.7kHz than Apple II due to resonance peak");
     }
 }
