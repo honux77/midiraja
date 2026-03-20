@@ -54,7 +54,8 @@ public class OneBitHardwareFilter implements AudioProcessor
     // Cone IIR state (two cascaded one-pole low-pass filters at 176,400 Hz)
     private double iirState1 = 0.0;
     private double iirState2 = 0.0;
-    private final double iirAlpha; // = 1 - exp(-1 / (INTERNAL_RATE * tauUs * 1e-6))
+    private final double iirAlpha;    // = 1 - exp(-1 / (INTERNAL_RATE * tauUs * 1e-6)) — for PWM loop at 176,400 Hz
+    private final double iirAlphaDsd; // = 1 - exp(-1 / (44100 * tauUs * 1e-6))         — for DSD mode at 44,100 Hz
 
     // PC-speaker resonance biquads (Direct Form I, Audio EQ Cookbook peaking EQ).
     // null for apple2 (no resonance peaks). At most two biquads are allocated.
@@ -88,7 +89,8 @@ public class OneBitHardwareFilter implements AudioProcessor
         this.mode = mode != null ? mode.toLowerCase(ROOT) : "pwm";
         this.subCarrierStep = carrierHz / INTERNAL_RATE;
         this.levels = levels;
-        this.iirAlpha = 1.0 - exp(-1.0 / (INTERNAL_RATE * tauUs * 1e-6));
+        this.iirAlpha    = 1.0 - exp(-1.0 / (INTERNAL_RATE * tauUs * 1e-6));
+        this.iirAlphaDsd = 1.0 - exp(-1.0 / (44100.0 * tauUs * 1e-6));
 
         if (resonancePeaks != null && resonancePeaks.length >= 3) {
             biquad1Coeffs = computePeakingBiquad(resonancePeaks[0], resonancePeaks[1], resonancePeaks[2]);
@@ -144,8 +146,8 @@ public class OneBitHardwareFilter implements AudioProcessor
             dsdErr += monoIn + (rand.nextDouble() - 0.5) * 0.1;
             double out = dsdErr > 0.0 ? 1.0 : -1.0;
             dsdErr -= out;
-            iirState1 += iirAlpha * (out - iirState1);
-            iirState2 += iirAlpha * (iirState1 - iirState2);
+            iirState1 += iirAlphaDsd * (out - iirState1);
+            iirState2 += iirAlphaDsd * (iirState1 - iirState2);
             return (float) iirState2;
         }
 
@@ -184,7 +186,7 @@ public class OneBitHardwareFilter implements AudioProcessor
     private static double[] computePeakingBiquad(double f0Hz, double dBgain, double Q)
     {
         double A     = pow(10.0, dBgain / 40.0);
-        double w0    = 2.0 * PI * f0Hz / INTERNAL_RATE;
+        double w0    = 2.0 * PI * f0Hz / 44100.0;
         double alpha = sin(w0) / (2.0 * Q);
 
         double b0 =  1.0 + alpha * A;
