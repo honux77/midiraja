@@ -556,15 +556,16 @@ public class PlaybackRunner
 
     static void reshuffleRemaining(int[] playOrder, int currentIdx, boolean shuffleOn)
     {
-        int start = currentIdx + 1;
-        int end = playOrder.length;
-        if (start >= end) return;
+        int n = playOrder.length;
+        if (n <= 1) return;
+        int currentSong = playOrder[currentIdx];
         if (shuffleOn)
         {
+            // Full Fisher-Yates shuffle of entire array
             var rng = new java.util.Random();
-            for (int i = end - 1; i > start; i--)
+            for (int i = n - 1; i > 0; i--)
             {
-                int j = start + rng.nextInt(i - start + 1);
+                int j = rng.nextInt(i + 1);
                 int tmp = playOrder[i];
                 playOrder[i] = playOrder[j];
                 playOrder[j] = tmp;
@@ -572,7 +573,17 @@ public class PlaybackRunner
         }
         else
         {
-            java.util.Arrays.sort(playOrder, start, end);
+            java.util.Arrays.sort(playOrder);
+        }
+        // Restore the currently-playing song to currentIdx so the index stays valid
+        for (int i = 0; i < n; i++)
+        {
+            if (playOrder[i] == currentSong)
+            {
+                playOrder[i] = playOrder[currentIdx];
+                playOrder[currentIdx] = currentSong;
+                break;
+            }
         }
     }
 

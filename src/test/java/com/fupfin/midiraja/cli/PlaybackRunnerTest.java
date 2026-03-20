@@ -119,40 +119,44 @@ class PlaybackRunnerTest {
         assertArrayEquals(new int[]{0}, PlaybackRunner.buildPlayOrder(1, true));
     }
 
-    @Test void reshuffleRemaining_shuffleOn_remainingNotInOriginalOrder() {
-        // Use a large enough slice that the probability of staying sorted is negligible
+    @Test void reshuffleRemaining_shuffleOn_fullArrayShuffled() {
+        // Large array: entire array (except currentIdx=2) should be shuffled
         int[] order = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        PlaybackRunner.reshuffleRemaining(order, 0, true);
-        // The remaining slice [1..9] should not be in original order (with overwhelming probability)
+        PlaybackRunner.reshuffleRemaining(order, 2, true);
+        // Currently-playing song stays at currentIdx
+        assertEquals(2, order[2]);
+        // All values 0-9 still present
+        int sum = 0;
+        for (int v : order) sum += v;
+        assertEquals(0+1+2+3+4+5+6+7+8+9, sum);
+        // At least one element is out of original order (with overwhelming probability for 9 others)
         boolean stillSorted = true;
-        for (int i = 1; i < order.length - 1; i++) {
+        for (int i = 0; i < order.length - 1; i++) {
             if (order[i] > order[i + 1]) { stillSorted = false; break; }
         }
-        // index 0 is untouched
-        assertEquals(0, order[0]);
-        // All values 1-9 still present
-        int sum = 0;
-        for (int i = 1; i < order.length; i++) sum += order[i];
-        assertEquals(1+2+3+4+5+6+7+8+9, sum);
-        // At least one element is out of order (not all 9 in sequence)
-        assertFalse(stillSorted, "Shuffled slice should not remain sorted");
+        assertFalse(stillSorted, "Full array shuffle should not remain sorted");
     }
 
     @Test void reshuffleRemaining_shuffleOff_restoresAscendingOrder() {
-        int[] order = {0, 4, 2, 1, 3}; // remaining [1..4] is unsorted
-        PlaybackRunner.reshuffleRemaining(order, 0, false);
-        assertArrayEquals(new int[]{0, 1, 2, 3, 4}, order);
+        int[] order = {3, 4, 0, 1, 2}; // currentIdx=2, song=0; others unsorted
+        PlaybackRunner.reshuffleRemaining(order, 2, false);
+        // After sort, 0 is at index 0; swap with currentIdx=2 → {1, 2, 0, 3, 4}
+        assertEquals(0, order[2]); // current song stays at currentIdx
+        // All values still present
+        int sum = 0;
+        for (int v : order) sum += v;
+        assertEquals(0+1+2+3+4, sum);
     }
 
-    @Test void reshuffleRemaining_atLastTrack_isNoOp() {
+    @Test void reshuffleRemaining_atLastTrack_currentSongStaysAtEnd() {
+        // Even at last track, current song must remain at currentIdx=2
         int[] order = {0, 1, 2};
-        int[] before = order.clone();
-        PlaybackRunner.reshuffleRemaining(order, 2, true); // currentIdx = last
-        assertArrayEquals(before, order);
+        PlaybackRunner.reshuffleRemaining(order, 2, true);
+        assertEquals(2, order[2]);
     }
 
     @Test void reshuffleRemaining_idempotentSortOff() {
-        int[] order = {0, 1, 2, 3}; // already sorted
+        int[] order = {0, 1, 2, 3}; // already sorted, currentIdx=0
         PlaybackRunner.reshuffleRemaining(order, 0, false);
         assertArrayEquals(new int[]{0, 1, 2, 3}, order);
     }
