@@ -23,3 +23,26 @@ This file provides critical guidance and architectural context to AI agents when
 * Keep git messages brief, summarizing only changes, omitting extra details, under 5 lines.
 
 For other information about this product, refer to @READEME.md, and for work instructions, refer to @CONTRIBUTING.md.
+
+## Terminal lifecycle — DO NOT CHANGE without understanding this
+
+**Why ISIG is disabled in `JLineTerminalIO.init()`:**
+
+When ISIG is enabled (the default), pressing Ctrl+C generates SIGINT, which causes
+`System.exit()`. During `System.exit()`, JVM application threads (the render loop, input loop)
+continue running while shutdown hooks execute concurrently. The running render loop writes
+terminal escape sequences that overwrite any restore sequences the shutdown hook sends —
+leaving the cursor invisible and the alt screen active after the process exits.
+
+The fix: disable ISIG so Ctrl+C is delivered as the character `\x03` (ETX). JLine reads it
+and maps it to `TerminalKey.QUIT` (via `km.bind(TerminalKey.QUIT, "\003")`). This routes
+through the normal QUIT key path, which stops the render loop cleanly before the terminal
+is restored by the `finally` block in `PlaybackRunner.run()`.
+
+**Do not:**
+- Re-enable ISIG (`Attributes.LocalFlag.ISIG`) in `JLineTerminalIO.init()`
+- Remove the `\003` → QUIT binding in `buildKeyMap()`
+- Move terminal restore logic from the `finally` block in `PlaybackRunner.run()` into
+  a shutdown hook — shutdown hooks run while app threads are still active
+
+**Test:** `JLineTerminalIOTest.ctrlC_isBoundToQuit()` will fail if the key binding is removed.

@@ -51,6 +51,9 @@ public class BeepCommand implements Callable<Integer>
     @Mixin
     private final CommonOptions common = new CommonOptions();
 
+    @Mixin
+    private FxOptions fxOptions = new FxOptions();
+
     @Option(names = {"--synth"}, defaultValue = "square",
             description = "Synthesis generation algorithm:\n"
                     + "  'fm'     (Yamaha-like Phase/Frequency Modulation using smooth sine waves)\n"
@@ -105,6 +108,7 @@ public class BeepCommand implements Callable<Integer>
         }
         AudioProcessor pipeline = new FloatToShortSink(audio, 1);
         pipeline = common.wrapRetroPipeline(pipeline);
+        pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
 
         // Map user's 1~6 quality level exponentially (1 -> 1x, 2 -> 2x, 3 -> 4x, ..., 6 -> 32x)
         int clampedLevel = max(1, min(6, qualityLevel));
@@ -116,6 +120,7 @@ public class BeepCommand implements Callable<Integer>
 
         var runner =
                 new PlaybackRunner(p.getOut(), p.getErr(), p.getTerminalIO(), p.isInTestMode());
+        runner.setFxOptions(fxOptions);
         int result = runner.run(provider, true, Optional.empty(), Optional.empty(), files,
                 requireNonNull(common), originalArgs());
 
