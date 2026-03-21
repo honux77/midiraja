@@ -25,11 +25,11 @@ import org.jspecify.annotations.Nullable;
  * would be physically inaccurate.
  *
  * <h2>Solution: 4× internal oversampling</h2>
- * The filter operates internally at 176,400 Hz (4×). At this rate, the Apple II 22,050 Hz carrier
- * is at exactly 12.5% of the Nyquist frequency (8 sub-samples per carrier period — no rounding).
- * The PC 15,200 Hz carrier is at ~8.6% (≈11.6 sub-samples per carrier period — minor rounding
- * for the PC mode only, producing inaudible artefacts above 88 kHz). Each sub-sample evaluates
- * the raw ±1 PWM bit directly and feeds it to the speaker-cone IIR model.
+ * The filter operates internally at 176,400 Hz (4×). The cone IIR needs at least 4–8 sub-samples
+ * per carrier period to accurately track PWM transitions; 4× satisfies this for both modes:
+ * the Apple II 22,050 Hz carrier gets exactly 8 sub-samples per period (no rounding), and the
+ * PC 15,200 Hz carrier gets ≈11.6 (minor rounding artefacts appear above 88 kHz, inaudible).
+ * Each sub-sample evaluates the raw ±1 PWM bit directly and feeds it to the speaker-cone IIR model.
  */
 public class OneBitHardwareFilter implements AudioProcessor
 {

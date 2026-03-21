@@ -129,8 +129,9 @@ by the cone's mechanical inertia. Using the RC label for a mechanical system wou
 physically inaccurate. Oversampling sidesteps this: it makes no assumptions about the filter
 topology and lets the IIR model the cone empirically.
 
-The Apple II carrier at 22,050 Hz divides 176,400 Hz into exactly 8 sub-samples per carrier
-period — no rounding error.
+The choice of 4× is deliberate: the cone IIR needs at least 4–8 sub-samples per carrier period
+to accurately track PWM transitions. 4× gives exactly 8 sub-samples per Apple II carrier period
+(176,400 / 22,050 = 8, no rounding error), which is both necessary and sufficient.
 
 ---
 
@@ -177,8 +178,9 @@ Same 4× oversampling approach as apple2 (§2.4), with two additions:
    Coefficients are computed at construction time at 44,100 Hz (the output sample rate at
    which the biquads run); bilinear pre-warping error at these frequencies is < 0.2%.
 
-The PC carrier at 15,200 Hz gives ≈ 11.6 sub-samples per carrier period. The resulting
-rounding artefacts appear above 88 kHz and are inaudible.
+The PC carrier at 15,200 Hz gives ≈ 11.6 sub-samples per carrier period — comfortably above
+the 4–8 sub-sample minimum needed for accurate IIR step response. The resulting rounding
+artefacts from the non-integer ratio appear above 88 kHz and are inaudible.
 
 ---
 
