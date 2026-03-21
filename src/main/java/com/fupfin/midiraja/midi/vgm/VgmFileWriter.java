@@ -46,6 +46,9 @@ public class VgmFileWriter implements AutoCloseable
     /** YM2413 (OPLL) clock for MSX NTSC (Hz). */
     public static final int YM2413_CLOCK = 3_579_545;
 
+    /** YMF262 (OPL3) standard clock (Hz). */
+    public static final int YMF262_CLOCK = 14_318_180;
+
     /** VGM internal sample rate used for all timing. */
     public static final int VGM_SAMPLE_RATE = 44100;
 
@@ -64,7 +67,13 @@ public class VgmFileWriter implements AutoCloseable
          * MSX combined: single AY-3-8910 PSG + YM2413 OPLL (VGM v1.61, 128-byte header).
          * Both AY8910 clock (0x74) and YM2413 clock (0x10) are written to the header.
          */
-        MSX
+        MSX,
+        /**
+         * YMF262 OPL3 — single chip (VGM v1.61, 128-byte header).
+         * Uses commands {@code 0x5E rr dd} (bank 0) and {@code 0x5F rr dd} (bank 1).
+         * Clock: 14,318,180 Hz. OPL3 mode must be enabled via bank-1 register 0x05 = 0x01.
+         */
+        OPL3
     }
 
     // ── Header layout constants ───────────────────────────────────────────────
@@ -190,6 +199,30 @@ public class VgmFileWriter implements AutoCloseable
         file.writeByte(data & 0xFF);
     }
 
+    // ── YMF262 (OPL3) chip commands ───────────────────────────────────────────
+
+    /**
+     * Writes a YMF262 bank-0 register write: {@code 0x5E reg data}.
+     * Covers OPL3 registers 0x00–0xFF (channels 1–9, operators 1–18).
+     */
+    public void writeOpl3(int reg, int data) throws IOException
+    {
+        file.writeByte(0x5E);
+        file.writeByte(reg & 0xFF);
+        file.writeByte(data & 0xFF);
+    }
+
+    /**
+     * Writes a YMF262 bank-1 register write: {@code 0x5F reg data}.
+     * Covers OPL3 registers 0x100–0x1FF (channels 10–18, operators 19–36).
+     */
+    public void writeOpl3Bank1(int reg, int data) throws IOException
+    {
+        file.writeByte(0x5F);
+        file.writeByte(reg & 0xFF);
+        file.writeByte(data & 0xFF);
+    }
+
     // ── Timing ────────────────────────────────────────────────────────────────
 
     /**
@@ -228,6 +261,7 @@ public class VgmFileWriter implements AutoCloseable
             case MSX     -> writeHeaderAy(fileSize, true);
             case SN76489 -> writeHeaderSn(fileSize);
             case YM2413  -> writeHeaderYm2413(fileSize);
+            case OPL3    -> writeHeaderOpl3(fileSize);
         }
         file.close();
     }
@@ -331,6 +365,48 @@ public class VgmFileWriter implements AutoCloseable
         writeLe32(0x0C);                   // 0x34 VGM data offset (data at 0x40)
         writeLe32(0);                      // 0x38 Sega PCM clock
         writeLe32(0);                      // 0x3C SPCM interface
+    }
+
+    /** Writes the VGM v1.61 header (128 bytes) for YMF262 (OPL3). */
+    private void writeHeaderOpl3(long fileSize) throws IOException
+    {
+        // Data starts at 0x80; VGM data offset field at 0x34 is relative: 0x80 - 0x34 = 0x4C
+        final int dataOffset = 0x4C;
+
+        writeAscii("Vgm ");                // 0x00
+        writeLe32(fileSize - 4);           // 0x04 EOF offset
+        writeLe32(0x00000161L);            // 0x08 Version 1.61
+        writeLe32(0);                      // 0x0C SN76489 clock (unused)
+        writeLe32(0);                      // 0x10 YM2413 clock (unused)
+        writeLe32(0);                      // 0x14 GD3 offset (none)
+        writeLe32(totalSamples);           // 0x18 Total samples
+        writeLe32(0);                      // 0x1C Loop offset (none)
+        writeLe32(0);                      // 0x20 Loop samples
+        writeLe32(60);                     // 0x24 Rate (NTSC 60)
+        writeLe16(0);                      // 0x28 SN76489 feedback (unused)
+        file.writeByte(0);                 // 0x2A SN76489 shift reg width
+        file.writeByte(0);                 // 0x2B SN76489 flags
+        writeLe32(0);                      // 0x2C YM2612 clock
+        writeLe32(0);                      // 0x30 YM2151 clock
+        writeLe32(dataOffset);             // 0x34 VGM data offset
+        writeLe32(0);                      // 0x38 Sega PCM clock
+        writeLe32(0);                      // 0x3C SPCM interface
+        writeLe32(0);                      // 0x40 RF5C68 clock
+        writeLe32(0);                      // 0x44 YM2203 clock
+        writeLe32(0);                      // 0x48 YM2608 clock
+        writeLe32(0);                      // 0x4C YM2610/B clock
+        writeLe32(0);                      // 0x50 YM3812 clock
+        writeLe32(0);                      // 0x54 YM3526 clock
+        writeLe32(0);                      // 0x58 Y8950 clock
+        writeLe32(YMF262_CLOCK);           // 0x5C YMF262 (OPL3) clock
+        writeLe32(0);                      // 0x60 YMF278B clock
+        writeLe32(0);                      // 0x64 YMF271 clock
+        writeLe32(0);                      // 0x68 YMZ280B clock
+        writeLe32(0);                      // 0x6C RF5C164 clock
+        writeLe32(0);                      // 0x70 PWM clock
+        writeLe32(0);                      // 0x74 AY8910 clock (unused)
+        writeLe32(0);                      // 0x78 AY8910 type/flags
+        writeLe32(0);                      // 0x7C padding
     }
 
     // ── Low-level helpers ─────────────────────────────────────────────────────
