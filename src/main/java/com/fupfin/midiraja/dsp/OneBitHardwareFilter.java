@@ -152,9 +152,25 @@ public class OneBitHardwareFilter implements AudioProcessor
         }
 
         // PWM mode: 4× oversampled cone simulation.
-        // The fast-path for silent input (abs < 1e-4) is intentionally absent here:
-        // skipping the loop would stall carrierPhase, causing a pop when audio resumes.
-        // At duty=0.5 (silence), the IIR naturally averages the alternating ±1 bits to ~0.
+        // Silence fast-path: real hardware stops toggling when no audio is playing — the speaker
+        // pin holds its last level and the cone rings down to equilibrium. Feeding zero to the IIR
+        // reproduces this. Carrier phase still advances so there is no phase discontinuity (pop)
+        // when audio resumes. Note: running at duty=0.5 does NOT average to ~0 — the 2-pole IIR
+        // only attenuates the ~15 kHz carrier by ~23 dB, leaving audible residual noise.
+        if (abs(monoIn) < 1e-4) {
+            for (int s = 0; s < OVERSAMPLE; s++) {
+                iirState1 += iirAlpha * (0.0 - iirState1);
+                iirState2 += iirAlpha * (iirState1 - iirState2);
+                carrierPhase = (carrierPhase + subCarrierStep) % 1.0;
+            }
+            double out = iirState2;
+            double[] c1 = biquad1Coeffs, s1 = biquad1State;
+            if (c1 != null && s1 != null) out = applyBiquad(c1, s1, out);
+            double[] c2 = biquad2Coeffs, s2 = biquad2State;
+            if (c2 != null && s2 != null) out = applyBiquad(c2, s2, out);
+            return (float) out;
+        }
+
         double rawDuty = max(0.0, min(1.0, (monoIn + 1.0) * 0.5));
         double duty    = round(rawDuty * levels) / levels;
 

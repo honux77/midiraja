@@ -365,34 +365,76 @@ class RetroFiltersTest {
     }
 
     @Test
-    void testPcResonancePeaksExceedApple2() {
+    void testPcBiquadsAddResonanceAt2500And6700Hz() {
+        // Directly verify that the PC biquads add energy at their centre frequencies.
+        // White noise ensures broadband spectral coverage so the comparison is not
+        // sensitive to the input signal's specific harmonic content.
         int n = 44100;
-        float[] leftApple2  = new float[n];
-        float[] rightApple2 = new float[n];
-        float[] leftPc      = new float[n];
-        float[] rightPc     = new float[n];
+        float[] leftNoBiquad  = new float[n];
+        float[] rightNoBiquad = new float[n];
+        float[] leftBiquad    = new float[n];
+        float[] rightBiquad   = new float[n];
+        java.util.Random rng = new java.util.Random(42L);
         for (int i = 0; i < n; i++) {
-            float s = (float)(Math.sin(2.0 * Math.PI * 440.0 * i / 44100.0) * 0.8);
-            leftApple2[i] = rightApple2[i] = leftPc[i] = rightPc[i] = s;
+            float s = (float)(rng.nextDouble() * 2.0 - 1.0) * 0.5f;
+            leftNoBiquad[i] = rightNoBiquad[i] = leftBiquad[i] = rightBiquad[i] = s;
         }
 
-        MockProcessor mockA2 = new MockProcessor();
-        MockProcessor mockPc = new MockProcessor();
+        MockProcessor mockNoBiquad = new MockProcessor();
+        MockProcessor mockBiquad   = new MockProcessor();
 
-        new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, null, mockA2)
-                .process(leftApple2, rightApple2, n);
+        // Same PC IIR, one without resonance peaks, one with
+        new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, null, mockNoBiquad)
+                .process(leftNoBiquad, rightNoBiquad, n);
         new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9,
-                new double[]{2500.0, 3.0, 3.0, 6700.0, 4.0, 4.0}, mockPc)
-                .process(leftPc, rightPc, n);
+                new double[]{2500.0, 3.0, 3.0, 6700.0, 4.0, 4.0}, mockBiquad)
+                .process(leftBiquad, rightBiquad, n);
 
-        double apple2At2500 = fftMagnitudeAt(mockA2.lastLeft, 2500.0);
-        double pcAt2500     = fftMagnitudeAt(mockPc.lastLeft, 2500.0);
-        double apple2At6700 = fftMagnitudeAt(mockA2.lastLeft, 6700.0);
-        double pcAt6700     = fftMagnitudeAt(mockPc.lastLeft, 6700.0);
+        double noBiquadAt2500 = fftMagnitudeAt(mockNoBiquad.lastLeft, 2500.0);
+        double biquadAt2500   = fftMagnitudeAt(mockBiquad.lastLeft, 2500.0);
+        double noBiquadAt6700 = fftMagnitudeAt(mockNoBiquad.lastLeft, 6700.0);
+        double biquadAt6700   = fftMagnitudeAt(mockBiquad.lastLeft, 6700.0);
 
-        assertTrue(pcAt2500 > apple2At2500,
-                "PC should have more energy at 2.5kHz than Apple II due to resonance peak");
-        assertTrue(pcAt6700 > apple2At6700,
-                "PC should have more energy at 6.7kHz than Apple II due to resonance peak");
+        assertTrue(biquadAt2500 > noBiquadAt2500,
+                "PC biquad should add energy at 2.5 kHz");
+        assertTrue(biquadAt6700 > noBiquadAt6700,
+                "PC biquad should add energy at 6.7 kHz");
+    }
+
+    @Test
+    void testPcSilenceProducesNoAudibleCarrier() {
+        // When monoIn is near zero, the IIR should ring down to silence rather than
+        // sustaining the 15.2 kHz carrier at -23 dB (which is audible).
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(
+                true, "pwm", 15200.0, 78.0, 37.9,
+                new double[]{2500.0, 3.0, 3.0, 6700.0, 4.0, 4.0}, mock);
+
+        int n = 44100;
+        float[] left = new float[n];
+        float[] right = new float[n];
+        // All zeros — complete silence
+        filter.process(left, right, n);
+
+        float maxOut = 0.0f;
+        for (float v : mock.lastLeft) maxOut = Math.max(maxOut, Math.abs(v));
+        assertTrue(maxOut < 1e-3f,
+                "PC mode: silence input should produce near-zero output, got max=" + maxOut);
+    }
+
+    @Test
+    void testApple2SilenceProducesNoAudibleCarrier() {
+        // Same check for Apple II's 22.05 kHz carrier — previously sat exactly at Nyquist.
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(
+                true, "pwm", 22050.0, 32.0, 28.4, null, mock);
+
+        int n = 44100;
+        float[] left = new float[n];
+        float[] right = new float[n];
+        filter.process(left, right, n);
+
+        float maxOut = 0.0f;
+        for (float v : mock.lastLeft) maxOut = Math.max(maxOut, Math.abs(v));
+        assertTrue(maxOut < 1e-3f,
+                "Apple II mode: silence input should produce near-zero output, got max=" + maxOut);
     }
 }
