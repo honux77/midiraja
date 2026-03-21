@@ -71,7 +71,7 @@ public class MuntCommand implements Callable<Integer>
             audio.enableDump(common.dumpWav.get());
         }
         AudioProcessor pipeline = new FloatToShortSink(audio);
-        pipeline = common.wrapRetroPipeline(pipeline);
+        pipeline = common.buildDspChain(pipeline);
 
         var bridge = new FFMMuntNativeBridge();
         var provider = new MuntSynthProvider(bridge, pipeline);

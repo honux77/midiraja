@@ -36,7 +36,7 @@ public class FmSynthOptions
             audio.enableDump(common.dumpWav.get());
         }
         AudioProcessor pipeline = new FloatToShortSink(audio);
-        pipeline = common.wrapRetroPipeline(pipeline);
+        pipeline = common.buildDspChain(pipeline);
         pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
         return pipeline;
     }

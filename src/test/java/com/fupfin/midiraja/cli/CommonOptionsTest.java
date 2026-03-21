@@ -39,30 +39,30 @@ class CommonOptionsTest
     }
 
     @Test
-    void wrapRetroPipeline_noOptionsSet_returnsSinkUnchanged()
+    void buildDspChain_noOptionsSet_returnsSinkUnchanged()
     {
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertSame(sink, result,
                 "With no retro/speaker options, pipeline should be the original sink");
     }
 
     @Test
-    void wrapRetroPipeline_unknownSpeakerProfile_throwsIllegalArgument()
+    void buildDspChain_unknownSpeakerProfile_throwsIllegalArgument()
     {
         common.speakerProfile = Optional.of("totally-unknown-profile");
 
         assertThrows(IllegalArgumentException.class,
-                () -> common.wrapRetroPipeline(sink),
+                () -> common.buildDspChain(sink),
                 "Unknown speaker profile should throw IllegalArgumentException");
     }
 
     @Test
-    void wrapRetroPipeline_knownSpeakerProfile_wrapsWithAcousticFilter()
+    void buildDspChain_knownSpeakerProfile_wrapsWithAcousticFilter()
     {
         common.speakerProfile = Optional.of("tin-can");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result,
                 "Known speaker profile 'tin-can' should wrap the pipeline with a filter");
@@ -71,22 +71,22 @@ class CommonOptionsTest
     }
 
     @Test
-    void wrapRetroPipeline_knownSpeakerProfileCaseInsensitive_wrapsWithAcousticFilter()
+    void buildDspChain_knownSpeakerProfileCaseInsensitive_wrapsWithAcousticFilter()
     {
         common.speakerProfile = Optional.of("TIN-CAN");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.AcousticSpeakerFilter.class, result);
     }
 
     @Test
-    void wrapRetroPipeline_retroModeCompactMac_wrapsWithCompactMacFilter()
+    void buildDspChain_retroModeCompactMac_wrapsWithCompactMacFilter()
     {
         common.retroMode = Optional.of("compactmac");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.CompactMacSimulatorFilter.class, result);
@@ -94,22 +94,22 @@ class CommonOptionsTest
 
 
     @Test
-    void wrapRetroPipeline_retroModePc_wrapsWithOneBitFilter()
+    void buildDspChain_retroModePc_wrapsWithOneBitFilter()
     {
         common.retroMode = Optional.of("pc");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.OneBitHardwareFilter.class, result);
     }
 
     @Test
-    void wrapRetroPipeline_retroModeCovox_wrapsWithCovoxFilter()
+    void buildDspChain_retroModeCovox_wrapsWithCovoxFilter()
     {
         common.retroMode = Optional.of("covox");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.CovoxDacFilter.class, result);
@@ -117,22 +117,22 @@ class CommonOptionsTest
 
 
     @Test
-    void wrapRetroPipeline_retroModeApple2_wrapsWithOneBitFilter()
+    void buildDspChain_retroModeApple2_wrapsWithOneBitFilter()
     {
         common.retroMode = Optional.of("apple2");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.OneBitHardwareFilter.class, result);
     }
 
     @Test
-    void wrapRetroPipeline_retroModeSpectrum_wrapsWithSpectrumBeeperFilter()
+    void buildDspChain_retroModeSpectrum_wrapsWithSpectrumBeeperFilter()
     {
         common.retroMode = Optional.of("spectrum");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.SpectrumBeeperFilter.class, result);
@@ -140,32 +140,32 @@ class CommonOptionsTest
 
 
     @Test
-    void wrapRetroPipeline_retroModeDisneysound_wrapsWithCovoxFilter()
+    void buildDspChain_retroModeDisneysound_wrapsWithCovoxFilter()
     {
         common.retroMode = Optional.of("disneysound");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.CovoxDacFilter.class, result);
     }
 
     @Test
-    void wrapRetroPipeline_unknownRetroMode_throwsIllegalArgument()
+    void buildDspChain_unknownRetroMode_throwsIllegalArgument()
     {
         common.retroMode = Optional.of("totallyunknownmode");
 
         assertThrows(IllegalArgumentException.class,
-                () -> common.wrapRetroPipeline(sink),
+                () -> common.buildDspChain(sink),
                 "Unknown retro mode should throw IllegalArgumentException");
     }
 
     @Test
-    void wrapRetroPipeline_retroModeCaseInsensitive_wrapsCorrectly()
+    void buildDspChain_retroModeCaseInsensitive_wrapsCorrectly()
     {
         common.retroMode = Optional.of("PC");
 
-        AudioProcessor result = common.wrapRetroPipeline(sink);
+        AudioProcessor result = common.buildDspChain(sink);
 
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.OneBitHardwareFilter.class, result);

@@ -208,7 +208,7 @@ public class DemoCommand implements Callable<Integer>
             audio.enableDump(common.dumpWav.get());
         }
         AudioProcessor pipeline = new FloatToShortSink(audio, channels);
-        pipeline = common.wrapRetroPipeline(pipeline);
+        pipeline = common.buildDspChain(pipeline);
         pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
         return pipeline;
     }

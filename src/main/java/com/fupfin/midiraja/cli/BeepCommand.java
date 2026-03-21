@@ -107,7 +107,7 @@ public class BeepCommand implements Callable<Integer>
             audio.enableDump(common.dumpWav.get());
         }
         AudioProcessor pipeline = new FloatToShortSink(audio, 1);
-        pipeline = common.wrapRetroPipeline(pipeline);
+        pipeline = common.buildDspChain(pipeline);
         pipeline = fxOptions.wrapWithFloatConversion(pipeline, common);
 
         // Map user's 1~6 quality level exponentially (1 -> 1x, 2 -> 2x, 3 -> 4x, ..., 6 -> 32x)

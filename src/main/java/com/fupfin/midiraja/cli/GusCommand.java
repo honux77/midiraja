@@ -98,7 +98,7 @@ public class GusCommand implements Callable<Integer>
         }
 
         AudioProcessor pipeline = new FloatToShortSink(audio);
-        pipeline = common.wrapRetroPipeline(pipeline);
+        pipeline = common.buildDspChain(pipeline);
         pipeline = Objects.requireNonNull(fxOptions).wrapWithFloatConversion(pipeline, common);
 
         var patchDir = patchDir();
