@@ -129,9 +129,64 @@ by the cone's mechanical inertia. Using the RC label for a mechanical system wou
 physically inaccurate. Oversampling sidesteps this: it makes no assumptions about the filter
 topology and lets the IIR model the cone empirically.
 
-The choice of 4× is deliberate: the cone IIR needs at least 4–8 sub-samples per carrier period
-to accurately track PWM transitions. 4× gives exactly 8 sub-samples per Apple II carrier period
-(176,400 / 22,050 = 8, no rounding error), which is both necessary and sufficient.
+The choice of 4× is deliberate — see §2.5 below for the full analysis shared with the PC mode.
+
+---
+
+### 2.5 Design Decisions: Why 4× Oversampling (Apple II & PC)
+
+`OneBitHardwareFilter` is shared by both `--retro apple2` and `--retro pc`. Three arguments
+for the 4× oversampling factor were examined during development. Only one proved valid.
+
+**❌ Argument 1: "Duty levels are not representable at 1×"**
+
+Claim: with only ~2–3 output samples per carrier period, adjacent duty levels produce identical
+±1 bit sequences and cannot be distinguished by the IIR.
+
+- Apple II: 22,050 Hz carrier, 32 levels, 1/32 duty step. At 1× there are exactly 2.0
+  samples per carrier period — the carrier sits exactly at Nyquist.
+- PC: 15,200 Hz carrier, 78 levels, 1/78 duty step. At 1× there are ~2.9 samples per period.
+
+This is incorrect. `duty = round(input × levels) / levels` is stored as a `double`, and
+`carrierPhase` is also a `double` advancing by `carrierHz / sampleRate` per sample. The
+comparison `carrierPhase < duty` uses full floating-point precision. Over many carrier cycles
+the IIR's long-term average converges to a distinct value for every discrete duty level. No
+integer sample alignment is required.
+
+**❌ Argument 2: "Hardware clock resolution requires high oversampling"**
+
+Claim: the original hardware generates duty cycle edges at the resolution of its master clock —
+Apple II at 1.02 MHz (1/46 of the 22 kHz carrier period ≈ 980 ns), PC PIT at 1.19 MHz
+(1/78 of the 15.2 kHz carrier period ≈ 838 ns). Reproducing this requires a sample rate of
+~1 MHz, i.e., ~23–27× oversampling.
+
+Also incorrect. The clock-tick resolution is the edge-timing precision of the *original analog
+hardware*. In our simulation, `duty = k/levels` is a continuous floating-point threshold
+compared against a floating-point phase accumulator. The transition point is not snapped to
+integer sub-sample boundaries — it is evaluated with double precision at each step. The
+floating-point representation already captures 1/levels precision (and far beyond) at 1×,
+with no additional oversampling needed for timing fidelity.
+
+**✅ Argument 3: "Cone IIR needs sufficient sub-samples per carrier period"**
+
+The valid reason. The IIR models the speaker cone's mechanical inertia by filtering the ±1 PWM
+bit stream. For accurate step response — and therefore the correct harmonic texture — the IIR
+must be updated frequently enough within each carrier cycle. Too few steps per period produces
+a coarse approximation that sounds wrong.
+
+The rule of thumb for adequate IIR step response is 4–8 samples per period of the filtered signal:
+
+| Oversampling | Internal rate | Steps / period (Apple II 22,050 Hz) | Steps / period (PC 15,200 Hz) | Assessment |
+| :--- | :--- | :--- | :--- | :--- |
+| 1× | 44,100 Hz | 2.0 ❌ (at Nyquist) | 2.9 ❌ | Inadequate |
+| 2× | 88,200 Hz | 4.0 △ | 5.8 △ | Borderline |
+| 4× | 176,400 Hz | **8.0 ✅** | **11.6 ✅** | Adequate |
+| 8× | 352,800 Hz | 16.0 | 23.2 | Excessive |
+
+4× is the minimum choice that clears the threshold for both modes. The Apple II carrier at
+22,050 Hz divides 176,400 Hz exactly (8.0 sub-samples per period, no rounding), making 4× a
+particularly clean fit. The PC's non-integer 11.6 produces rounding artefacts only above
+88 kHz, which is inaudible.
 
 ---
 
@@ -179,56 +234,8 @@ Same 4× oversampling approach as apple2 (§2.4), with two additions:
    which the biquads run); bilinear pre-warping error at these frequencies is < 0.2%.
 
 The PC carrier at 15,200 Hz gives ≈ 11.6 sub-samples per carrier period — comfortably above
-the 4–8 sub-sample minimum needed for accurate IIR step response. The resulting rounding
-artefacts from the non-integer ratio appear above 88 kHz and are inaudible.
-
-### Design Decisions: Why 4× Oversampling in OneBitHardwareFilter
-
-Three arguments for oversampling were examined. Only one proved valid.
-
-**❌ "78 duty levels are not representable at 1×"**
-
-Claim: with only ~2.9 output samples per carrier period, adjacent duty levels (e.g., 38/78 vs
-39/78) produce identical ±1 bit sequences and cannot be distinguished by the IIR.
-
-This is incorrect. `duty = round(input × 78) / 78` is stored as a `double`, and `carrierPhase`
-is also a `double` advancing by `carrierHz / sampleRate` per sample. The comparison
-`carrierPhase < duty` is evaluated at full floating-point precision, far exceeding 1/78
-resolution. Over many carrier cycles, the IIR's long-term average converges to a distinct value
-for every k from 0 to 78. No integer sample alignment is required.
-
-**❌ "PIT 1.19 MHz clock requires 27× oversampling"**
-
-Claim: the IBM PC PIT generates duty cycle edges at 1 PIT-clock precision (838 ns = 1/78 of
-the carrier period). Reproducing this requires a sample rate of 1.19 MHz, i.e., 27× oversampling.
-
-Also incorrect. The 838 ns resolution is the edge-timing precision of the *original analog
-hardware*. In our simulation, `duty = k/78.0` is a continuous floating-point threshold compared
-against a floating-point phase accumulator. The transition point is not snapped to integer
-sub-sample boundaries — it is evaluated at each step with double precision. The floating-point
-representation already captures 1/78 precision (and far beyond) without any additional
-oversampling.
-
-**✅ "Cone IIR needs sufficient sub-samples per carrier period"**
-
-The valid reason. The IIR models the speaker cone's mechanical inertia by filtering the ±1 PWM
-bit stream. For accurate step response — and therefore the correct harmonic texture — the IIR
-must be updated frequently enough within each carrier cycle. Too few steps per period produces
-a coarse approximation that sounds wrong.
-
-The rule of thumb for adequate IIR step response is 4–8 samples per period:
-
-| Oversampling | Internal rate | Steps / carrier period (PC) | Steps / carrier period (Apple II) | Assessment |
-| :--- | :--- | :--- | :--- | :--- |
-| 1× | 44,100 Hz | 2.9 | 2.0 | ❌ Inadequate (Apple II at Nyquist) |
-| 2× | 88,200 Hz | 5.8 | 4.0 | △ Borderline |
-| 4× | 176,400 Hz | 11.6 | 8.0 | ✅ Adequate |
-| 8× | 352,800 Hz | 23.2 | 16.0 | Excessive |
-
-4× is the minimum choice that clears the threshold for both modes. The Apple II carrier at
-22,050 Hz divides 176,400 Hz exactly (8.0 sub-samples per period, no rounding), making 4× a
-particularly clean fit. The PC's non-integer 11.6 sub-samples produces rounding artefacts only
-above 88 kHz, which is inaudible.
+the 4–8 sub-sample minimum. The resulting rounding artefacts from the non-integer ratio appear
+above 88 kHz and are inaudible. See §2.5 for the full design rationale shared with Apple II.
 
 ---
 
