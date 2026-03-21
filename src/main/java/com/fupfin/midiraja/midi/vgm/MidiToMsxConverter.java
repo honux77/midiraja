@@ -540,16 +540,22 @@ public final class MidiToMsxConverter
 
         // ── Volume conversion ─────────────────────────────────────────────────
 
-        /** YM2413: velocity 0–127 → volume 15–0 (0=max, 15=silent). */
+        /**
+         * YM2413: velocity 0–127 → volume 10–0 (0=max, 15=silent).
+         * Max attenuation capped at 10 (vs register max 15) to boost FM output level.
+         */
         private static int fmVelocityToVolume(int velocity)
         {
-            return 15 - Math.round(velocity * 15.0f / 127.0f);
+            return 10 - Math.round(velocity * 10.0f / 127.0f);
         }
 
-        /** PSG: velocity 0–127 → amplitude 0–15 (0=silent, 15=max). */
+        /**
+         * PSG: velocity 0–127 → amplitude 0–11 (0=silent, 11=max).
+         * Capped at 11 (≈ −12 dB vs AY max of 15) to balance with YM2413 FM output.
+         */
         private static int psgVelocityToAmplitude(int velocity)
         {
-            return Math.round(velocity * 15.0f / 127.0f);
+            return Math.round(velocity * 11.0f / 127.0f);
         }
     }
 }

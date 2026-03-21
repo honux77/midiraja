@@ -13,6 +13,62 @@
 
 ---
 
+## Quick Start
+
+```bash
+# Install (macOS & Linux)
+curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bash
+
+# Tour all synthesis engines — no setup needed
+midra demo
+
+# Play immediately — FreePats wavetable is bundled, no setup needed
+midra patch song.mid
+
+# Play with SoundFont — bundled FluidR3 GM SF3, no setup needed
+midra soundfont song.mid
+
+# Play with a custom SoundFont
+midra soundfont ~/soundfonts/FluidR3_GM.sf2 song.mid
+
+# Route to hardware (Roland SC-55, Yamaha MU100, etc.)
+midra device song.mid
+```
+
+### Engine quick-pick
+
+| I want … | Command |
+|----------|---------|
+| Best quality, no setup | `midra patch song.mid` |
+| SoundFont playback, no setup | `midra soundfont song.mid` |
+| Retro hardware emulation | see below |
+| Roland MT-32 (LucasArts / Sierra adventures) | `midra mt32 ~/roms/ song.mid` |
+| Hardware synth or OS MIDI port | `midra device song.mid` |
+
+**Retro emulation engines** — all zero-setup, no external files needed:
+
+| Chip | Era | Command |
+|------|-----|---------|
+| OPL3 (AdLib / Sound Blaster) | DOS games (DOOM, TIE Fighter) | `midra opl song.mid` |
+| OPN2 (Sega Genesis / PC-98) | Console / Japanese PC | `midra opn song.mid` |
+| PSG (MSX / ZX Spectrum / Atari ST) | 8-bit home computers | `midra psg song.mid` |
+| 1-bit (Apple II / PC Speaker) | Extreme lo-fi | `midra 1bit song.mid` |
+| Amiga Paula (A500 / A1200) | Amiga 500 / 1200 | `midra opl --retro amiga song.mid` |
+
+**VGM export** — convert MIDI to VGM for retro chip emulators (no audio output, file only):
+
+| Chip | Voices | Command |
+|------|--------|---------|
+| AY-3-8910 / YM2149 (PSG) | 3 melodic | `midra vgm song.mid` |
+| YM2413 OPLL | 9 FM melodic + rhythm | `midra opll song.mid` |
+| MSX combined (PSG + OPLL) | 3 PSG + 9 FM = 12 voices | `midra msxvgm song.mid` |
+| YMF262 OPL3 | 18 FM (14 melodic + 4 percussion) | `midra opl3vgm song.mid` |
+
+See the full engine guide in [docs/quickstart.md](docs/quickstart.md).
+
+---
+
+
 ## Installation
 
 ### Supported Platforms
