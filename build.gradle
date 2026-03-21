@@ -149,6 +149,7 @@ jacocoTestReport {
 import net.ltgt.gradle.errorprone.CheckSeverity
 
 tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
     options.compilerArgs.add('--enable-preview')
     if (!name.toLowerCase().contains("test")) {
         options.errorprone {
