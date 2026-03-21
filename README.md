@@ -17,7 +17,7 @@
 
 ```bash
 # Install (macOS & Linux)
-curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/honux77/midiraja/main/install.sh | bash
 
 # Tour all synthesis engines — no setup needed
 midra demo
@@ -79,18 +79,18 @@ See the full engine guide in [docs/quickstart.md](docs/quickstart.md).
 | Linux | amd64 / arm64 | Available (experimental) |
 | Windows | amd64 | Available (experimental) |
 
-> **Linux & Windows** builds are provided but have received limited real-world testing. Please [open an issue](https://github.com/fupfin/midiraja/issues) if you encounter problems.
+> **Linux & Windows** builds are provided but have received limited real-world testing. Please [open an issue](https://github.com/honux77/midiraja/issues) if you encounter problems.
 
 ### macOS & Linux
 
 ```bash
-curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/honux77/midiraja/main/install.sh | bash
 ```
 
 Install to a custom prefix (e.g. `/usr/local`):
 
 ```bash
-curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bash -s -- --prefix /usr/local
+curl -sL https://raw.githubusercontent.com/honux77/midiraja/main/install.sh | bash -s -- --prefix /usr/local
 ```
 
 > **Linux prerequisite:** ALSA is required for audio output.
@@ -99,12 +99,23 @@ curl -sL https://raw.githubusercontent.com/fupfin/midiraja/main/install.sh | bas
 ### Windows (PowerShell)
 
 ```powershell
-irm https://raw.githubusercontent.com/fupfin/midiraja/main/install.ps1 | iex
+irm https://raw.githubusercontent.com/honux77/midiraja/main/install.ps1 | iex
 ```
+
+Install from a locally downloaded zip (e.g. a CI artifact):
+
+```powershell
+irm https://raw.githubusercontent.com/honux77/midiraja/main/install.ps1 -OutFile install.ps1
+Unblock-File .\install.ps1
+.\install.ps1 -Local .\midra-windows-amd64.zip
+```
+
+Restart your terminal after installation, then run `midra --help`.
+
 
 ### Manual Download
 
-Download the latest release from the [Releases](https://github.com/fupfin/midiraja/releases) page:
+Download the latest release from the [Releases](https://github.com/honux77/midiraja/releases) page:
 
 - `midra-darwin-arm64.tar.gz` — macOS Apple Silicon
 - `midra-linux-amd64.tar.gz` — Linux x86_64
