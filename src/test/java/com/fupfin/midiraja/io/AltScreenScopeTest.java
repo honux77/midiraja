@@ -81,18 +81,20 @@ class AltScreenScopeTest
     }
 
     @Test
-    void exitThenTryWithResources_closesOnlyOnce()
+    void exitBeforeClose_tryWithResourcesDoesNotDoubleEmit()
     {
         var sw = new StringWriter();
         try (var scope = AltScreenScope.enter(new PrintWriter(sw)))
         {
-            sw.getBuffer().setLength(0);
-            scope.exit();
-            int lengthAfterExit = sw.toString().length();
-            // try-with-resources will call close() again; output must not grow
-            sw.getBuffer().setLength(lengthAfterExit);  // snapshot
-        }
-        // If idempotent, the second close() from try-with-resources added nothing
-        assertTrue(sw.toString().length() == 0 || sw.toString().contains(Theme.TERM_ALT_SCREEN_DISABLE));
+            sw.getBuffer().setLength(0);  // clear enter output
+            scope.exit();  // first close
+        }  // try-with-resources calls close() a second time
+        // Total disable+show output must appear exactly once
+        String output = sw.toString();
+        int firstOccurrence = output.indexOf(Theme.TERM_ALT_SCREEN_DISABLE);
+        int lastOccurrence  = output.lastIndexOf(Theme.TERM_ALT_SCREEN_DISABLE);
+        assertTrue(firstOccurrence >= 0, "TERM_ALT_SCREEN_DISABLE must appear at least once");
+        assertEquals(firstOccurrence, lastOccurrence,
+                "TERM_ALT_SCREEN_DISABLE must appear exactly once (idempotent close)");
     }
 }
