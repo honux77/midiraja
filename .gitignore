@@ -47,3 +47,6 @@ src/main/c/miniaudio/*.so
 .DS_Store
 
 bin/
+
+# Git worktrees
+.worktrees/
