@@ -205,7 +205,6 @@ class PlaybackRunnerTest {
         };
 
         MockMidiProvider provider = new MockMidiProvider();
-        // 5-parameter constructor — does not exist yet, will fail to compile
         PlaybackRunner runner = new PlaybackRunner(
                 new PrintStream(outBytes), new PrintStream(errBytes), mockIO, true, factory);
 
