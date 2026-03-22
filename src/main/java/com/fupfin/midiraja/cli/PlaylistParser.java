@@ -13,7 +13,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.OptionalDouble;
@@ -65,7 +64,7 @@ public class PlaylistParser
                 playlist.add(f);
             }
         }
-        return new ParseResult(Collections.unmodifiableList(playlist), acc.build());
+        return new ParseResult(playlist, acc.build());
     }
 
     @SuppressWarnings({"StringSplitter", "EmptyCatch"})

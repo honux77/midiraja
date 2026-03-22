@@ -67,6 +67,8 @@ public class DemoCommand implements Callable<Integer>
             return 1;
         }
 
+        // demoDir is always a directory — parsePlaylistFile is never called, so no
+        // #MIDRA: directives are produced and directives() need not be applied.
         List<File> allFiles = new PlaylistParser(p.getErr(), common.isVerbose())
                 .parse(List.of(demoDir), common).files();
         if (allFiles.isEmpty())
