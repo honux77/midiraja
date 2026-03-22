@@ -179,7 +179,7 @@ public class PlaybackRunner
                 // Use the same output path (System.out) that was used to enter alt screen
                 // so the sequence reaches the terminal reliably.
                 String safeRestore = Theme.TERM_ALT_SCREEN_DISABLE
-                                + Theme.TERM_MOUSE_DISABLE + Theme.COLOR_RESET + "\033[?7h"
+                                + Theme.TERM_MOUSE_DISABLE + Theme.COLOR_RESET + Theme.TERM_AUTOWRAP_ON
                                 + Theme.TERM_SHOW_CURSOR + "\r\033[K\n";
                 if (isInteractive)
                 {
@@ -237,9 +237,9 @@ public class PlaybackRunner
             }));
 
             // ── UI mode ───────────────────────────────────────────────────────
-            boolean[] altScreenOut = new boolean[1];
-            PlaybackUI ui = buildUI(common.uiOptions, isInteractive, activeIO.getHeight(), altScreenOut);
-            boolean useAltScreen = altScreenOut[0];
+            var uiResult = buildUI(common.uiOptions, isInteractive, activeIO.getHeight());
+            PlaybackUI ui = uiResult.ui();
+            boolean useAltScreen = uiResult.useAltScreen();
 
             // Install SIGTSTP/SIGCONT handlers so Ctrl+Z cleanly suspends and restores the UI.
             // Each UI mode encapsulates its own terminal state (alt screen, cursor, autowrap).
@@ -273,7 +273,7 @@ public class PlaybackRunner
                 {
                     String safeRestore = (useAltScreen && !suppressAltScreenRestore
                                     ? Theme.TERM_ALT_SCREEN_DISABLE : "")
-                            + Theme.TERM_MOUSE_DISABLE + Theme.COLOR_RESET + "\033[?7h"
+                            + Theme.TERM_MOUSE_DISABLE + Theme.COLOR_RESET + Theme.TERM_AUTOWRAP_ON
                             + Theme.TERM_SHOW_CURSOR + "\r\033[K\n";
                     out.print(safeRestore);
                     out.flush();
@@ -415,37 +415,16 @@ public class PlaybackRunner
         }
     }
 
-    PlaybackUI buildUI(UiModeOptions uiOpts, boolean isInteractive,
-            int activeIOHeight, boolean[] useAltScreenOut)
+    record UIResult(PlaybackUI ui, boolean useAltScreen) {}
+
+    UIResult buildUI(UiModeOptions uiOpts, boolean isInteractive, int activeIOHeight)
     {
-        PlaybackUI ui;
-        if (uiOpts.classicMode)
-        {
-            ui = new DumbUI();
-        }
-        else if (uiOpts.miniMode)
-        {
-            ui = new LineUI();
-        }
-        else if (uiOpts.fullMode)
-        {
-            ui = new DashboardUI();
-            useAltScreenOut[0] = true;
-        }
-        else if (!isInteractive)
-        {
-            ui = new DumbUI();
-        }
-        else if (activeIOHeight < 10)
-        {
-            ui = new LineUI();
-        }
-        else
-        {
-            ui = new DashboardUI();
-            useAltScreenOut[0] = true;
-        }
-        return ui;
+        if (uiOpts.classicMode)  return new UIResult(new DumbUI(),      false);
+        if (uiOpts.miniMode)     return new UIResult(new LineUI(),      false);
+        if (uiOpts.fullMode)     return new UIResult(new DashboardUI(), true);
+        if (!isInteractive)      return new UIResult(new DumbUI(),      false);
+        if (activeIOHeight < 10) return new UIResult(new LineUI(),      false);
+        return                        new UIResult(new DashboardUI(), true);
     }
 
     private void playPlaylistLoop(List<File> playlist, MidiOutProvider provider, MidiPort port,
