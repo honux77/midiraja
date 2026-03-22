@@ -366,4 +366,43 @@ class PlaybackEngineTest
                 100, 1.0, Optional.empty(), Optional.empty(), clock);
         assertNotNull(engine);
     }
+
+    @Test void fakeClock_nanoTime_advancesWithSleep() throws InterruptedException {
+        var clock = new FakeClock();
+        long t0 = clock.nanoTime();
+        clock.sleepMillis(100);
+        long t1 = clock.nanoTime();
+        clock.onSpinWait();
+        long t2 = clock.nanoTime();
+
+        assertEquals(100_000_000L, t1 - t0, "sleepMillis(100) should advance by 100ms in nanos");
+        assertTrue(t2 > t1, "onSpinWait() should advance nanos by at least 1");
+    }
+
+    /**
+     * After the last event, playLoop() sleeps END_OF_TRACK_MS (20 ms) before returning.
+     * FakeClock confirms the delay is observed without real wall-clock time passing.
+     *
+     * Code path: empty track → sortedEvents has one End-of-Track meta at tick 0 →
+     * outer while loop exits after processing it (eventIndex == sortedEvents.size()) →
+     * falls through to the END_OF_TRACK_MS sleep.
+     */
+    @Test void endOfTrack_delay_isObserved() throws Exception {
+        var clock = new FakeClock();
+        // createTrack() inserts a single End-of-Track meta at tick 0.
+        var singleEventSeq = new Sequence(Sequence.PPQ, 480);
+        singleEventSeq.createTrack();
+
+        var engine = new PlaybackEngine(singleEventSeq, mockProvider, ctx(),
+                100, 1.0, Optional.empty(), Optional.empty(), clock);
+
+        ScopedValue.where(TerminalIO.CONTEXT, mockIO)
+                .call(() -> engine.start(new DumbUI()));
+
+        // Startup delay: 50 × sleepMillis(10) = 500ms fake.
+        // End-of-track delay: sleepMillis(20) = 20ms fake.
+        // Total minimum = 520ms = 520,000,000 ns.
+        assertTrue(clock.nanoTime() >= 520_000_000L,
+                "Expected startup + end-of-track delay >= 520ms, got " + clock.nanoTime() + " ns");
+    }
 }
