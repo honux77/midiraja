@@ -153,6 +153,26 @@ class PlaylistParserTest
         assertTrue(result.directives().recursive(), "#MIDRA: -R should set recursive=true");
     }
 
+    @Test void testM3uRecursiveDirectiveAffectsSubsequentDirectory(@TempDir Path tempDir) throws Exception
+    {
+        // Create nested structure: tempDir/sub/nested.mid
+        Path subDir = tempDir.resolve("sub");
+        Files.createDirectory(subDir);
+        createTestMidi(subDir, "nested.mid");
+
+        File m3u = tempDir.resolve("playlist.m3u").toFile();
+        // --recursive directive appears before the directory entry
+        Files.writeString(m3u.toPath(),
+                "#MIDRA: --recursive\n" + tempDir.toAbsolutePath() + "\n");
+
+        var result = parser.parse(List.of(m3u), common);
+
+        assertTrue(result.directives().recursive(),
+                "--recursive directive should be recorded in directives");
+        assertEquals(1, result.files().size(),
+                "--recursive directive should cause nested.mid to be found via recursive scan");
+    }
+
     // ── M3U key-value directives ────────────────────────────────────────────────
 
     @Test void testM3uVolumeDirective(@TempDir Path tempDir) throws Exception
@@ -222,6 +242,21 @@ class PlaylistParserTest
         assertTrue(result.directives().shuffle(), "shuffle should be set");
         assertTrue(result.directives().loop(), "loop should be set");
         assertEquals(50, result.directives().volume().getAsInt(), "volume should be 50");
+    }
+
+    @Test void applyTo_updatesCommonOptionsFields(@TempDir Path tempDir) throws Exception
+    {
+        File midi = createTestMidi(tempDir, "track.mid");
+        File m3u = tempDir.resolve("playlist.m3u").toFile();
+        Files.writeString(m3u.toPath(),
+                "#MIDRA: --shuffle --volume 70 --speed 1.2\n" + midi.getAbsolutePath() + "\n");
+
+        var result = parser.parse(List.of(m3u), common);
+        result.directives().applyTo(common);
+
+        assertTrue(common.shuffle,   "applyTo should set shuffle on CommonOptions");
+        assertEquals(70,  common.volume, "applyTo should set volume on CommonOptions");
+        assertEquals(1.2, common.speed, 0.001, "applyTo should set speed on CommonOptions");
     }
 
     // ── M3U comment and blank line handling ─────────────────────────────────────
