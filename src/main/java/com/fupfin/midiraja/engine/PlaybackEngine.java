@@ -51,6 +51,12 @@ public class PlaybackEngine
     private final AtomicReference<Double> currentSpeed = new AtomicReference<>(1.0);
 
 
+    private static final int STARTUP_DELAY_MS   = 500; // Skip quickly through tracks without noisy init
+    private static final int STARTUP_POLL_MS    =  10; // Poll interval during startup delay
+    private static final int PLAYBACK_POLL_MS   =  50; // Main playback loop sleep interval
+    private static final int END_OF_TRACK_MS    =  20; // Hold after last event so UI renders final frame
+    private static final int RESET_SETTLE_MS    =  50; // Give hardware synth time to process reset SysEx
+
     private final AtomicBoolean isPlaying = new AtomicBoolean(false);
     private final AtomicBoolean isPaused = new AtomicBoolean(false);
 
@@ -304,8 +310,8 @@ public class PlaybackEngine
             try
             {
                 pipelineRoot.sendMessage(payload);
-                Thread.sleep(50); // Give the hardware synthesizer 50ms to process the
-                                  // reset before slamming it with notes
+                Thread.sleep(RESET_SETTLE_MS); // Give the hardware synthesizer time to
+                                               // process the reset before slamming it with notes
             }
             catch (Exception ignored)
             {
@@ -318,7 +324,7 @@ public class PlaybackEngine
         // STARTUP DELAY (UX Improvement): Wait 500ms before actually starting playback.
         // This allows the user to quickly skip through tracks (Next/Prev)
         // without triggering heavy audio initialization and unwanted noise.
-        long startupWaitEnd = System.currentTimeMillis() + 500;
+        long startupWaitEnd = System.currentTimeMillis() + STARTUP_DELAY_MS;
         while (System.currentTimeMillis() < startupWaitEnd)
         {
             if (!isPlaying.get())
@@ -326,7 +332,7 @@ public class PlaybackEngine
                 // User hit next/prev/quit during the delay. Abort immediately.
                 return;
             }
-            Thread.sleep(10);
+            Thread.sleep(STARTUP_POLL_MS);
         }
 
         playbackActuallyStarted.set(true);
@@ -426,7 +432,7 @@ public class PlaybackEngine
                 while (isPlaying.get() && seekTarget.get() == -1
                         && endStatus.get() == PlaybackStatus.FINISHED)
                 {
-                    Thread.sleep(50);
+                    Thread.sleep(PLAYBACK_POLL_MS);
                     // If the user presses next/prev, the UI might change endStatus.get() and set
                     // isPlaying.get()=false.
                     // But actually the UI calls next() which sets endStatus.get() = NEXT,
@@ -445,7 +451,7 @@ public class PlaybackEngine
 
             while (isPaused.get() && isPlaying.get())
             {
-                Thread.sleep(50); // Hold the playback thread
+                Thread.sleep(PLAYBACK_POLL_MS); // Hold the playback thread
                 // If user seeks while paused, break out to let the seek logic run
                 if (seekTarget.get() != -1) break;
                 // Keep pushing the startTime forward so we don't instantly "catch up"
@@ -475,7 +481,7 @@ public class PlaybackEngine
                     long remainingMs = (targetNanos - currentNanos) / 1_000_000L;
                     if (remainingMs > 1)
                     {
-                        Thread.sleep(min(remainingMs - 1, 50));
+                        Thread.sleep(min(remainingMs - 1, PLAYBACK_POLL_MS));
                     }
                     else
                     {
@@ -511,7 +517,7 @@ public class PlaybackEngine
             listeners.forEach(l -> l.onTick(currentMicroseconds.get()));
             try
             {
-                Thread.sleep(20);
+                Thread.sleep(END_OF_TRACK_MS);
             }
             catch (Exception ignored)
             { /* Allow UI to render 100% frame */

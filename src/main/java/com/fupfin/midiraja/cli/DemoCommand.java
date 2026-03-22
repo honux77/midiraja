@@ -22,7 +22,9 @@ import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
 import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
 import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
 import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 import com.fupfin.midiraja.midi.MidiOutProvider;
+import java.util.function.Consumer;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import com.fupfin.midiraja.midi.TsfSynthProvider;
@@ -162,43 +164,38 @@ public class DemoCommand implements Callable<Integer>
     private ProviderWithArgs selectProviderForTrack(String fileName) throws Exception
     {
         if (fileName.contains("-tsf-")) {
-            var pipeline = buildPipeline(2);
-            var provider = new TsfSynthProvider(new FFMTsfNativeBridge(), pipeline, null);
-            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
-            return new ProviderWithArgs(provider, Optional.ofNullable(findResource("soundfonts/FluidR3_GM.sf3")));
+            var provider = new TsfSynthProvider(new FFMTsfNativeBridge(), buildPipeline(2), null);
+            return withGain(provider, Optional.ofNullable(findResource("soundfonts/FluidR3_GM.sf3")), provider::setMasterGain);
         }
         if (fileName.contains("-gus-")) {
-            var pipeline = buildPipeline(2);
             var patchDir = findResource("freepats");
-            var provider = new GusSynthProvider(pipeline, patchDir);
-            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
-            return new ProviderWithArgs(provider, Optional.ofNullable(patchDir));
+            var provider = new GusSynthProvider(buildPipeline(2), patchDir);
+            return withGain(provider, Optional.ofNullable(patchDir), provider::setMasterGain);
         }
         if (fileName.contains("-opl3-")) {
-            var pipeline = buildPipeline(2);
-            var provider = new AdlMidiSynthProvider(new FFMAdlMidiNativeBridge(), pipeline, 0, 4, common.retroMode.orElse(null));
-            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
-            return new ProviderWithArgs(provider, Optional.of("bank:0"));
+            var provider = new AdlMidiSynthProvider(new FFMAdlMidiNativeBridge(), buildPipeline(2), 0, 4, common.retroMode.orElse(null));
+            return withGain(provider, Optional.of("bank:0"), provider::setMasterGain);
         }
         if (fileName.contains("-opn2-")) {
-            var pipeline = buildPipeline(2);
-            var provider = new OpnMidiSynthProvider(new FFMOpnMidiNativeBridge(), pipeline, 0, 4, common.retroMode.orElse(null));
-            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
-            return new ProviderWithArgs(provider, Optional.of(""));
+            var provider = new OpnMidiSynthProvider(new FFMOpnMidiNativeBridge(), buildPipeline(2), 0, 4, common.retroMode.orElse(null));
+            return withGain(provider, Optional.of(""), provider::setMasterGain);
         }
         if (fileName.contains("-psg-")) {
-            var pipeline = buildPipeline(1);
-            var provider = new PsgSynthProvider(pipeline, 4, 5.0, 25.0, false, false);
-            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
-            return new ProviderWithArgs(provider, Optional.empty());
+            var provider = new PsgSynthProvider(buildPipeline(1), 4, 5.0, 25.0, false, false);
+            return withGain(provider, Optional.empty(), provider::setMasterGain);
         }
         if (fileName.contains("-beep-")) {
-            var pipeline = buildPipeline(1);
-            var provider = new BeepSynthProvider(pipeline, 2, 1.0, 1.1, 1, "dsd", "square");
-            if (fxOptions.masterGain != null) provider.setMasterGain(fxOptions.masterGain);
-            return new ProviderWithArgs(provider, Optional.empty());
+            var provider = new BeepSynthProvider(buildPipeline(1), 2, 1.0, 1.1, 1, "dsd", "square");
+            return withGain(provider, Optional.empty(), provider::setMasterGain);
         }
         throw new IllegalArgumentException("Unknown engine tag in demo filename: " + fileName);
+    }
+
+    private ProviderWithArgs withGain(MidiOutProvider provider, Optional<String> soundbank,
+            Consumer<MasterGainFilter> setGain)
+    {
+        if (fxOptions.masterGain != null) setGain.accept(fxOptions.masterGain);
+        return new ProviderWithArgs(provider, soundbank);
     }
 
     private AudioProcessor buildPipeline(int channels) throws Exception {
