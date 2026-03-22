@@ -7,7 +7,10 @@
 
 package com.fupfin.midiraja.cli;
 
+import com.fupfin.midiraja.io.AltScreenScope;
 import com.fupfin.midiraja.io.JLineTerminalIO;
+import com.fupfin.midiraja.io.NavKeyMapFactory;
+import com.fupfin.midiraja.io.TerminalModeManager;
 import com.fupfin.midiraja.ui.ScreenBuffer;
 import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintStream;
@@ -18,10 +21,8 @@ import java.util.Scanner;
 import java.util.function.BiConsumer;
 import org.jline.keymap.BindingReader;
 import org.jline.keymap.KeyMap;
-import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
-import org.jline.utils.InfoCmp;
 import org.jline.utils.NonBlockingReader;
 import org.jspecify.annotations.Nullable;
 
@@ -211,14 +212,12 @@ public final class TerminalSelector
     {
         int selectedIdx = firstSelectable(items);
 
-        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build();
+             var alt = AltScreenScope.enter(terminal.writer()))
         {
-            terminal.enterRawMode();
-            disableIsig(terminal);
+            TerminalModeManager.enterRawNoIsig(terminal);
             var km = buildNavKeyMap(terminal);
             var bindingReader = new BindingReader(terminal.reader());
-            terminal.writer().print(Theme.TERM_ALT_SCREEN_ENABLE + Theme.TERM_HIDE_CURSOR);
-            terminal.writer().flush();
 
             while (true)
             {
@@ -299,20 +298,10 @@ public final class TerminalSelector
 
                 switch (action)
                 {
-                    case "QUIT" -> {
-                        terminal.writer()
-                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                        terminal.writer().flush();
-                        return null;
-                    }
-                    case "SELECT" -> {
-                        terminal.writer()
-                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                        terminal.writer().flush();
-                        return items.get(selectedIdx).requireValue();
-                    }
-                    case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
-                    case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
+                    case "QUIT"   -> { alt.exit(); return null; }
+                    case "SELECT" -> { alt.exit(); return items.get(selectedIdx).requireValue(); }
+                    case "UP"     -> selectedIdx = nextSelectable(items, selectedIdx, -1);
+                    case "DOWN"   -> selectedIdx = nextSelectable(items, selectedIdx, 1);
                 }
             }
         }
@@ -328,8 +317,7 @@ public final class TerminalSelector
 
         try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
-            terminal.enterRawMode();
-            disableIsig(terminal);
+            TerminalModeManager.enterRawNoIsig(terminal);
             var km = buildNavKeyMap(terminal);
             var bindingReader = new BindingReader(terminal.reader());
             terminal.writer().print(Theme.TERM_HIDE_CURSOR);
@@ -420,14 +408,12 @@ public final class TerminalSelector
         int selectedIdx = config.initialIndex() > 0 ? config.initialIndex() : firstSelectable(items);
         boolean confirmingDelete = false;
 
-        try (Terminal terminal = TerminalBuilder.builder().system(true).build())
+        try (Terminal terminal = TerminalBuilder.builder().system(true).build();
+             var alt = AltScreenScope.enter(terminal.writer()))
         {
-            terminal.enterRawMode();
-            disableIsig(terminal);
+            TerminalModeManager.enterRawNoIsig(terminal);
             var km = buildNavKeyMapWithActions(terminal);
             var bindingReader = new BindingReader(terminal.reader());
-            terminal.writer().print(Theme.TERM_ALT_SCREEN_ENABLE + Theme.TERM_HIDE_CURSOR);
-            terminal.writer().flush();
 
             while (true)
             {
@@ -513,9 +499,7 @@ public final class TerminalSelector
                     switch (action)
                     {
                         case "CONFIRM" -> {
-                            terminal.writer()
-                                    .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                            terminal.writer().flush();
+                            alt.exit();
                             return new SelectResult.Delete<>(items.get(selectedIdx).requireValue());
                         }
                         case "ABORT", "QUIT" -> confirmingDelete = false;
@@ -525,21 +509,14 @@ public final class TerminalSelector
 
                 switch (action)
                 {
-                    case "QUIT" -> {
-                        terminal.writer()
-                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                        terminal.writer().flush();
-                        return new SelectResult.Cancelled<>();
-                    }
+                    case "QUIT"   -> { alt.exit(); return new SelectResult.Cancelled<>(); }
                     case "SELECT" -> {
-                        terminal.writer()
-                                .print(Theme.TERM_ALT_SCREEN_DISABLE + Theme.TERM_SHOW_CURSOR);
-                        terminal.writer().flush();
+                        alt.exit();
                         return new SelectResult.Chosen<>(items.get(selectedIdx).requireValue());
                     }
                     case "DELETE" -> confirmingDelete = true;
-                    case "UP" -> selectedIdx = nextSelectable(items, selectedIdx, -1);
-                    case "DOWN" -> selectedIdx = nextSelectable(items, selectedIdx, 1);
+                    case "UP"     -> selectedIdx = nextSelectable(items, selectedIdx, -1);
+                    case "DOWN"   -> selectedIdx = nextSelectable(items, selectedIdx, 1);
                 }
             }
         }
@@ -556,8 +533,7 @@ public final class TerminalSelector
 
         try (Terminal terminal = TerminalBuilder.builder().system(true).build())
         {
-            terminal.enterRawMode();
-            disableIsig(terminal);
+            TerminalModeManager.enterRawNoIsig(terminal);
             var km = buildNavKeyMapWithActions(terminal);
             var bindingReader = new BindingReader(terminal.reader());
             terminal.writer().print(Theme.TERM_HIDE_CURSOR);
@@ -661,38 +637,15 @@ public final class TerminalSelector
         return new SelectResult.Cancelled<>();
     }
 
-    /**
-     * Disables ISIG so Ctrl+C is delivered as the character {@code \x03} (ETX) rather than
-     * generating SIGINT. Combined with the {@code \003} → QUIT binding, this routes Ctrl+C
-     * through the normal quit path and ensures the terminal is restored cleanly on exit.
-     * Same rationale as {@link com.fupfin.midiraja.io.JLineTerminalIO#init()}.
-     */
-    private static void disableIsig(Terminal terminal)
-    {
-        Attributes attr = terminal.getAttributes();
-        attr.setLocalFlag(Attributes.LocalFlag.ISIG, false);
-        terminal.setAttributes(attr);
-    }
-
     private static KeyMap<String> buildNavKeyMap(Terminal terminal)
     {
-        var km = new KeyMap<String>();
-        km.setAmbiguousTimeout(100);
-        String upSeq = KeyMap.key(terminal, InfoCmp.Capability.key_up);
-        if (upSeq != null && !upSeq.isEmpty()) km.bind("UP", upSeq);
-        km.bind("UP", "\033[A", "\033OA");
-        String downSeq = KeyMap.key(terminal, InfoCmp.Capability.key_down);
-        if (downSeq != null && !downSeq.isEmpty()) km.bind("DOWN", downSeq);
-        km.bind("DOWN", "\033[B", "\033OB");
-        km.bind("SELECT", "\r", "\n");
-        km.bind("QUIT", "q", "Q", "\033", "\003"); // \003 = Ctrl+C (ETX), ISIG disabled
-        return km;
+        return NavKeyMapFactory.buildNavKeyMap(terminal, "UP", "DOWN", "SELECT", "QUIT");
     }
 
     private static KeyMap<String> buildNavKeyMapWithActions(Terminal terminal)
     {
         var km = buildNavKeyMap(terminal);
-        km.bind("DELETE", "d", "D");
+        km.bind("DELETE",  "d", "D");
         km.bind("CONFIRM", "y", "Y");
         km.bind("ABORT",   "n", "N");
         return km;
