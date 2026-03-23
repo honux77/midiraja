@@ -11,6 +11,7 @@ import static java.lang.Math.max;
 import static java.util.Locale.ROOT;
 
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.engine.MidiPlaybackEngine;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.engine.PlaybackEngineFactory;
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
@@ -96,7 +97,7 @@ public class PlaybackRunner
     public PlaybackRunner(PrintStream out, PrintStream err, @Nullable TerminalIO terminalIO,
             boolean isTestMode)
     {
-        this(out, err, terminalIO, isTestMode, PlaybackEngine::new);
+        this(out, err, terminalIO, isTestMode, MidiPlaybackEngine::new);
     }
 
     /** Test constructor: injects a custom engine factory. */
