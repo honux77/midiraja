@@ -1,0 +1,35 @@
+/*
+ * Copyright (c) 2026, Park, Sungchul All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the LICENSE file in the root
+ * directory of this source tree.
+ */
+
+package com.fupfin.midiraja.engine;
+
+import com.fupfin.midiraja.ui.PlaybackEventListener;
+import javax.sound.midi.Sequence;
+
+/** Read-only view of engine state — consumed by the render loop. */
+public interface PlaybackState
+{
+    PlaylistContext getContext();
+    Sequence getSequence();
+    long getCurrentMicroseconds();
+    long getTotalMicroseconds();
+    double[] getChannelLevels();
+    int[] getChannelPrograms();
+    float getCurrentBpm();
+    double getCurrentSpeed();
+    int getCurrentTranspose();
+    double getVolumeScale();
+    boolean isPlaying();
+    boolean isPaused();
+    boolean isLoopEnabled();
+    boolean isShuffleEnabled();
+    boolean isBookmarked();
+    String getFilterDescription();
+    String getPortSuffix();
+    void decayChannelLevels(double decayAmount);
+    void addPlaybackEventListener(PlaybackEventListener listener);
+}
