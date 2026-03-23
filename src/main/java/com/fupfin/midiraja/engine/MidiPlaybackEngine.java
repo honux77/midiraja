@@ -118,7 +118,6 @@ public class MidiPlaybackEngine implements PlaybackEngine
 
     private final List<MidiEvent> sortedEvents;
     private final int resolution;
-    private final long tickLength;
     private final PlaylistContext context;
     private final int[] channelPrograms = new int[16];
 
@@ -132,15 +131,15 @@ public class MidiPlaybackEngine implements PlaybackEngine
             });
 
     public MidiPlaybackEngine(Sequence sequence, MidiOutProvider provider, PlaylistContext context,
-            int initialVolumePercent, double initialSpeed, Optional<String> startTimeStr,
+            int initialVolumePercent, double initialSpeed, Optional<Long> startTimeMicroseconds,
             Optional<Integer> initialTranspose)
     {
         this(sequence, provider, context, initialVolumePercent, initialSpeed,
-                startTimeStr, initialTranspose, MidiClock.SYSTEM);
+                startTimeMicroseconds, initialTranspose, MidiClock.SYSTEM);
     }
 
     public MidiPlaybackEngine(Sequence sequence, MidiOutProvider provider, PlaylistContext context,
-            int initialVolumePercent, double initialSpeed, Optional<String> startTimeStr,
+            int initialVolumePercent, double initialSpeed, Optional<Long> startTimeMicroseconds,
             Optional<Integer> initialTranspose, MidiClock clock)
     {
         this.clock = clock;
@@ -158,7 +157,6 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 initialTranspose.orElse(0));
         this.pipelineRoot = this.transposeFilter;
         this.resolution = sequence.getResolution();
-        this.tickLength = sequence.getTickLength();
         this.context = context;
         this.loopEnabled = context.loop();
         this.shuffleEnabled = context.shuffle();
@@ -167,11 +165,8 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 .flatMap(track -> IntStream.range(0, track.size()).mapToObj(track::get))
                 .sorted(Comparator.comparingLong(MidiEvent::getTick)).toList();
 
-        if (startTimeStr.isPresent() && !startTimeStr.get().isBlank())
-        {
-            this.seekTarget.set(TempoMap.getTickForTime(sortedEvents, resolution, tickLength,
-                    TempoMap.parseTimeToMicroseconds(startTimeStr.get())));
-        }
+        startTimeMicroseconds.ifPresent(
+                us -> this.seekTarget.set(getTickForTime(us)));
     }
 
     public void addPlaybackEventListener(PlaybackEventListener listener)
@@ -785,10 +780,44 @@ public class MidiPlaybackEngine implements PlaybackEngine
     {
         if (seekTarget.get() == -1)
         {
-            seekTarget.set(
-                    TempoMap.getTickForTime(sortedEvents, resolution, tickLength,
-                            max(0, currentMicroseconds.get() + microsecondsDelta)));
+            seekTarget.set(getTickForTime(max(0, currentMicroseconds.get() + microsecondsDelta)));
         }
+    }
+
+    private long getTickForTime(long targetMicroseconds)
+    {
+        if (targetMicroseconds <= 0) return -1;
+        long targetNanos = targetMicroseconds * 1000;
+        long currentNanos = 0;
+        long lastTick = 0;
+        double ticksToNanos = 500_000_000.0 / resolution;
+
+        for (MidiEvent ev : sortedEvents)
+        {
+            long t = ev.getTick();
+            long nextNanos = currentNanos + (long) ((t - lastTick) * ticksToNanos);
+            if (nextNanos >= targetNanos)
+            {
+                long remainingNanos = targetNanos - currentNanos;
+                return lastTick + (long) (remainingNanos / ticksToNanos);
+            }
+
+            currentNanos = nextNanos;
+            lastTick = t;
+
+            var msg = ev.getMessage().getMessage();
+            int status = msg[0] & 0xFF;
+
+            if (status == 0xFF && msg.length >= 6 && (msg[1] & 0xFF) == 0x51)
+            {
+                int mspqn = ((msg[3] & 0xFF) << 16) | ((msg[4] & 0xFF) << 8) | (msg[5] & 0xFF);
+                if (mspqn > 0)
+                {
+                    ticksToNanos = (double) mspqn * 1000.0 / resolution;
+                }
+            }
+        }
+        return sequence.getTickLength();
     }
 
 }

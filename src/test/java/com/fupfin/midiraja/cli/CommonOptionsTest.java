@@ -170,4 +170,62 @@ class CommonOptionsTest
         assertNotSame(sink, result);
         assertInstanceOf(com.fupfin.midiraja.dsp.OneBitHardwareFilter.class, result);
     }
+
+    // ── startTimeMicroseconds ─────────────────────────────────────────────────
+
+    @Test
+    void startTimeMicroseconds_seconds_returnsCorrectValue()
+    {
+        common.startTime = Optional.of("30");
+        assertEquals(Optional.of(30_000_000L), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_minutesAndSeconds_returnsCorrectValue()
+    {
+        common.startTime = Optional.of("1:30");
+        assertEquals(Optional.of(90_000_000L), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_hoursMinutesSeconds_returnsCorrectValue()
+    {
+        common.startTime = Optional.of("1:00:00");
+        assertEquals(Optional.of(3_600_000_000L), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_zero_returnsZeroWrapped()
+    {
+        common.startTime = Optional.of("0");
+        assertEquals(Optional.of(0L), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_blank_returnsEmpty()
+    {
+        common.startTime = Optional.of("   ");
+        assertEquals(Optional.empty(), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_nonNumeric_returnsZeroWrapped()
+    {
+        common.startTime = Optional.of("abc");
+        assertEquals(Optional.of(0L), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_leadingTrailingWhitespace_ignored()
+    {
+        common.startTime = Optional.of("  30  ");
+        assertEquals(Optional.of(30_000_000L), common.startTimeMicroseconds());
+    }
+
+    @Test
+    void startTimeMicroseconds_notSet_returnsEmpty()
+    {
+        // startTime defaults to Optional.empty()
+        assertEquals(Optional.empty(), common.startTimeMicroseconds());
+    }
 }

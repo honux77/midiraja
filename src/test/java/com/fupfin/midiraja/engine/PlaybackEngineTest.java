@@ -257,7 +257,7 @@ class PlaybackEngineTest
 
         RecordingMidiProvider recording = new RecordingMidiProvider();
         PlaybackEngine engine = new MidiPlaybackEngine(
-            seq, recording, ctx(), 100, 1000.0, Optional.of("0:02"), Optional.empty());
+            seq, recording, ctx(), 100, 1000.0, Optional.of(2_000_000L), Optional.empty());
 
         ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO()).call(() -> {
             engine.start(new DumbUI());
@@ -290,7 +290,7 @@ class PlaybackEngineTest
 
         RecordingMidiProvider recording = new RecordingMidiProvider();
         PlaybackEngine engine = new MidiPlaybackEngine(
-            seq, recording, ctx(), 100, 1000.0, Optional.of("0:02"), Optional.empty());
+            seq, recording, ctx(), 100, 1000.0, Optional.of(2_000_000L), Optional.empty());
 
         ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO()).call(() -> {
             engine.start(new DumbUI());
@@ -314,7 +314,7 @@ class PlaybackEngineTest
 
         RecordingMidiProvider recording = new RecordingMidiProvider();
         PlaybackEngine engine = new MidiPlaybackEngine(
-            seq, recording, ctx(), 100, 1000.0, Optional.of("0:02"), Optional.empty());
+            seq, recording, ctx(), 100, 1000.0, Optional.of(2_000_000L), Optional.empty());
 
         ScopedValue.where(TerminalIO.CONTEXT, new MockTerminalIO()).call(() -> {
             engine.start(new DumbUI());

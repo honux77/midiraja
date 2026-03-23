@@ -177,7 +177,7 @@ public class PlaybackRunner
                 ports = provider.getOutputPorts();
             }
 
-            Optional<String> currentStartTime = common.startTime;
+            Optional<Long> currentStartTime = common.startTimeMicroseconds();
 
             var activeIO = this.terminalIO != null ? this.terminalIO : new JLineTerminalIO();
             activeIO.init();

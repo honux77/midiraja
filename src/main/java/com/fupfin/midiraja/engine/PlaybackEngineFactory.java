@@ -28,6 +28,6 @@ public interface PlaybackEngineFactory
     PlaybackEngine create(Sequence sequence, MidiOutProvider provider,
             PlaylistContext context,
             int initialVolumePercent, double initialSpeed,
-            Optional<String> startTimeStr,
+            Optional<Long> startTimeMicroseconds,
             Optional<Integer> initialTranspose) throws Exception;
 }

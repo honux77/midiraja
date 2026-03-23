@@ -56,6 +56,35 @@ public class CommonOptions
                     + "Written to the midiraja log file; debug also echoes to stderr.")
     public Optional<String> logLevel = Optional.empty();
 
+    /**
+     * Parses the {@code --start} string into microseconds.
+     * Returns empty if no start time was specified or the value is blank.
+     */
+    public Optional<Long> startTimeMicroseconds()
+    {
+        return startTime
+                .filter(s -> !s.isBlank())
+                .map(CommonOptions::parseTimeToMicroseconds);
+    }
+
+    private static long parseTimeToMicroseconds(String timeStr)
+    {
+        try
+        {
+            String[] parts = timeStr.trim().split(":", -1);
+            long seconds = 0;
+            for (String part : parts)
+            {
+                seconds = seconds * 60 + Long.parseLong(part);
+            }
+            return seconds * 1000000L;
+        }
+        catch (NumberFormatException e)
+        {
+            return 0;
+        }
+    }
+
     /** Returns true when log level is info or debug (enables stack traces and detailed messages). */
     public boolean isVerbose()
     {

@@ -51,7 +51,7 @@ class PlaylistPlayerTest {
         private final int transpose;
         private final PlaybackStatus exitStatus;
         MockPlaybackEngine(Sequence seq, MidiOutProvider p, PlaylistContext ctx,
-                           int vol, double speed, Optional<String> start,
+                           int vol, double speed, Optional<Long> start,
                            Optional<Integer> transpose, PlaybackStatus exitStatus) {
             this.ctx = ctx;
             this.vol = vol;

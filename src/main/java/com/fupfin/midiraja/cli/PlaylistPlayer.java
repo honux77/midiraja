@@ -58,14 +58,14 @@ class PlaylistPlayer {
      */
     PlaybackStatus play(List<File> playlist, MidiOutProvider provider, MidiPort port,
                         CommonOptions common, PlaybackUI ui, TerminalIO io,
-                        Optional<String> initialStartTime, List<String> originalArgs)
+                        Optional<Long> initialStartTime, List<String> originalArgs)
             throws Exception
     {
         // Use int[][] so the lambda can capture playOrderHolder (effectively final reference)
         // while playOrderHolder[0] can be reassigned on loop wrap-around.
         int[][] playOrderHolder = { buildPlayOrder(playlist.size(), common.shuffle) };
         int[] currentIdxHolder = {0};
-        Optional<String> currentStartTime = initialStartTime;
+        Optional<Long> currentStartTime = initialStartTime;
         boolean wasPaused = false;
         PlaybackStatus lastRawStatus = PlaybackStatus.FINISHED;
 
