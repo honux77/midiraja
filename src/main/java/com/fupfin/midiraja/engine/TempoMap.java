@@ -33,6 +33,15 @@ final class TempoMap
         }
     }
 
+    /**
+     * Returns the tick position corresponding to {@code targetMicroseconds} of absolute playback
+     * time, accounting for tempo-change meta-events in the sequence.
+     *
+     * @param events       all MIDI events in the sequence, sorted by tick (ascending)
+     * @param resolution   ticks per quarter note (from {@code Sequence.getResolution()})
+     * @param tickLength   total tick length of the sequence (from {@code Sequence.getTickLength()})
+     * @param targetMicroseconds absolute time to seek to; returns -1 when ≤ 0
+     */
     static long getTickForTime(List<MidiEvent> events, int resolution, long tickLength,
             long targetMicroseconds)
     {
@@ -40,9 +49,8 @@ final class TempoMap
         long targetNanos = targetMicroseconds * 1000;
         long currentNanos = 0;
         long lastTick = 0;
-        float bpm = 120.0f;
-        double ticksToNanos = (60000000000.0 / (bpm * resolution)); // Absolute time logic ignores
-                                                                     // speed multiplier
+        // 120 BPM = 500_000 µs/beat → nanoseconds per tick at initial tempo
+        double ticksToNanos = 500_000_000.0 / resolution; // Absolute time ignores speed multiplier
 
         for (MidiEvent ev : events)
         {
@@ -65,8 +73,7 @@ final class TempoMap
                 int mspqn = ((msg[3] & 0xFF) << 16) | ((msg[4] & 0xFF) << 8) | (msg[5] & 0xFF);
                 if (mspqn > 0)
                 {
-                    bpm = 60000000.0f / mspqn;
-                    ticksToNanos = (60000000000.0 / (bpm * resolution));
+                    ticksToNanos = (double) mspqn * 1000.0 / resolution;
                 }
             }
         }
