@@ -118,6 +118,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
 
     private final List<MidiEvent> sortedEvents;
     private final int resolution;
+    private final long tickLength;
     private final PlaylistContext context;
     private final int[] channelPrograms = new int[16];
 
@@ -157,6 +158,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 initialTranspose.orElse(0));
         this.pipelineRoot = this.transposeFilter;
         this.resolution = sequence.getResolution();
+        this.tickLength = sequence.getTickLength();
         this.context = context;
         this.loopEnabled = context.loop();
         this.shuffleEnabled = context.shuffle();
@@ -167,7 +169,8 @@ public class MidiPlaybackEngine implements PlaybackEngine
 
         if (startTimeStr.isPresent() && !startTimeStr.get().isBlank())
         {
-            this.seekTarget.set(getTickForTime(parseTimeToMicroseconds(startTimeStr.get())));
+            this.seekTarget.set(TempoMap.getTickForTime(sortedEvents, resolution, tickLength,
+                    TempoMap.parseTimeToMicroseconds(startTimeStr.get())));
         }
     }
 
@@ -219,64 +222,6 @@ public class MidiPlaybackEngine implements PlaybackEngine
         notificationScheduler.shutdown();
         PlaybackEngine.PlaybackStatus status = endStatus.get();
         return status != null ? status : PlaybackEngine.PlaybackStatus.FINISHED;
-    }
-
-    private long parseTimeToMicroseconds(String timeStr)
-    {
-        try
-        {
-            String[] parts = timeStr.trim().split(":", -1);
-            long seconds = 0;
-            for (String part : parts)
-            {
-                seconds = seconds * 60 + Long.parseLong(part);
-            }
-            return seconds * 1000000L;
-        }
-        catch (NumberFormatException e)
-        {
-            return 0;
-        }
-    }
-
-    private long getTickForTime(long targetMicroseconds)
-    {
-        if (targetMicroseconds <= 0) return -1;
-        long targetNanos = targetMicroseconds * 1000;
-        long currentNanos = 0;
-        long lastTick = 0;
-        float bpm = 120.0f;
-        @SuppressWarnings("NullAway")
-        double ticksToNanos = (60000000000.0 / (bpm * resolution)); // Absolute time logic ignores
-                                                                    // speed multiplier
-
-        for (MidiEvent ev : sortedEvents)
-        {
-            long t = ev.getTick();
-            long nextNanos = currentNanos + (long) ((t - lastTick) * ticksToNanos);
-            if (nextNanos >= targetNanos)
-            {
-                long remainingNanos = targetNanos - currentNanos;
-                return lastTick + (long) (remainingNanos / ticksToNanos);
-            }
-
-            currentNanos = nextNanos;
-            lastTick = t;
-
-            var msg = ev.getMessage().getMessage();
-            int status = msg[0] & 0xFF;
-
-            if (status == 0xFF && msg.length >= 6 && (msg[1] & 0xFF) == 0x51)
-            {
-                int mspqn = ((msg[3] & 0xFF) << 16) | ((msg[4] & 0xFF) << 8) | (msg[5] & 0xFF);
-                if (mspqn > 0)
-                {
-                    bpm = 60000000.0f / mspqn;
-                    ticksToNanos = (60000000000.0 / (bpm * resolution));
-                }
-            }
-        }
-        return sequence.getTickLength();
     }
 
     @SuppressWarnings("EmptyCatch")
@@ -841,7 +786,8 @@ public class MidiPlaybackEngine implements PlaybackEngine
         if (seekTarget.get() == -1)
         {
             seekTarget.set(
-                    getTickForTime(max(0, currentMicroseconds.get() + microsecondsDelta)));
+                    TempoMap.getTickForTime(sortedEvents, resolution, tickLength,
+                            max(0, currentMicroseconds.get() + microsecondsDelta)));
         }
     }
 
