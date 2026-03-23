@@ -297,8 +297,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
         long elapsedNanos = 0;
         long startTimeNanos = clock.nanoTime();
         @SuppressWarnings("NullAway")
-        double ticksToNanos =
-                (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
+        double ticksToNanos = tickDurationNanos(currentBpm.get(), currentSpeed.get(), resolution);
 
         boolean endReached = false;
         while (isPlaying.get() && (eventIndex < sortedEvents.size() || holdAtEnd.get()))
@@ -319,7 +318,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 long chaseNanos = 0;
                 long chaseLastTick = 0;
                 double chaseTicksToNanos =
-                        (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
+                        tickDurationNanos(currentBpm.get(), currentSpeed.get(), resolution);
 
                 for (MidiEvent ev : sortedEvents)
                 {
@@ -331,7 +330,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
                     processChaseEvent(ev);
 
                     chaseTicksToNanos =
-                            (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
+                            tickDurationNanos(currentBpm.get(), currentSpeed.get(), resolution);
                     newIndex++;
                 }
 
@@ -346,7 +345,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
 
                 // Reset timing reference after seek
                 ticksToNanos =
-                        (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
+                        tickDurationNanos(currentBpm.get(), currentSpeed.get(), resolution);
                 startTimeNanos = clock.nanoTime() - elapsedNanos;
                 try
                 {
@@ -448,7 +447,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
             eventIndex++;
 
             // Recalculate timing ratio if BPM changed during processEvent
-            ticksToNanos = (60000000000.0 / (currentBpm.get() * currentSpeed.get() * resolution));
+            ticksToNanos = tickDurationNanos(currentBpm.get(), currentSpeed.get(), resolution);
         }
 
         // Force broadcast 100% completion state before natural exit
@@ -471,21 +470,19 @@ public class MidiPlaybackEngine implements PlaybackEngine
         if (MidirajaCommand.SHUTTING_DOWN) return;
         var msg = event.getMessage();
         var raw = msg.getMessage();
-        int status = raw[0] & 0xFF;
 
         // Meta Tempo
-        if (status == 0xFF && raw.length >= 6 && (raw[1] & 0xFF) == 0x51)
+        int mspqn = extractTempoMspqn(raw);
+        if (mspqn > 0)
         {
-            int mspqn = ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
-            if (mspqn > 0)
-            {
-                currentBpm.set(60000000.0f / mspqn);
-                @SuppressWarnings("NullAway")
-                float bpm = currentBpm.get();
-                listeners.forEach(l -> l.onTempoChanged(bpm));
-            }
+            currentBpm.set(60_000_000.0f / mspqn);
+            @SuppressWarnings("NullAway")
+            float bpm = currentBpm.get();
+            listeners.forEach(l -> l.onTempoChanged(bpm));
             return;
         }
+
+        int status = raw[0] & 0xFF;
 
         // Forward SysEx during chase (e.g. MT-32 initialization at song start)
         if (status == 0xF0)
@@ -533,20 +530,18 @@ public class MidiPlaybackEngine implements PlaybackEngine
 
 
         var raw = msg.getMessage();
-        int status = raw[0] & 0xFF;
 
-        if (status == 0xFF && raw.length >= 6 && (raw[1] & 0xFF) == 0x51)
+        int mspqn = extractTempoMspqn(raw);
+        if (mspqn > 0)
         {
-            int mspqn = ((raw[3] & 0xFF) << 16) | ((raw[4] & 0xFF) << 8) | (raw[5] & 0xFF);
-            if (mspqn > 0)
-            {
-                currentBpm.set(60000000.0f / mspqn);
-                @SuppressWarnings("NullAway")
-                float bpm = currentBpm.get();
-                listeners.forEach(l -> l.onTempoChanged(bpm));
-            }
+            currentBpm.set(60_000_000.0f / mspqn);
+            @SuppressWarnings("NullAway")
+            float bpm = currentBpm.get();
+            listeners.forEach(l -> l.onTempoChanged(bpm));
             return;
         }
+
+        int status = raw[0] & 0xFF;
 
         // Forward SysEx to the synthesizer (e.g. MT-32 patch/channel setup
         // messages)
@@ -784,13 +779,27 @@ public class MidiPlaybackEngine implements PlaybackEngine
         }
     }
 
+    private static double tickDurationNanos(float bpm, double speed, int resolution)
+    {
+        return 60_000_000_000.0 / (bpm * speed * resolution);
+    }
+
+    /** Returns the microseconds-per-quarter-note value from a MIDI Set Tempo meta-event,
+     *  or -1 if {@code msg} is not a tempo event or has mspqn == 0. */
+    private static int extractTempoMspqn(byte[] msg)
+    {
+        if (msg[0] != (byte) 0xFF || msg.length < 6 || (msg[1] & 0xFF) != 0x51) return -1;
+        int mspqn = ((msg[3] & 0xFF) << 16) | ((msg[4] & 0xFF) << 8) | (msg[5] & 0xFF);
+        return mspqn > 0 ? mspqn : -1;
+    }
+
     private long getTickForTime(long targetMicroseconds)
     {
         if (targetMicroseconds <= 0) return -1;
         long targetNanos = targetMicroseconds * 1000;
         long currentNanos = 0;
         long lastTick = 0;
-        double ticksToNanos = 500_000_000.0 / resolution;
+        double ticksToNanos = tickDurationNanos(120.0f, 1.0, resolution);
 
         for (MidiEvent ev : sortedEvents)
         {
@@ -806,15 +815,10 @@ public class MidiPlaybackEngine implements PlaybackEngine
             lastTick = t;
 
             var msg = ev.getMessage().getMessage();
-            int status = msg[0] & 0xFF;
-
-            if (status == 0xFF && msg.length >= 6 && (msg[1] & 0xFF) == 0x51)
+            int mspqn = extractTempoMspqn(msg);
+            if (mspqn > 0)
             {
-                int mspqn = ((msg[3] & 0xFF) << 16) | ((msg[4] & 0xFF) << 8) | (msg[5] & 0xFF);
-                if (mspqn > 0)
-                {
-                    ticksToNanos = (double) mspqn * 1000.0 / resolution;
-                }
+                ticksToNanos = tickDurationNanos(60_000_000.0f / mspqn, 1.0, resolution);
             }
         }
         return sequence.getTickLength();
