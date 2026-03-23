@@ -7,7 +7,8 @@
 
 package com.fupfin.midiraja.ui;
 
-import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaybackCommands;
+import com.fupfin.midiraja.engine.PlaybackState;
 import com.fupfin.midiraja.io.TerminalIO;
 
 /**
@@ -19,12 +20,12 @@ public interface PlaybackUI
     /**
      * Executes the rendering loop. This method should block until the engine stops playing.
      */
-    void runRenderLoop(PlaybackEngine engine);
+    void runRenderLoop(PlaybackState state);
 
     /**
      * Executes the input polling loop. This method should block until the engine stops playing.
      */
-    void runInputLoop(PlaybackEngine engine);
+    void runInputLoop(PlaybackCommands commands);
 
     /**
      * Called before the process suspends (SIGTSTP). The implementation should restore the terminal

@@ -13,14 +13,15 @@ import static com.fupfin.midiraja.ui.UIUtils.truncateAnsi;
 import static java.lang.Math.*;
 
 import com.fupfin.midiraja.Version;
-import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaybackCommands;
+import com.fupfin.midiraja.engine.PlaybackState;
 import com.fupfin.midiraja.engine.PlaylistContext;
 import com.fupfin.midiraja.io.TerminalIO;
 
 public class LineUI implements PlaybackUI
 {
     @Override
-    public void runRenderLoop(PlaybackEngine engine)
+    public void runRenderLoop(PlaybackState engine)
     {
         var term = TerminalIO.CONTEXT.get();
         if (term.isInteractive())
@@ -147,7 +148,7 @@ public class LineUI implements PlaybackUI
     }
 
     @Override
-    public void runInputLoop(PlaybackEngine engine)
+    public void runInputLoop(PlaybackCommands engine)
     {
         InputLoopRunner.run(engine, InputHandler::handleMiniInput);
     }

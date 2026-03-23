@@ -8,7 +8,8 @@
 package com.fupfin.midiraja.ui;
 
 import com.fupfin.midiraja.Version;
-import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaybackCommands;
+import com.fupfin.midiraja.engine.PlaybackState;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
 import java.nio.charset.StandardCharsets;
@@ -59,7 +60,7 @@ public class DashboardUI implements PlaybackUI
     }
 
     @Override
-    public void runRenderLoop(PlaybackEngine engine)
+    public void runRenderLoop(PlaybackState engine)
     {
         var term = TerminalIO.CONTEXT.get();
         if (!term.isInteractive()) return;
@@ -191,7 +192,7 @@ public class DashboardUI implements PlaybackUI
     }
 
     @Override
-    public void runInputLoop(PlaybackEngine engine)
+    public void runInputLoop(PlaybackCommands engine)
     {
         InputLoopRunner.run(engine, InputHandler::handleCommonInput);
     }

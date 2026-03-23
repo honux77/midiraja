@@ -7,6 +7,7 @@
 
 package com.fupfin.midiraja.ui;
 
+import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
@@ -22,8 +23,8 @@ public class InputLoopRunner
      * Standard polling loop for terminal input. Blocks and reads keys until the engine stops
      * playing, passing each key to the provided handler.
      */
-    public static void run(PlaybackEngine engine,
-            BiConsumer<PlaybackEngine, TerminalKey> keyHandler)
+    public static void run(PlaybackCommands engine,
+            BiConsumer<PlaybackCommands, TerminalKey> keyHandler)
     {
         var term = TerminalIO.CONTEXT.get();
         try

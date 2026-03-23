@@ -10,7 +10,8 @@ package com.fupfin.midiraja.ui;
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
 
 import com.fupfin.midiraja.Version;
-import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaybackCommands;
+import com.fupfin.midiraja.engine.PlaybackState;
 import com.fupfin.midiraja.engine.PlaylistContext;
 import com.fupfin.midiraja.io.TerminalIO;
 
@@ -23,7 +24,7 @@ public class DumbUI implements PlaybackUI
     private boolean headerPrinted = false;
 
     @Override
-    public void runRenderLoop(PlaybackEngine engine)
+    public void runRenderLoop(PlaybackState engine)
     {
         var term = TerminalIO.CONTEXT.get();
         PlaylistContext context = engine.getContext();
@@ -90,7 +91,7 @@ public class DumbUI implements PlaybackUI
     }
 
     @Override
-    public void runInputLoop(PlaybackEngine engine)
+    public void runInputLoop(PlaybackCommands engine)
     {
         // No input handling in dumb mode
         try

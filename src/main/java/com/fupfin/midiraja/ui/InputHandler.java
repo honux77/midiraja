@@ -7,7 +7,7 @@
 
 package com.fupfin.midiraja.ui;
 
-import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
 import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
 
@@ -16,7 +16,7 @@ public class InputHandler
     private InputHandler()
     {}
 
-    public static void handleCommonInput(PlaybackEngine engine, TerminalKey key)
+    public static void handleCommonInput(PlaybackCommands engine, TerminalKey key)
     {
         switch (key)
         {
@@ -42,7 +42,7 @@ public class InputHandler
         }
     }
 
-    public static void handleMiniInput(PlaybackEngine engine, TerminalKey key)
+    public static void handleMiniInput(PlaybackCommands engine, TerminalKey key)
     {
         switch (key)
         {
