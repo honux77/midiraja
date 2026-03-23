@@ -9,6 +9,7 @@ package com.fupfin.midiraja.engine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.fupfin.midiraja.engine.MidiPlaybackEngine;
 import com.fupfin.midiraja.io.MockTerminalIO;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.MidiPort;
@@ -123,7 +124,7 @@ import org.junit.jupiter.api.condition.EnabledIf;
             List.of(new File("monkey_island.mid")), 0, new MidiPort(0, "Test"), null, false, false);
 
         PlaybackEngine engine =
-            new PlaybackEngine(seq, provider, ctx, 100, 1000.0, Optional.empty(), Optional.empty());
+            new MidiPlaybackEngine(seq, provider, ctx, 100, 1000.0, Optional.empty(), Optional.empty());
 
         MockTerminalIO mockIO = new MockTerminalIO();
         ScopedValue.where(TerminalIO.CONTEXT, mockIO).call(() -> {

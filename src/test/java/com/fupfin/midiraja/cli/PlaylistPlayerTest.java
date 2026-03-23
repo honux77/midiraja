@@ -44,17 +44,65 @@ class PlaylistPlayerTest {
         @Override public void prepareForNewTrack(Sequence sequence) {}
     }
 
-    static class MockPlaybackEngine extends PlaybackEngine {
+    static class MockPlaybackEngine implements PlaybackEngine {
+        private final PlaylistContext ctx;
+        private final int vol;
+        private final double speed;
+        private final int transpose;
         private final PlaybackStatus exitStatus;
         MockPlaybackEngine(Sequence seq, MidiOutProvider p, PlaylistContext ctx,
                            int vol, double speed, Optional<String> start,
                            Optional<Integer> transpose, PlaybackStatus exitStatus) {
-            super(seq, p, ctx, vol, speed, start, transpose);
+            this.ctx = ctx;
+            this.vol = vol;
+            this.speed = speed;
+            this.transpose = transpose.orElse(0);
             this.exitStatus = exitStatus;
         }
         @Override public PlaybackStatus start(com.fupfin.midiraja.ui.PlaybackUI ui) {
             return exitStatus;
         }
+        // PlaybackState — return meaningful values so PlaylistPlayer state propagates correctly
+        @Override public PlaylistContext getContext() { return ctx; }
+        @Override public Sequence getSequence() { return null; }
+        @Override public long getCurrentMicroseconds() { return 0; }
+        @Override public long getTotalMicroseconds() { return 0; }
+        @Override public double[] getChannelLevels() { return new double[0]; }
+        @Override public int[] getChannelPrograms() { return new int[0]; }
+        @Override public float getCurrentBpm() { return 120f; }
+        @Override public double getCurrentSpeed() { return speed; }
+        @Override public int getCurrentTranspose() { return transpose; }
+        @Override public double getVolumeScale() { return vol / 100.0; }
+        @Override public boolean isPlaying() { return false; }
+        @Override public boolean isPaused() { return false; }
+        @Override public boolean isLoopEnabled() { return ctx.loop(); }
+        @Override public boolean isShuffleEnabled() { return ctx.shuffle(); }
+        @Override public boolean isBookmarked() { return false; }
+        @Override public String getFilterDescription() { return ""; }
+        @Override public String getPortSuffix() { return ""; }
+        @Override public void decayChannelLevels(double decayAmount) {}
+        @Override public void addPlaybackEventListener(com.fupfin.midiraja.ui.PlaybackEventListener listener) {}
+        // PlaybackCommands no-ops
+        @Override public void requestStop(PlaybackStatus status) {}
+        @Override public void adjustVolume(double delta) {}
+        @Override public void adjustSpeed(double delta) {}
+        @Override public void adjustTranspose(int delta) {}
+        @Override public void seekRelative(long microsecondsDelta) {}
+        @Override public void togglePause() {}
+        @Override public void toggleLoop() {}
+        @Override public void toggleShuffle() {}
+        @Override public void fireBookmark() {}
+        @Override public void firePlayOrderChanged(PlaylistContext ctx) {}
+        // PlaybackEngine configuration no-ops
+        @Override public void setHoldAtEnd(boolean hold) {}
+        @Override public void setIgnoreSysex(boolean ignoreSysex) {}
+        @Override public void setInitialResetType(Optional<String> resetType) {}
+        @Override public void setInitiallyPaused() {}
+        @Override public void setFilterDescription(String desc) {}
+        @Override public void setPortSuffix(String suffix) {}
+        @Override public void setBookmarked(boolean bookmarked) {}
+        @Override public void setBookmarkCallback(java.util.function.Consumer<Boolean> callback) {}
+        @Override public void setShuffleCallback(java.util.function.Consumer<Boolean> callback) {}
     }
 
     @BeforeEach void setUp() {
