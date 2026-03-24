@@ -44,10 +44,10 @@ See the full demo reference in the [User Guide](user_guide.md#22-try-the-demo-to
 You don't need to configure anything. Find any `.mid` file and run:
 
 ```bash
-midra patch song.mid
+midra soundfont song.mid
 ```
 
-The `patch` engine uses the FreePats wavetable set — bundled with Midiraja, no downloads needed. For something more retro, try `midra 1bit song.mid`.
+The `soundfont` engine uses the bundled FluidR3 GM SF3 — no downloads needed. For a GUS wavetable sound, try `midra patch song.mid`; for something more retro, try `midra 1bit song.mid`.
 
 ---
 
@@ -55,8 +55,8 @@ The `patch` engine uses the FreePats wavetable set — bundled with Midiraja, no
 
 | I want … | Command |
 |----------|---------|
-| Best quality, no setup | `midra patch song.mid` |
-| SoundFont playback, no setup | `midra soundfont song.mid` |
+| Best quality, no setup | `midra soundfont song.mid` |
+| GUS wavetable, no setup | `midra patch song.mid` |
 | Retro hardware emulation | see below |
 | Roland MT-32 (LucasArts / Sierra) | `midra mt32 ~/roms/ song.mid` |
 | Route to hardware synth | `midra device song.mid` |
@@ -69,7 +69,8 @@ The `patch` engine uses the FreePats wavetable set — bundled with Midiraja, no
 | OPN2 (Sega Genesis / PC-98) | Console / Japanese PC | `midra opn song.mid` |
 | PSG (MSX / ZX Spectrum / Atari ST) | 8-bit home computers | `midra psg song.mid` |
 | 1-bit (Apple II / PC Speaker) | Extreme lo-fi | `midra 1bit song.mid` |
-| Amiga Paula (A500 / A1200) | Amiga 500 / 1200 | `midra opl --retro amiga song.mid` |
+
+Add `--retro <mode>` to any engine for vintage hardware audio simulation (Amiga Paula, Compact Mac, ZX Spectrum beeper, IBM PC Speaker, and more). See [User Guide §3.4](user_guide.md#34-retro-hardware-simulation---retro).
 
 The `patch` and `soundfont` engines bundle their instrument data (FreePats and FluidR3 GM SF3 respectively) — no downloads needed. To use a custom SoundFont:
 ```bash

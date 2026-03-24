@@ -50,3 +50,8 @@ bin/
 
 # Git worktrees
 .worktrees/
+
+# Analysis documents (working notes, not tracked)
+docs/dependency-analysis.md
+docs/midi-playback-engine-redesign.md
+docs/test-coverage-analysis.md

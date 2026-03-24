@@ -176,115 +176,6 @@ Once the music starts, your terminal becomes an interactive dashboard. You don't
 
 ---
 
-### 3.4. Global Audio Effects (DSP Rack)
-Midiraja features a modular audio processing pipeline. You can apply high-quality global effects to the built-in pure-math synthesizers (`fm`, `psg`, `1bit`, `patch`) by simply adding flags to your launch command.
-
-> ⚠️ **Important Note on Compatibility:**
-> Global DSP Effects are *only* available for Midiraja's internal synthesis engines. They cannot be applied when routing audio to external hardware (`device` command) or when using the dynamically linked external engine (`fluidsynth`), because in that case audio generation happens outside of Midiraja's DSP control loop.
-
-All effect intensities are controlled via intuitive percentages (0-100%).
-
-**1. Analog Tube Saturation (`--tube <0-100>`)**
-Adds harmonic distortion and warmth by simulating an overdriven vacuum tube amplifier (using a `Math.tanh` waveshaper and auto-gain compensation).
-* *Recommended for Warmth:* `--tube 15` (Rounds off harsh digital edges)
-* *Recommended for Punch:* `--tube 40` (Fattens up drum kicks and basslines)
-* *Example:* `midra opl --tube 20 song.mid`
-
-**2. Stereo Chorus (`--chorus <0-100>`)**
-Thickens the sound and spreads it across the stereo field using modulated delay lines. Perfect for 80s synth-pop vibes.
-* *Example:* `midra opn --chorus 50 song.mid`
-
-**3. Algorithmic Reverb (`--reverb <preset>`)**
-Places the synthesizer inside a simulated 3D acoustic space (based on the legendary Freeverb algorithm).
-* **Presets:** `room` (small/punchy), `chamber` (warm/dense studio), `hall` (lush/orchestral), `plate` (bright/metallic), `spring` (bouncy vintage amp), `cave` (massive/ambient).
-* **Intensity:** Control the wet/dry mix using `--reverb-level <0-100>` (Default is 50).
-* *Example:* `midra psg --reverb chamber --reverb-level 70 song.mid`
-
-**4. Vintage Speaker Simulation (`--speaker <profile>`)**
-Applies an `AcousticSpeakerFilter` that models the acoustic frequency response of vintage speaker hardware, reshaping the output to sound like it is coming from a specific physical cabinet.
-* **Profiles:** `tin-can` (narrow-band, telephone-like; heavy high and low rolloff for a mid-forward, hollow character), `warm-radio` (AM radio warmth; gentle mid-forward coloration with soft bass rolloff).
-* *Example:* `midra fluidsynth piano.sf2 --speaker tin-can song.mid`
-
-> ⚠️ **Do not combine `--speaker` with `--retro`:**
-> Every `--retro` mode already contains a physically accurate model of its hardware speaker — the Mac's 2-inch cone, the Spectrum's 22mm beeper, the IBM PC's paper cone. Adding `--speaker` on top applies a second filter stage with no physical basis, producing an over-filtered result that does not match any real hardware. Use `--speaker` only when not using `--retro`. For the full technical explanation, see [Retro Common Engineering: The `--speaker` Option](retro/retro-common-engineering.md#4-the---speaker-option-and-retro-modes).
-
-**5. Dynamics Compressor (`--compress <preset>`)**
-Applies a feed-forward compressor before the DSP chain (including any `--retro` stage). Boosts quiet passages to use more of the hardware dynamic range, improving the perceived signal-to-noise ratio of retro simulations. Also useful without `--retro` as a general loudness-levelling stage.
-
-* **Presets:**
-  * `soft` — transparent limiter; only clips peaks above −3 dBFS, no makeup gain. Preserves full dynamics.
-  * `gentle` — 2:1 compression above −18 dBFS, +3 dB makeup. Light levelling.
-  * `moderate` — 4:1 compression above −18 dBFS, +6 dB makeup. Recommended for quiet music through `--retro pc`.
-  * `aggressive` — 8:1 compression above −24 dBFS, +9 dB makeup. Maximum loudness levelling.
-
-```bash
-# Quiet MIDI through PC speaker — moderate compression helps S/N
-midra munt --retro pc --compress moderate song.mid
-
-# Standalone loudness levelling (no retro)
-midra fluid piano.sf2 --compress gentle song.mid
-```
-
-**6. Retro PWM Drive Gain (`--retro-drive <gain>`)**
-Controls the internal drive gain for `--retro pc` and `--retro apple2`. The signal is multiplied by `gain` before PWM encoding and divided by the same factor after the speaker filter, so the output level is preserved. Higher gain forces more of the 78 PWM duty-cycle levels into use, reducing carrier sideband noise and improving S/N for quiet input.
-
-* **Default: 4.0** — optimised for typical synthesizer output near −18 dBFS.
-* Signals above `1/gain` amplitude will be hard-clipped before PWM.
-
-| Input level | Recommended `--retro-drive` |
-| :---: | :---: |
-| −6 dBFS (loud) | `2` |
-| −12 dBFS | `4` (default) |
-| −18 dBFS | `4` (default) |
-| −24 dBFS (quiet) | `8` |
-
-```bash
-# Loud input — reduce drive to avoid clipping
-midra munt --retro pc --retro-drive 2 song.mid
-
-# Very quiet input — increase drive for better S/N
-midra munt --retro pc --retro-drive 8 song.mid
-```
-
-> **Tip:** `--retro-drive` and `--compress` address the same S/N problem from different angles. `--retro-drive` is a static, predictable gain; `--compress` adapts dynamically to the signal level. For music with consistent dynamics, `--retro-drive` alone is sufficient. For music with wide dynamic range, combine both.
-
-**7. Amiga Paula Stereo Width (`--paula-width <0-300>`)**
-Controls the M/S stereo widening applied by the Amiga Paula retro filter. This option is only effective when `--retro amiga`, `--retro a500`, or `--retro a1200` is active; it has no effect with other modes.
-
-The Amiga Paula chip drove four independent 8-bit DAC channels with hard panning (channels 0 and 3 fully left, channels 1 and 2 fully right). `--paula-width` approximates this channel separation on a pre-mixed stereo source using M/S processing.
-
-* **`0`**: No widening — output matches the filtered mono-mix of the input.
-* **`60`** *(default)*: Recreates the pronounced channel separation of authentic Amiga music. Recommended starting point.
-* **`100`**: Maximum safe widening — extreme stereo spread without clipping risk.
-* **`101–300`**: Hyper-wide; may cause clipping on dense mixes. Use with care.
-
-```bash
-# A500 profile with default Paula widening (60%)
-midra opl --retro a500 song.mid
-
-# A1200 profile, emphasise stereo spread
-midra opl --retro a1200 --paula-width 80 song.mid
-
-# Narrow the hard-pan effect (mono-compatible mix)
-midra opl --retro amiga --paula-width 20 song.mid
-```
-
-**8. 3-Band EQ & Filters**
-Sculpt the frequency response using precision RBJ Biquad filters.
-* **EQ (0-100%):** `--bass`, `--mid`, `--treble` (Default is 50 for neutral. Set to 100 for maximum boost, 0 to cut completely).
-* **Cutoffs (Hz):** `--lpf <freq>` (Low-pass, cuts high frequencies), `--hpf <freq>` (High-pass, cuts low frequencies).
-* *Example:* `midra opl --bass 80 --treble 70 --hpf 300 song.mid` (Boosts lows/highs but cuts extreme sub-bass rumble).
-
-### 3.5. Consistent Volume Across Engines
-
-All of Midiraja's **built-in** engines (1-bit, PSG, FM, GUS patches, SoundFont) are calibrated to the same output level — roughly **−9 dBFS peak**. This means you can freely switch between engines for the same MIDI file without unexpected volume jumps.
-
-This consistent baseline also matters for DSP effects: because every engine enters the `--tube` waveshaper and `--reverb` wet/dry mix at the same signal level, the distortion character and reverb tail length will behave predictably regardless of which engine you pick.
-
-> **Note on FluidSynth:** This external engine manages its own audio output and is not subject to Midiraja's internal level calibration. You can use `--volume` to balance it manually against the built-in engines.
-
----
-
 ## Chapter 4. The 3 Ways to Play (Synthesizer Engines)
 
 What makes Midiraja a "Museum of Computer Audio" is its ability to radically change how a song sounds. You choose the "Engine" by typing its name right after `midra`.
@@ -419,15 +310,15 @@ Not sure which engine to pick? Use the decision table below.
 
 | I want … | Best engine | Notes |
 |-----------|-------------|-------|
-| Play a MIDI file right now, no setup | `patch` | Bundled FreePats wavetable — best quality, zero install |
-| SoundFont playback, no setup | `soundfont` | Bundled FluidR3 GM SF3 (MIT); full DSP effects rack |
+| Play a MIDI file right now, no setup | `soundfont` | Bundled FluidR3 GM SF3 (MIT); full DSP effects rack |
+| GUS wavetable, no setup | `patch` | Bundled FreePats; zero install |
 | **Retro hardware emulation** (no setup) | — | see table below |
 | SoundFont with custom file | `soundfont` + an SF2/SF3 file | Pass as first argument; TinySoundFont handles both formats |
 | Best possible SoundFont quality, low latency | `fluidsynth` + an SF2 file | Requires `brew install fluid-synth` |
 | Early 90s LucasArts / Sierra adventure games | `mt32` + ROM files | Bundled Munt emulator, no install |
 | Route to hardware synth / external device | `device` | Sends raw MIDI to OS ports |
 
-**Retro emulation engines** — all zero-setup, bundled inside midra:
+**Built-in chip emulation engines** — all zero-setup, bundled inside midra:
 
 | I want … | Engine | Notes |
 |----------|--------|-------|
@@ -436,8 +327,19 @@ Not sure which engine to pick? Use the decision table below.
 | 8-bit MSX / ZX Spectrum / Atari ST sound | `psg` | Add `--scc` for richer MSX sound |
 | Apple II / PC Speaker lo-fi | `1bit` | Add `--synth xor --mux xor` for Tim Follin–style buzzing |
 | Extreme low-fi (PC Speaker "RealSound") | `patch --realsound` | 15 kHz PWM through a paper cone |
-| Amiga 500 warm retro sound | any engine + `--retro amiga` or `--retro a500` | A500 RC LPF (~4.5 kHz) + LED filter; stereo hard-pan feel |
-| Amiga 1200 bright retro sound | any engine + `--retro a1200` | AGA DAC filter (~28 kHz, near-transparent) + LED filter |
+
+**`--retro` post-processing** — add to any engine to simulate vintage hardware audio paths:
+
+| I want … | Flag | Notes |
+|----------|------|-------|
+| Amiga 500 warm stereo | `--retro amiga` / `--retro a500` | RC LPF + LED filter, hard-pan stereo |
+| Amiga 1200 bright stereo | `--retro a1200` | AGA DAC, near-transparent |
+| Early compact Mac sound | `--retro compactmac` | 8-bit PWM + 2-inch speaker (add `--aux` for line out) |
+| Apple II DAC sound | `--retro apple2` | 5-bit PWM + cone speaker (add `--aux` for line out) |
+| IBM PC internal speaker | `--retro pc` | 6.3-bit PWM + paper cone (add `--aux` for line out) |
+| ZX Spectrum beeper | `--retro spectrum` | 7-bit beeper (add `--aux` for line out) |
+| Covox Speech Thing | `--retro covox` | R-2R 8-bit DAC, line out |
+| Disney Sound Source | `--retro disneysound` | LPT parallel port DAC, line out |
 
 ### Quick comparison: TinySoundFont (`soundfont`) vs FluidSynth (`fluidsynth`)
 
@@ -457,8 +359,6 @@ Use **`fluidsynth`** when you need the best SF2 compatibility, lower audio laten
 | `patch` (`gus`) | 1994 Gravis Ultrasound | 32 wavetable voices | FreePats (bundled) |
 | `soundfont` (`tsf`) | Modern SoundFont | Polyphonic (SF2 limit) | FluidR3 GM SF3 (bundled) |
 | `mt32` | 1987 Roland MT-32 | 32 partial generators | Required ROM files |
-| `retro amiga` (A500) | Amiga 500 | Warm stereo, hard-panned | None |
-| `retro a1200` (A1200) | Amiga 1200 | Bright stereo, hard-panned | None |
 
 ---
 
@@ -527,7 +427,159 @@ You can browse and edit bank files with the free [OPL3BankEditor](https://github
 
 ---
 
-## Chapter 5. Powered by Open Source (Appendices)
+## Chapter 5. Audio Processing
+
+### 5.1. Retro Hardware Simulation (`--retro`)
+
+`--retro` is a post-processing stage that sits between the synthesizer and the DSP effects rack. It takes the clean PCM output of any engine and reshapes it to sound as if it were played back through a specific piece of vintage hardware — reproducing DAC quantization noise, analog RC filtering, and physical speaker acoustics of each machine.
+
+Add `--retro <mode>` to any engine command:
+
+| Mode | Hardware modelled | Character |
+|------|-------------------|-----------|
+| `amiga` / `a500` | Amiga 500 Paula DAC + RC + LED filter | Warm stereo, hard-pan |
+| `a1200` | Amiga 1200 AGA DAC | Bright stereo, near-transparent |
+| `compactmac` | Compact Mac 8-bit PWM + 2-inch speaker | Warm, muffled mono |
+| `apple2` | Apple II 5-bit PWM + cone speaker | 5-bit harmonic texture |
+| `pc` | IBM PC Speaker 6.3-bit PWM + paper cone | Gritty crunch |
+| `spectrum` | ZX Spectrum beeper | Buzzy 7-bit texture |
+| `covox` | Covox Speech Thing R-2R DAC | 8-bit warmth, line out |
+| `disneysound` | Disney Sound Source (LPT DAC) | Parallel port DAC, same character as covox |
+
+```bash
+# Amiga 500 sound through OPL engine
+midra opl --retro amiga song.mid
+
+# Compact Mac experience through SoundFont
+midra soundfont --retro compactmac song.mid
+
+# ZX Spectrum beeper
+midra psg --retro spectrum song.mid
+```
+
+**`--aux` flag:** modes that model an internal speaker (`compactmac`, `pc`, `apple2`, `spectrum`) include the speaker stage by default. Add `--aux` to hear the raw electrical output (audio jack / line out) instead:
+
+```bash
+# Mac audio jack output — no speaker coloration
+midra soundfont --retro compactmac --aux song.mid
+
+# Electrical output through a custom speaker profile
+midra soundfont --retro compactmac --aux --speaker warm-radio song.mid
+```
+
+`amiga`, `covox`, and `disneysound` model line-out hardware only; `--aux` has no effect on these modes.
+
+---
+
+### 5.2. Global Audio Effects (DSP Rack)
+Midiraja features a modular audio processing pipeline. You can apply high-quality global effects to the built-in pure-math synthesizers (`fm`, `psg`, `1bit`, `patch`) by simply adding flags to your launch command.
+
+> ⚠️ **Important Note on Compatibility:**
+> Global DSP Effects are *only* available for Midiraja's internal synthesis engines. They cannot be applied when routing audio to external hardware (`device` command) or when using the dynamically linked external engine (`fluidsynth`), because in that case audio generation happens outside of Midiraja's DSP control loop.
+
+All effect intensities are controlled via intuitive percentages (0-100%).
+
+**1. Analog Tube Saturation (`--tube <0-100>`)**
+Adds harmonic distortion and warmth by simulating an overdriven vacuum tube amplifier (using a `Math.tanh` waveshaper and auto-gain compensation).
+* *Recommended for Warmth:* `--tube 15` (Rounds off harsh digital edges)
+* *Recommended for Punch:* `--tube 40` (Fattens up drum kicks and basslines)
+* *Example:* `midra opl --tube 20 song.mid`
+
+**2. Stereo Chorus (`--chorus <0-100>`)**
+Thickens the sound and spreads it across the stereo field using modulated delay lines. Perfect for 80s synth-pop vibes.
+* *Example:* `midra opn --chorus 50 song.mid`
+
+**3. Algorithmic Reverb (`--reverb <preset>`)**
+Places the synthesizer inside a simulated 3D acoustic space (based on the legendary Freeverb algorithm).
+* **Presets:** `room` (small/punchy), `chamber` (warm/dense studio), `hall` (lush/orchestral), `plate` (bright/metallic), `spring` (bouncy vintage amp), `cave` (massive/ambient).
+* **Intensity:** Control the wet/dry mix using `--reverb-level <0-100>` (Default is 50).
+* *Example:* `midra psg --reverb chamber --reverb-level 70 song.mid`
+
+**4. Vintage Speaker Simulation (`--speaker <profile>`)**
+Applies an `AcousticSpeakerFilter` that models the acoustic frequency response of vintage speaker hardware, reshaping the output to sound like it is coming from a specific physical cabinet.
+* **Profiles:** `tin-can` (narrow-band; heavy high/low rolloff, hollow mid-forward character), `warm-radio` (gentle mid-forward coloration with soft high-frequency rolloff), `telephone` (ITU G.711 POTS band: 300 Hz–3.4 kHz), `pc` (IBM PC internal speaker: 250 Hz–9 kHz with 2 kHz presence boost).
+* *Example:* `midra fluidsynth piano.sf2 --speaker tin-can song.mid`
+
+> **Combining `--speaker` with `--retro`:** Modes that model an internal speaker (`compactmac`, `pc`, `apple2`, `spectrum`) already apply speaker coloration by default — adding `--speaker` on top doubles the filtering. To use `--speaker` with these modes, first add `--aux` to bypass the built-in speaker stage: `midra soundfont --retro compactmac --aux --speaker warm-radio song.mid`. For modes without a speaker model (`amiga`, `covox`, `disneysound`), `--speaker` can be combined freely.
+
+**5. Dynamics Compressor (`--compress <preset>`)**
+Applies a feed-forward compressor before the DSP chain (including any `--retro` stage). Boosts quiet passages to use more of the hardware dynamic range, improving the perceived signal-to-noise ratio of retro simulations. Also useful without `--retro` as a general loudness-levelling stage.
+
+* **Presets:**
+  * `soft` — transparent limiter; only clips peaks above −3 dBFS, no makeup gain. Preserves full dynamics.
+  * `gentle` — 2:1 compression above −18 dBFS, +3 dB makeup. Light levelling.
+  * `moderate` — 4:1 compression above −18 dBFS, +6 dB makeup. Recommended for quiet music through `--retro pc`.
+  * `aggressive` — 8:1 compression above −24 dBFS, +9 dB makeup. Maximum loudness levelling.
+
+```bash
+# Quiet MIDI through PC speaker — moderate compression helps S/N
+midra munt --retro pc --compress moderate song.mid
+
+# Standalone loudness levelling (no retro)
+midra fluid piano.sf2 --compress gentle song.mid
+```
+
+**6. Retro PWM Drive Gain (`--retro-drive <gain>`)**
+Controls the internal drive gain for `--retro pc` and `--retro apple2`. The signal is multiplied by `gain` before PWM encoding and divided by the same factor after the speaker filter, so the output level is preserved. Higher gain forces more of the 78 PWM duty-cycle levels into use, reducing carrier sideband noise and improving S/N for quiet input.
+
+* **Default: 4.0** — optimised for typical synthesizer output near −18 dBFS.
+* Signals above `1/gain` amplitude will be hard-clipped before PWM.
+
+| Input level | Recommended `--retro-drive` |
+| :---: | :---: |
+| −6 dBFS (loud) | `2` |
+| −12 dBFS | `4` (default) |
+| −18 dBFS | `4` (default) |
+| −24 dBFS (quiet) | `8` |
+
+```bash
+# Loud input — reduce drive to avoid clipping
+midra munt --retro pc --retro-drive 2 song.mid
+
+# Very quiet input — increase drive for better S/N
+midra munt --retro pc --retro-drive 8 song.mid
+```
+
+> **Tip:** `--retro-drive` and `--compress` address the same S/N problem from different angles. `--retro-drive` is a static, predictable gain; `--compress` adapts dynamically to the signal level. For music with consistent dynamics, `--retro-drive` alone is sufficient. For music with wide dynamic range, combine both.
+
+**7. Amiga Paula Stereo Width (`--paula-width <0-300>`)**
+Controls the M/S stereo widening applied by the Amiga Paula retro filter. This option is only effective when `--retro amiga`, `--retro a500`, or `--retro a1200` is active; it has no effect with other modes.
+
+The Amiga Paula chip drove four independent 8-bit DAC channels with hard panning (channels 0 and 3 fully left, channels 1 and 2 fully right). `--paula-width` approximates this channel separation on a pre-mixed stereo source using M/S processing.
+
+* **`0`**: No widening — output matches the filtered mono-mix of the input.
+* **`60`** *(default)*: Recreates the pronounced channel separation of authentic Amiga music. Recommended starting point.
+* **`100`**: Maximum safe widening — extreme stereo spread without clipping risk.
+* **`101–300`**: Hyper-wide; may cause clipping on dense mixes. Use with care.
+
+```bash
+# A500 profile with default Paula widening (60%)
+midra opl --retro a500 song.mid
+
+# A1200 profile, emphasise stereo spread
+midra opl --retro a1200 --paula-width 80 song.mid
+
+# Narrow the hard-pan effect (mono-compatible mix)
+midra opl --retro amiga --paula-width 20 song.mid
+```
+
+**8. 3-Band EQ & Filters**
+Sculpt the frequency response using precision RBJ Biquad filters.
+* **EQ (0-100%):** `--bass`, `--mid`, `--treble` (Default is 50 for neutral. Set to 100 for maximum boost, 0 to cut completely).
+* **Cutoffs (Hz):** `--lpf <freq>` (Low-pass, cuts high frequencies), `--hpf <freq>` (High-pass, cuts low frequencies).
+* *Example:* `midra opl --bass 80 --treble 70 --hpf 300 song.mid` (Boosts lows/highs but cuts extreme sub-bass rumble).
+
+### 5.3. Consistent Volume Across Engines
+
+All of Midiraja's **built-in** engines (1-bit, PSG, FM, GUS patches, SoundFont) are calibrated to the same output level — roughly **−9 dBFS peak**. This means you can freely switch between engines for the same MIDI file without unexpected volume jumps.
+
+This consistent baseline also matters for DSP effects: because every engine enters the `--tube` waveshaper and `--reverb` wet/dry mix at the same signal level, the distortion character and reverb tail length will behave predictably regardless of which engine you pick.
+
+> **Note on FluidSynth:** This external engine manages its own audio output and is not subject to Midiraja's internal level calibration. You can use `--volume` to balance it manually against the built-in engines.
+
+---
+
+## Chapter 6. Powered by Open Source (Appendices)
 
 Midiraja stands on the shoulders of giants. While our UI, rendering pipelines, and the 1-Bit engine are custom-built, we proudly integrate several legendary open-source emulation cores to bring you the best retro sound possible. We highly encourage you to check out and support these amazing projects!
 
