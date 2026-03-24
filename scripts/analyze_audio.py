@@ -281,7 +281,41 @@ def compare_directory(dir_path):
     # ── [4] Frequency sweep: THD at each frequency ────────────────────────────
     sweep_thd_table(dir_path, files)
 
-    # ── [5] Multi-tone IMD: chord (440+880+1320 Hz) through AmigaOnly ─────────
+    # ── [5] CompactMac THD + frequency response ───────────────────────────────
+    if "sine_compactmac" in files:
+        print("\n=== [5] CompactMac: THD and Output Level (440 Hz sine) ===")
+        print(f"{'Config':<26} {'THD%':>7}  {'Fund dB':>8}  "
+              f"{'2f':>7}  {'3f':>7}  {'4f':>7}  {'5f':>7}  {'NoiseFloor':>11}")
+        print("-" * 90)
+        for key, label in [("sine_dry", "Dry"), ("sine_compactmac", "CompactMac")]:
+            if key not in files:
+                continue
+            sig              = load_raw(files[key])
+            pct, fund, harms = thd_analysis(sig)
+            nf               = noise_floor_db(sig)
+            harm_str         = "  ".join(f"{h:+7.1f}" for h in harms[:4])
+            print(f"{label:<26} {pct:>7.3f}%  {fund:>+8.1f}  {harm_str}  {nf:>+10.1f}")
+
+        print("\n=== [6] CompactMac: Frequency Response (level relative to dry, dB) ===")
+        print(f"  {'Freq':>6}  {'Dry fund dB':>12}  {'CMac fund dB':>13}  {'Rolloff':>8}  {'CMac THD':>9}")
+        print("  " + "-" * 58)
+        sweep_freqs = [100, 200, 500, 1000, 2000, 3000, 5000, 8000, 10000]
+        dry_fund_db = None
+        for freq in sweep_freqs:
+            dry_key  = f"sweep_dry_{freq}"
+            cmac_key = f"sweep_compactmac_{freq}"
+            if dry_key not in files or cmac_key not in files:
+                continue
+            d_sig = load_raw(files[dry_key])
+            c_sig = load_raw(files[cmac_key])
+            _, d_fund, _       = thd_analysis(d_sig, fundamental=freq)
+            c_pct, c_fund, _   = thd_analysis(c_sig, fundamental=freq)
+            rolloff = c_fund - d_fund
+            if dry_fund_db is None:
+                dry_fund_db = d_fund
+            print(f"  {freq:>6}  {d_fund:>+12.1f}  {c_fund:>+13.1f}  {rolloff:>+8.1f}  {c_pct:>8.3f}%")
+
+    # ── [8] Multi-tone IMD: chord (440+880+1320 Hz) through AmigaOnly ─────────
     if "chord_amiga" in files:
         print("\n=== [5] Multi-tone IMD: 440+880+1320 Hz chord through AmigaOnly ===")
         print("  Measures intermodulation distortion products added by 8-bit DAC LUT.")

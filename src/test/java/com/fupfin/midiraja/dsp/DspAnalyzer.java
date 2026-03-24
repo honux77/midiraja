@@ -79,6 +79,14 @@ public class DspAnalyzer
         return sink;
     }
 
+    static CaptureSink runCompactMac(float[] signal)
+    {
+        var sink = new CaptureSink();
+        new CompactMacSimulatorFilter(true, sink)
+                .process(signal.clone(), signal.clone(), FRAMES);
+        return sink;
+    }
+
     static CaptureSink runReverbOnly(float[] signal, ReverbFilter.Preset preset, float level)
     {
         var sink = new CaptureSink();
@@ -175,6 +183,16 @@ public class DspAnalyzer
         {
             save(runDry(sine(freq)),       dir + "/sweep_dry_"   + freq + ".raw");
             save(runAmigaOnly(sine(freq)), dir + "/sweep_amiga_" + freq + ".raw");
+        }
+
+        System.out.println("\n  [CompactMac: sine 440 Hz — THD + output level]");
+        save(runCompactMac(sine440), dir + "/sine_compactmac.raw");
+
+        System.out.println("  [CompactMac: frequency sweep]");
+        for (int freq : new int[]{100, 200, 500, 1000, 2000, 3000, 5000, 8000, 10000})
+        {
+            save(runDry(sine(freq)),          dir + "/sweep_dry_"        + freq + ".raw");
+            save(runCompactMac(sine(freq)),   dir + "/sweep_compactmac_" + freq + ".raw");
         }
 
         System.out.printf("%nAnalyze with:%n  python3 scripts/analyze_audio.py %s%n", dir);

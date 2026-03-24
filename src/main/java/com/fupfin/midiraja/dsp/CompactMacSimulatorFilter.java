@@ -6,9 +6,14 @@ package com.fupfin.midiraja.dsp;
  * the horizontal video flyback frequency (~22.25 kHz). The resulting 1-bit pulse train was
  * integrated by a physical RC low-pass filter before reaching the internal 2-inch speaker.
  *
- * This filter performs: 1. Event-Driven Analytical Integration of the 1-bit PWM pulse train. 2.
- * Simulates the physical RC filter charging and discharging at sub-microsecond precision. 3.
- * Eliminates ZOH aliasing (the "siren" tone) mathematically without oversampling.
+ * <p>The Mac had a single mono speaker and a mono audio path. Stereo input is summed to mono
+ * before PWM encoding, and the mono output is written to both output channels.
+ *
+ * <p>This filter performs:
+ * 1. Stereo-to-mono sum (L+R)/2 — matches physical mono-only hardware.
+ * 2. Event-Driven Analytical Integration of the 1-bit PWM pulse train.
+ * 3. Exact RC filter charging/discharging at sub-microsecond precision.
+ * 4. Aliasing-free reconstruction without oversampling.
  */
 public class CompactMacSimulatorFilter implements AudioProcessor
 {
@@ -17,34 +22,33 @@ public class CompactMacSimulatorFilter implements AudioProcessor
 
     // Timing constants
     private final double outputSampleTimeUs = 1000000.0 / 44100.0;
-    private final double macSampleTimeUs = 1000000.0 / 22254.5;
+    private final double macSampleTimeUs    = 1000000.0 / 22254.5; // authentic Mac carrier
 
-    // RC Filter time constant (Tau)
-    // The authentic Mac Plus capture shows a steep roll-off starting around 5kHz and hitting -83dB
-    // at 10kHz.
-    // This requires a Tau of roughly 30.0 us to match the analog integration curve perfectly.
+    // RC filter time constant: f_-3dB = 1/(2π×30µs) ≈ 5,300 Hz
     private final double tauUs = 30.0;
 
-    // Simulation state
-    private double currentTimeUs = 0.0;
+    // Post-RC 18 kHz LPF (bilinear transform, 1-pole) — suppresses aliased carrier
+    // At 44.1 kHz output rate the Mac carrier (22,254.5 Hz) aliases to ~21,845 Hz.
+    // The bilinear transform places an exact zero at Nyquist, giving ~26 dB suppression there.
+    private static final double LPF_K  = Math.tan(Math.PI * 18000.0 / 44100.0); // ≈ 3.309
+    private static final double LPF_B0 = LPF_K / (1.0 + LPF_K);                // ≈ 0.768
+    private static final double LPF_A1 = (LPF_K - 1.0) / (LPF_K + 1.0);       // ≈ 0.536
+    // difference equation: y[n] = B0*(x[n] + x[n-1]) - A1*y[n-1]
+
+    // Simulation state (mono — single RC path)
+    private double currentTimeUs      = 0.0;
     private double nextMacSampleTimeUs = 0.0;
-
-    private double xL = 0.0;
-    private double xR = 0.0;
-
-    private double dutyL = 0.5;
-    private double dutyR = 0.5;
-
-    private boolean isHighL = false;
-    private boolean isHighR = false;
-
-    private double transitionTimeLUs = 0.0;
-    private double transitionTimeRUs = 0.0;
+    private double x                  = 0.0;   // RC capacitor voltage
+    private double duty               = 0.5;
+    private boolean isHigh            = false;
+    private double transitionTimeUs   = 0.0;
+    private double lpfX               = 0.0;   // LPF: previous input
+    private double lpfY               = 0.0;   // LPF: previous output
 
     public CompactMacSimulatorFilter(boolean enabled, AudioProcessor next)
     {
         this.enabled = enabled;
-        this.next = next;
+        this.next    = next;
     }
 
     @Override
@@ -56,17 +60,19 @@ public class CompactMacSimulatorFilter implements AudioProcessor
             return;
         }
 
-        // Pull architecture
-        next.process(left, right, frames);
-
         for (int i = 0; i < frames; i++)
         {
-            simulateSample(left[i], right[i]);
-            left[i] = (float) xL;
-            right[i] = (float) xR;
+            float mono = (left[i] + right[i]) * 0.5f;
+            simulateSample(mono);
+            double yLpf = LPF_B0 * (x + lpfX) - LPF_A1 * lpfY;
+            lpfX = x;
+            lpfY = yLpf;
+            left[i]  = (float) yLpf;
+            right[i] = (float) yLpf;
         }
 
         wrapTime();
+        next.process(left, right, frames);
     }
 
     @Override
@@ -78,29 +84,29 @@ public class CompactMacSimulatorFilter implements AudioProcessor
             return;
         }
 
-        next.processInterleaved(interleavedPcm, frames, channels);
-
         for (int i = 0; i < frames; i++)
         {
-            int leftIdx = i * channels;
+            int leftIdx  = i * channels;
             int rightIdx = channels > 1 ? leftIdx + 1 : leftIdx;
 
             float inL = interleavedPcm[leftIdx] / 32768.0f;
-            float inR = interleavedPcm[rightIdx] / 32768.0f;
+            float inR = channels > 1 ? interleavedPcm[rightIdx] / 32768.0f : inL;
 
-            simulateSample(inL, inR);
+            simulateSample((inL + inR) * 0.5f);
+            double yLpf = LPF_B0 * (x + lpfX) - LPF_A1 * lpfY;
+            lpfX = x;
+            lpfY = yLpf;
 
-            interleavedPcm[leftIdx] = (short) Math.max(-32768, Math.min(32767, xL * 32768.0));
-            if (channels > 1)
-            {
-                interleavedPcm[rightIdx] = (short) Math.max(-32768, Math.min(32767, xR * 32768.0));
-            }
+            short out = (short) Math.max(-32768, Math.min(32767, yLpf * 32768.0));
+            interleavedPcm[leftIdx] = out;
+            if (channels > 1) interleavedPcm[rightIdx] = out;
         }
 
         wrapTime();
+        next.processInterleaved(interleavedPcm, frames, channels);
     }
 
-    private void simulateSample(float inL, float inR)
+    private void simulateSample(float in)
     {
         double targetOutputTimeUs = currentTimeUs + outputSampleTimeUs;
 
@@ -108,51 +114,32 @@ public class CompactMacSimulatorFilter implements AudioProcessor
         {
             if (currentTimeUs >= nextMacSampleTimeUs)
             {
-                // Authentic 8-bit Quantization
-                // The capture proves the Mac successfully isolated the 8-bit steps.
-                // We use standard symmetrical clamping to represent the clean digital buffer.
-                int u8L = Math.max(0,
-                        Math.min(255, Math.round((inL * 0.5f + 0.5f) * 255.0f)));
-                int u8R = Math.max(0,
-                        Math.min(255, Math.round((inR * 0.5f + 0.5f) * 255.0f)));
-
-                dutyL = u8L / 255.0;
-                dutyR = u8R / 255.0;
-
-                isHighL = true;
-                isHighR = true;
-
-                transitionTimeLUs = nextMacSampleTimeUs + (dutyL * macSampleTimeUs);
-                transitionTimeRUs = nextMacSampleTimeUs + (dutyR * macSampleTimeUs);
-
+                // 8-bit duty cycle quantization: maps [-1,1] → [0,255] → [0,1]
+                int u8 = Math.max(0, Math.min(255, Math.round((in * 0.5f + 0.5f) * 255.0f)));
+                duty           = u8 / 255.0;
+                isHigh         = true;
+                transitionTimeUs = nextMacSampleTimeUs + (duty * macSampleTimeUs);
                 nextMacSampleTimeUs += macSampleTimeUs;
             }
 
             double nextEventUs = targetOutputTimeUs;
-            if (nextEventUs > nextMacSampleTimeUs) nextEventUs = nextMacSampleTimeUs;
-            if (isHighL && nextEventUs > transitionTimeLUs) nextEventUs = transitionTimeLUs;
-            if (isHighR && nextEventUs > transitionTimeRUs) nextEventUs = transitionTimeRUs;
+            if (nextEventUs > nextMacSampleTimeUs)  nextEventUs = nextMacSampleTimeUs;
+            if (isHigh && nextEventUs > transitionTimeUs) nextEventUs = transitionTimeUs;
 
             double deltaT = nextEventUs - currentTimeUs;
             if (deltaT > 1e-9)
             {
-                double expDecay = Math.exp(-deltaT / tauUs);
-
-                double uL = isHighL ? 1.0 : -1.0;
-                double uR = isHighR ? 1.0 : -1.0;
-
-                xL = uL + (xL - uL) * expDecay;
-                xR = uR + (xR - uR) * expDecay;
-
-                currentTimeUs = nextEventUs;
+                double u         = isHigh ? 1.0 : -1.0;
+                double expDecay  = Math.exp(-deltaT / tauUs);
+                x                = u + (x - u) * expDecay;
+                currentTimeUs    = nextEventUs;
             }
             else
             {
                 currentTimeUs = nextEventUs;
             }
 
-            if (isHighL && currentTimeUs >= transitionTimeLUs) isHighL = false;
-            if (isHighR && currentTimeUs >= transitionTimeRUs) isHighR = false;
+            if (isHigh && currentTimeUs >= transitionTimeUs) isHigh = false;
         }
     }
 
@@ -160,10 +147,9 @@ public class CompactMacSimulatorFilter implements AudioProcessor
     {
         while (currentTimeUs > 1000000.0)
         {
-            currentTimeUs -= 1000000.0;
+            currentTimeUs      -= 1000000.0;
             nextMacSampleTimeUs -= 1000000.0;
-            transitionTimeLUs -= 1000000.0;
-            transitionTimeRUs -= 1000000.0;
+            transitionTimeUs   -= 1000000.0;
         }
     }
 
@@ -171,15 +157,13 @@ public class CompactMacSimulatorFilter implements AudioProcessor
     public void reset()
     {
         next.reset();
-        currentTimeUs = 0.0;
+        currentTimeUs       = 0.0;
         nextMacSampleTimeUs = 0.0;
-        xL = 0.0;
-        xR = 0.0;
-        dutyL = 0.5;
-        dutyR = 0.5;
-        isHighL = false;
-        isHighR = false;
-        transitionTimeLUs = 0.0;
-        transitionTimeRUs = 0.0;
+        x                   = 0.0;
+        duty                = 0.5;
+        isHigh              = false;
+        transitionTimeUs    = 0.0;
+        lpfX                = 0.0;
+        lpfY                = 0.0;
     }
 }
