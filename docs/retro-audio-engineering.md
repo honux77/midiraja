@@ -596,7 +596,7 @@ Input (L or R)
 Output (L or R)
 ```
 
-**ZOH (Zero-Order Hold):** Paula's DMA hardware fetched one 8-bit sample from chip RAM and held it for the duration of the DMA period before the next fetch. At typical Amiga playback rates (~22 kHz), this means each value was held for approximately two 44.1 kHz output samples. ZOH introduces a gentle ~sinc-shaped roll-off — a hallmark of Paula's sound.
+**Resampling (linear interpolation):** Paula's DMA hardware fetched one 8-bit sample from chip RAM and held it for the duration of the DMA period before the next fetch. At typical Amiga playback rates (~22 kHz), this means each value was held for approximately two 44.1 kHz output samples. The implementation uses linear interpolation between consecutive DAC values over this 2-sample hold window, which is the minimum-quality resampling standard when converting 44.1 kHz CD-quality input to the ~22 kHz effective rate. (Pure ZOH/nearest-neighbour would introduce additional aliasing artefacts not present in the original hardware's analogue output.)
 
 **R-2R DAC LUT:** A pre-computed 256-entry lookup table maps each 8-bit quantization level to a slightly non-ideal voltage, simulating the gain mismatch inherent in real R-2R resistor ladders with ±3% component tolerances. The seed value (1985 — Amiga's launch year) ensures a reproducible, deterministic DAC nonlinearity. This produces gentle harmonic distortion that is characteristic of Paula's texture.
 
@@ -633,7 +633,7 @@ The M/S model encodes the input into Mid (L+R) and Side (L−R) components, scal
 
 | Parameter | A500 value | A1200 value | Purpose |
 | :--- | :--- | :--- | :--- |
-| ZOH hold | 2 samples | 2 samples | Paula DMA fetch rate (~22 kHz) |
+| Resampling | Linear interp, 2 samples | Linear interp, 2 samples | Paula DMA fetch rate (~22 kHz) |
 | DAC levels | 256 (8-bit) | 256 (8-bit) | R-2R ladder resolution |
 | DAC tolerance | ±3%, seed=1985 | ±3%, seed=1985 | Resistor mismatch nonlinearity |
 | RC LPF α | 0.39 | 0.80 | ~4.5 kHz / ~28 kHz hardware cutoff |
@@ -662,6 +662,71 @@ midra opl --retro a1200 --paula-width 80 song.mid
 # Narrow the widening for a more mono-compatible output
 midra opl --retro amiga --paula-width 20 song.mid
 ```
+
+### 6.7 Measured Distortion Characteristics (AmigaOnly A500)
+
+The following measurements were produced by `DspAnalyzer` + `scripts/analyze_audio.py` at
+44.1 kHz, stereo, using the current implementation (linear interpolation resampling,
+R-2R DAC LUT ±3% seed=1985, static LPF α=0.39, LED cascade α=0.32×2).
+No real-hardware reference is available for comparison; these figures describe the
+simulation as-implemented.
+
+#### THD at 440 Hz sine (–12 dBFS input)
+
+| Config | THD% | Fund | 2f (880 Hz) | 3f (1320 Hz) | 4f (1760 Hz) | 5f (2200 Hz) | Noise floor |
+| :--- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Dry | 0.002% | –12.0 dB | –131.6 dB | –109.6 dB | –140.5 dB | –114.7 dB | –146.9 dB |
+| AmigaOnly (A500) | 0.160% | –12.4 dB | –93.4 dB | –73.0 dB | –113.4 dB | –70.1 dB | –107.0 dB |
+| ReverbOnly (ROOM 50%) | 0.002% | –14.6 dB | –122.9 dB | –109.7 dB | –138.1 dB | –114.3 dB | –131.1 dB |
+| NEW: Amiga→Reverb | 0.167% | –14.9 dB | –95.4 dB | –76.1 dB | –114.2 dB | –71.9 dB | –108.3 dB |
+| OLD: Reverb→Amiga | 0.537% | –15.4 dB | –96.6 dB | –61.8 dB | –102.7 dB | –67.6 dB | –105.3 dB |
+
+Pipeline order matters: placing Reverb before Amiga (OLD) triples THD (0.537% vs 0.167%)
+because the reverb tail — which contains frequency content across the full band — is then
+re-quantized through the 8-bit DAC LUT, amplifying intermodulation artefacts.
+
+#### THD frequency sweep (AmigaOnly A500, sine at –12 dBFS)
+
+| Freq | Dry THD | Amiga THD | 3rd harm | 5th harm | Noise floor |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 100 Hz | 0.001% | 0.281% | –70.1 dB | –64.1 dB | –105.6 dB |
+| 200 Hz | 0.001% | 0.253% | –70.5 dB | –65.2 dB | –106.1 dB |
+| 500 Hz | 0.001% | 0.151% | –73.1 dB | –71.1 dB | –106.2 dB |
+| 1000 Hz | 0.001% | 0.063% | –79.6 dB | –82.0 dB | –107.8 dB |
+| 1500 Hz | 0.001% | 0.049% | –82.7 dB | –92.4 dB | –105.4 dB |
+| 2000 Hz | 0.001% | 0.021% | –91.6 dB | –99.9 dB | –107.0 dB |
+| 3000 Hz | 0.001% | 0.019% | –96.7 dB | –112.3 dB | –104.5 dB |
+
+THD decreases with frequency because the LED filter (–3 dB at ~3.3 kHz) attenuates the
+harmonics more than the fundamental as frequency rises.
+
+#### IMD: 440 + 880 + 1320 Hz chord (AmigaOnly A500)
+
+Notable intermodulation products vs. dry signal:
+
+| Freq | Amp (dBFS) | Δ vs dry | Note |
+| ---: | ---: | ---: | :--- |
+| 440 Hz | –21.9 dB | –0.3 dB | Fundamental (reference) |
+| 880 Hz | –22.8 dB | –1.2 dB | Fundamental |
+| 1320 Hz | –24.1 dB | –2.5 dB | Fundamental |
+| 1760 Hz | –69.3 dB | **+39.5 dB** | 2nd-order IMD product (2×440±880, etc.) |
+| 2200 Hz | –78.9 dB | **+39.5 dB** | 2nd/3rd-order IMD products |
+| 3520 Hz | –83.8 dB | +30.6 dB | 3rd-order IMD (2×1320±880) |
+| 3080 Hz | –93.8 dB | +28.6 dB | 3rd-order IMD |
+
+The 1760 Hz and 2200 Hz products (+39.5 dB above dry) are the perceptually relevant artefacts:
+they sit within the LED filter passband (~3.3 kHz cutoff) and are audible on dense harmonic
+content. This is the origin of the "FM radio detuning" texture on complex chords.
+
+#### Spectral shape with white noise input
+
+| Config | RMS | 0–200 Hz | 200–1.5 kHz | 1.5–6 kHz | 6–22 kHz |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| Dry | –10.8 dBFS | –56.9 dB | –57.3 dB | –57.2 dB | –57.2 dB |
+| Amiga (noise) | –18.9 dBFS | –53.4 dB | –55.4 dB | –63.9 dB | –87.7 dB |
+
+The –8.1 dB RMS reduction and 30 dB roll-off above 6 kHz reflect the combined effect of
+the linear interpolation resampler, static RC LPF (α=0.39), and LED cascade (α=0.32×2).
 
 ---
 
