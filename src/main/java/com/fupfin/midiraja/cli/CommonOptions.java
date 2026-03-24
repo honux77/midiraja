@@ -148,13 +148,12 @@ public class CommonOptions
      * (outermost in the chain). Current priority assignments:</p>
      * <ul>
      *   <li>200 — dynamics compressor ({@code --compress})</li>
-     *   <li>400 — retro hardware DAC simulation ({@code --retro})</li>
      *   <li>700 — vintage speaker coloration ({@code --speaker})</li>
      * </ul>
      *
-     * <p>Future effects should be slotted into the appropriate priority range:
-     * 300–399 for pre-saturation (overdrive), 500–599 for post-retro coloration
-     * (tube warmth, chorus), 600–699 for spatial effects (reverb).</p>
+     * <p>Note: the retro hardware DAC filter ({@code --retro}) is intentionally applied
+     * in the float pipeline, <em>before</em> spatial effects (reverb). See
+     * {@link #wrapRetroFilter(AudioProcessor)}.</p>
      */
     public AudioProcessor buildDspChain(AudioProcessor sink)
     {
@@ -166,10 +165,6 @@ public class CommonOptions
                 entries.add(new DspEntry(200, next ->
                         new DynamicsCompressor(parseCompressPreset(preset), next))));
 
-        // Priority 400: retro hardware DAC simulation.
-        retroMode.ifPresent(mode ->
-                entries.add(new DspEntry(400, next -> buildRetroFilter(mode.toLowerCase(Locale.ROOT), next))));
-
         // Priority 700: vintage speaker coloration — after DAC, shapes the final tone.
         speakerProfile.ifPresent(profile ->
                 entries.add(new DspEntry(700, next -> buildSpeakerFilter(profile, next))));
@@ -180,6 +175,17 @@ public class CommonOptions
         AudioProcessor pipeline = sink;
         for (var e : entries) pipeline = e.factory().apply(pipeline);
         return pipeline;
+    }
+
+    /**
+     * Wraps {@code next} with the retro hardware DAC filter if {@code --retro} is set.
+     * Called from the float pipeline so the retro filter receives the already-filtered
+     * signal before spatial effects (reverb) are applied.
+     */
+    AudioProcessor wrapRetroFilter(AudioProcessor next)
+    {
+        return retroMode.map(mode -> buildRetroFilter(mode.toLowerCase(Locale.ROOT), next))
+                        .orElse(next);
     }
 
     // ── private helpers ───────────────────────────────────────────────────────

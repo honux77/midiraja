@@ -134,6 +134,19 @@ public interface MidiOutProvider extends MidiSink
     }
 
     /**
+     * Gently silences notes on user pause by sending Sustain Off + All Notes Off, allowing voices
+     * to complete their release envelopes instead of cutting abruptly. This avoids the click
+     * artifact that hard-cutoff (All Sound Off) produces when followed by DSP effects like reverb.
+     *
+     * <p>Default implementation falls back to {@link #panic()} for external MIDI ports where
+     * note-off timing is less predictable.
+     */
+    default void softPause()
+    {
+        panic();
+    }
+
+    /**
      * Instantly silences all active notes to prevent stuck sounds across track changes or abrupt
      * exits.
      */

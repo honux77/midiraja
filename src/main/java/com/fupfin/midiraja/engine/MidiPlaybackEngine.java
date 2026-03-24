@@ -683,7 +683,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
         {
             try
             {
-                provider.panic();
+                provider.softPause();
             }
             catch (Exception ignored)
             { /* Ignore */

@@ -32,6 +32,8 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
     protected @Nullable Thread renderThread;
     protected volatile boolean running = false;
     protected volatile boolean renderPaused = false;
+    /** Set by softPause(); cleared by render thread after resetting the DSP pipeline. */
+    private volatile boolean pendingDspReset = false;
     private @Nullable MasterGainFilter masterGain = null;
 
     protected static final int SAMPLE_RATE = 44100;
@@ -70,6 +72,21 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
     {
         if (data == null || data.length == 0) return;
         eventQueue.offer(data.clone());
+    }
+
+    @Override
+    public void softPause()
+    {
+        eventQueue.clear();
+        for (int ch = 0; ch < 16; ch++)
+        {
+            eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 64, 0});  // Sustain Off
+            eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 123, 0}); // All Notes Off
+            eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 120, 0}); // All Sound Off
+        }
+        // Signal the render thread to reset DSP state (AmigaPaula, Reverb, etc.) on the next
+        // frame, so any click from All Sound Off does not resonate through stateful filters.
+        pendingDspReset = true;
     }
 
     @Override
@@ -163,6 +180,17 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
                 while ((event = eventQueue.poll()) != null)
                 {
                     dispatchToNative(event);
+                }
+
+                if (pendingDspReset)
+                {
+                    pendingDspReset = false;
+                    bridge.generate(pcmBuffer, FRAMES_PER_RENDER); // let synth stabilise to silence
+                    if (audioOut != null) audioOut.reset();        // clear DSP + flush ring buffer
+                    java.util.Arrays.fill(pcmBuffer, (short) 0);
+                    if (audioOut != null) audioOut.processInterleaved(pcmBuffer, FRAMES_PER_RENDER, 2);
+                    renderPaused = true; // stop render thread; onPlaybackStarted() resumes it
+                    continue;
                 }
 
                 bridge.generate(pcmBuffer, FRAMES_PER_RENDER);

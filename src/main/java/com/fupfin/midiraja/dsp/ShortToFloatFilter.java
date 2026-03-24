@@ -20,6 +20,12 @@ public class ShortToFloatFilter implements AudioProcessor
     }
 
     @Override
+    public void reset()
+    {
+        next.reset();
+    }
+
+    @Override
     public void process(float[] left, float[] right, int frames)
     {
         next.process(left, right, frames);

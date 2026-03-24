@@ -2,15 +2,22 @@ package com.fupfin.midiraja.cli;
 
 import com.fupfin.midiraja.dsp.*;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.jspecify.annotations.Nullable;
+import picocli.CommandLine;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 /**
  * Shared DSP effect options (EQ, Reverb, Chorus, Tube).
  */
 public class FxOptions
 {
+    @Spec @SuppressWarnings("NullAway") CommandSpec spec;
+
     private static final java.util.logging.Logger log =
             java.util.logging.Logger.getLogger(FxOptions.class.getName());
     @Option(names = {"--bass"}, defaultValue = "50",
@@ -79,8 +86,12 @@ public class FxOptions
             }
             catch (IllegalArgumentException e)
             {
-                log.warning("Unknown reverb preset '" + reverb.get() + "'. Using HALL.");
-                pipeline = new ReverbFilter(pipeline, ReverbFilter.Preset.HALL, levelScale);
+                var valid = Arrays.stream(ReverbFilter.Preset.values())
+                        .map(p -> p.name().toLowerCase(java.util.Locale.ROOT))
+                        .collect(Collectors.joining(", "));
+                throw new CommandLine.ParameterException(spec.commandLine(),
+                        "Invalid value for --reverb: '" + reverb.get()
+                        + "'. Valid values: " + valid);
             }
         }
         return pipeline;
@@ -94,7 +105,10 @@ public class FxOptions
     }
 
     /**
-     * Wraps the pipeline with ShortToFloat → FX chain → MasterGain if float conversion is needed.
+     * Wraps the pipeline with ShortToFloat → retro DAC → FX chain → MasterGain if float
+     * conversion is needed. The retro DAC filter (e.g. AmigaPaula) is placed before spatial
+     * effects (reverb) so that reverb operates on the already band-limited signal, producing
+     * a reverb tail that matches the hardware's frequency response.
      * The MasterGain is initialized to {@code INTERNAL_LEVEL_INV × (volume / 100)} so that
      * {@code --volume} directly controls the PCM output level for internal synths.
      * The inserted filter is also stored in {@link #masterGain} for runtime adjustment.
@@ -107,6 +121,7 @@ public class FxOptions
             masterGain.setVolumeScale(Math.max(0, Math.min(150, common.volume)) / 100.0f);
             pipeline = masterGain;
             pipeline = wrapFxPipeline(pipeline);
+            pipeline = common.wrapRetroFilter(pipeline);
             pipeline = new ShortToFloatFilter(pipeline);
         }
         return pipeline;

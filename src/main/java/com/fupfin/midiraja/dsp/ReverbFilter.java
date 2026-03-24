@@ -144,11 +144,12 @@ public final class ReverbFilter extends AudioFilter
         this.scaleRoom = (preset.roomSize * 0.28f) + 0.7f;
         this.scaleDamp = preset.damp * 0.4f;
 
-        // Scale the wet volume (clamped to a reasonable max to prevent blowing out speakers)
-        this.scaleWet = Math.min(1.0f, preset.wet * levelScale);
+        // levelScale (0–1) directly controls the wet/dry mix ratio.
+        // preset.wet provides a per-preset ceiling so atmospheric presets (CAVE) can be
+        // naturally wetter than tight presets (ROOM) even at the same user level.
+        this.scaleWet = Math.min(preset.wet, levelScale);
 
-        // If wet is boosted heavily, we reduce the dry signal slightly more to keep the overall
-        // volume balanced.
+        // Reduce dry slightly as wet increases to keep overall volume balanced.
         this.scaleDry = Math.max(0.1f, 1.0f - (this.scaleWet * 0.6f));
 
         for (int i = 0; i < numCombs; i++)
@@ -158,6 +159,28 @@ public final class ReverbFilter extends AudioFilter
             combsL[i].setDamp(scaleDamp);
             combsR[i].setDamp(scaleDamp);
         }
+    }
+
+    @Override
+    public void reset()
+    {
+        for (int i = 0; i < numCombs; i++)
+        {
+            java.util.Arrays.fill(combsL[i].buffer, 0f);
+            combsL[i].bufIdx = 0;
+            combsL[i].filterStore = 0;
+            java.util.Arrays.fill(combsR[i].buffer, 0f);
+            combsR[i].bufIdx = 0;
+            combsR[i].filterStore = 0;
+        }
+        for (int i = 0; i < numAllpasses; i++)
+        {
+            java.util.Arrays.fill(allpassesL[i].buffer, 0f);
+            allpassesL[i].bufIdx = 0;
+            java.util.Arrays.fill(allpassesR[i].buffer, 0f);
+            allpassesR[i].bufIdx = 0;
+        }
+        super.reset();
     }
 
     public void setEnabled(boolean enabled)
