@@ -22,13 +22,10 @@ import com.fupfin.midiraja.midi.psg.PsgSynthProvider;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
 import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
-import com.fupfin.midiraja.midi.FFMMuntNativeBridge;
 import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
-import com.fupfin.midiraja.midi.FluidSynthProvider;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiPort;
 import com.fupfin.midiraja.midi.MidiProviderFactory;
-import com.fupfin.midiraja.midi.MuntSynthProvider;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import java.io.PrintStream;
@@ -75,35 +72,6 @@ public class MidirajaCommand implements Callable<Integer>
 
     @Mixin
     private final CommonOptions common = new CommonOptions();
-
-    // ── Deprecated legacy options (hidden, for backwards compatibility) ───────
-
-    @Option(names = {"--opl"}, hidden = true, arity = "0..1", fallbackValue = "")
-    private Optional<String> legacyOpl = Optional.empty();
-
-    @Option(names = {"--opl-emulator"}, hidden = true)
-    private int legacyOplEmulator = 0;
-
-    @Option(names = {"--opl-chips"}, hidden = true)
-    private int legacyOplChips = 4;
-
-    @Option(names = {"--opn"}, hidden = true, arity = "0..1", fallbackValue = "")
-    private Optional<String> legacyOpn = Optional.empty();
-
-    @Option(names = {"--opn-emulator"}, hidden = true)
-    private int legacyOpnEmulator = 0;
-
-    @Option(names = {"--opn-chips"}, hidden = true)
-    private int legacyOpnChips = 4;
-
-    @Option(names = {"--munt"}, hidden = true)
-    private Optional<String> legacyMunt = Optional.empty();
-
-    @Option(names = {"--fluid"}, hidden = true)
-    private Optional<String> legacyFluid = Optional.empty();
-
-    @Option(names = {"--fluid-driver"}, hidden = true)
-    private Optional<String> legacyFluidDriver = Optional.empty();
 
     @Spec
     @Nullable
@@ -280,10 +248,7 @@ public class MidirajaCommand implements Callable<Integer>
     public Integer call() throws Exception
     {
         AppLogger.configure(common.logLevel.orElse(null));
-        boolean hasLegacyOption = legacyMunt.isPresent() || legacyOpl.isPresent()
-                || legacyOpn.isPresent() || legacyFluid.isPresent();
-        if ((files == null || files.isEmpty()) && port.isEmpty() && !hasLegacyOption
-                && provider == null)
+        if ((files == null || files.isEmpty()) && port.isEmpty() && provider == null)
         {
             try (var terminal = TerminalBuilder.builder().system(true).build())
             {
@@ -313,59 +278,11 @@ public class MidirajaCommand implements Callable<Integer>
         }
 
         MidiOutProvider resolvedProvider;
-        Optional<String> soundbankArg = Optional.empty();
 
         if (provider != null)
         {
             // Test mode: provider already injected
             resolvedProvider = provider;
-        }
-        else if (legacyMunt.isPresent())
-        {
-            stdErr.println("Warning: --munt is deprecated. Use 'midra munt <rom-dir> "
-                    + "<files...>' instead.");
-            String audioLib = AudioLibResolver.resolve();
-            var audio = new NativeAudioEngine(audioLib);
-            var bridge = new FFMMuntNativeBridge();
-            audio.init(32000, 2, 4096);
-            AudioProcessor pipeline = new FloatToShortSink(audio);
-            resolvedProvider = new MuntSynthProvider(bridge, pipeline);
-            soundbankArg = legacyMunt;
-        }
-        else if (legacyOpl.isPresent())
-        {
-            stdErr.println("Warning: --opl is deprecated. Use 'midra opl [-b BANK] "
-                    + "<files...>' instead.");
-            String audioLib = AudioLibResolver.resolve();
-            var audio = new NativeAudioEngine(audioLib);
-            audio.init(44100, 2, 4096);
-            AudioProcessor pipeline = new FloatToShortSink(audio);
-            var bridge = new FFMAdlMidiNativeBridge();
-            resolvedProvider = new AdlMidiSynthProvider(bridge, pipeline,
-                    legacyOplEmulator, legacyOplChips, null);
-            String val = legacyOpl.get();
-            soundbankArg = Optional
-                    .of(val.isEmpty() ? "bank:0" : (val.matches("\\d+") ? "bank:" + val : val));
-        }
-        else if (legacyOpn.isPresent())
-        {
-            stdErr.println("Warning: --opn is deprecated. Use 'midra opn [-b PATH] "
-                    + "<files...>' instead.");
-            String audioLib = AudioLibResolver.resolve();
-            var audio = new NativeAudioEngine(audioLib);
-            var bridge = new FFMOpnMidiNativeBridge();
-            audio.init(44100, 2, 4096);
-            AudioProcessor pipeline = new FloatToShortSink(audio);
-            resolvedProvider = new OpnMidiSynthProvider(bridge, pipeline,
-                    legacyOpnEmulator, legacyOpnChips, null);
-            soundbankArg = Optional.of(legacyOpn.get());
-        }
-        else if (legacyFluid.isPresent())
-        {
-            stdErr.println("Warning: --fluid is deprecated. Use 'midra fluid <soundfont.sf2> "
-                    + "<files...>' instead.");
-            resolvedProvider = new FluidSynthProvider(legacyFluidDriver.orElse(null));
-            soundbankArg = legacyFluid;
         }
         else if (!files.isEmpty() && port.isEmpty())
         {
@@ -389,12 +306,9 @@ public class MidirajaCommand implements Callable<Integer>
             resolvedProvider = MidiProviderFactory.createProvider();
         }
 
-        boolean isSoftSynth = legacyMunt.isPresent() || legacyOpl.isPresent()
-                || legacyOpn.isPresent() || legacyFluid.isPresent()
-                || (provider != null && isTestMode);
-
         var runner = new PlaybackRunner(stdOut, stdErr, terminalIO, isTestMode);
-        return runner.run(resolvedProvider, isSoftSynth, port, soundbankArg, files, common, originalArgs());
+        return runner.run(resolvedProvider, provider != null && isTestMode, port, Optional.empty(),
+                files, common, originalArgs());
     }
 
     private int runBuiltinEngine(String engine, List<File> files, CommonOptions common)
