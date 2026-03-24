@@ -64,7 +64,7 @@ class RetroFiltersTest {
         // PC speaker: empirical 15.2kHz carrier (1.19318MHz / 78 steps), ~6.3-bit
         // 8-bit source pre-quantisation, no resonance peaks
         OneBitHardwareFilter filter = new OneBitHardwareFilter(
-                true, "pwm", 15200.0, 78.0, 37.9, 8, 1.0, null, mock);
+                true, "pwm", 15200.0, 78.0, 37.9, 8, 1.0, null, false, mock);
         float[] left  = new float[512];
         float[] right = new float[512];
 
@@ -81,7 +81,7 @@ class RetroFiltersTest {
     void testApple2DacToggle() {
         // DAC522 profile: 22kHz carrier (above hearing limit), 5-bit resolution
         // tauUs=28.4 derives from the old smoothAlpha=0.55 via τ = -1/(44100 × ln(1-0.55))
-        OneBitHardwareFilter filter = new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, mock);
+        OneBitHardwareFilter filter = new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, false, mock);
         float[] left  = {0.5f, 0.5f, -0.5f, -0.5f};
         float[] right = {0.5f, 0.5f, -0.5f, -0.5f};
 
@@ -346,7 +346,7 @@ class RetroFiltersTest {
         }
 
         OneBitHardwareFilter filter = new OneBitHardwareFilter(
-                true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, mock);
+                true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, false, mock);
         filter.process(left, right, n);
 
         float[] out = mock.lastLeft;
@@ -384,10 +384,10 @@ class RetroFiltersTest {
         MockProcessor mockBiquad   = new MockProcessor();
 
         // Same PC IIR, one without resonance peaks, one with (preBitDepth=0 to isolate biquad effect)
-        new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, 0, 1.0, null, mockNoBiquad)
+        new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, 0, 1.0, null, false, mockNoBiquad)
                 .process(leftNoBiquad, rightNoBiquad, n);
         new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, 0, 1.0,
-                new double[]{2500.0, 3.0, 3.0, 6700.0, 4.0, 4.0}, mockBiquad)
+                new double[]{2500.0, 3.0, 3.0, 6700.0, 4.0, 4.0}, false, mockBiquad)
                 .process(leftBiquad, rightBiquad, n);
 
         double noBiquadAt2500 = fftMagnitudeAt(mockNoBiquad.lastLeft, 2500.0);
@@ -406,7 +406,7 @@ class RetroFiltersTest {
         // When monoIn is near zero, the IIR should ring down to silence rather than
         // sustaining the 15.2 kHz carrier at -23 dB (which is audible).
         OneBitHardwareFilter filter = new OneBitHardwareFilter(
-                true, "pwm", 15200.0, 78.0, 37.9, 8, 1.0, null, mock);
+                true, "pwm", 15200.0, 78.0, 37.9, 8, 1.0, null, false, mock);
 
         int n = 44100;
         float[] left = new float[n];
@@ -424,7 +424,7 @@ class RetroFiltersTest {
     void testApple2SilenceProducesNoAudibleCarrier() {
         // Same check for Apple II's 22.05 kHz carrier — previously sat exactly at Nyquist.
         OneBitHardwareFilter filter = new OneBitHardwareFilter(
-                true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, mock);
+                true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, false, mock);
 
         int n = 44100;
         float[] left = new float[n];
@@ -435,5 +435,55 @@ class RetroFiltersTest {
         for (float v : mock.lastLeft) maxOut = Math.max(maxOut, Math.abs(v));
         assertTrue(maxOut < 1e-3f,
                 "Apple II mode: silence input should produce near-zero output, got max=" + maxOut);
+    }
+
+    @Test
+    void testPcAuxOutBypassesConePoles() {
+        int n = 4096;
+        float[] leftSpeaker = new float[n], rightSpeaker = new float[n];
+        float[] leftAux     = new float[n], rightAux     = new float[n];
+        for (int i = 0; i < n; i++)
+            leftSpeaker[i] = rightSpeaker[i] = leftAux[i] = rightAux[i] =
+                    (float) Math.sin(2.0 * Math.PI * 8000.0 * i / 44100.0);
+
+        MockProcessor mockSpeaker = new MockProcessor();
+        MockProcessor mockAux     = new MockProcessor();
+        new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, 8, 1.0, null, false, mockSpeaker)
+                .process(leftSpeaker, rightSpeaker, n);
+        new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, 8, 1.0, null, true, mockAux)
+                .process(leftAux, rightAux, n);
+
+        float peakSpeaker = 0, peakAux = 0;
+        for (int i = 512; i < n; i++) {
+            peakSpeaker = Math.max(peakSpeaker, Math.abs(mockSpeaker.lastLeft[i]));
+            peakAux     = Math.max(peakAux,     Math.abs(mockAux.lastLeft[i]));
+        }
+        assertTrue(peakAux > peakSpeaker * 2.0f,
+                "aux mode should be louder at 8 kHz (cone bypassed). speaker=" + peakSpeaker + " aux=" + peakAux);
+    }
+
+    @Test
+    void testApple2AuxOutBypassesConePoles() {
+        int n = 4096;
+        float[] leftSpeaker = new float[n], rightSpeaker = new float[n];
+        float[] leftAux     = new float[n], rightAux     = new float[n];
+        for (int i = 0; i < n; i++)
+            leftSpeaker[i] = rightSpeaker[i] = leftAux[i] = rightAux[i] =
+                    (float) Math.sin(2.0 * Math.PI * 8000.0 * i / 44100.0);
+
+        MockProcessor mockSpeaker = new MockProcessor();
+        MockProcessor mockAux     = new MockProcessor();
+        new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, false, mockSpeaker)
+                .process(leftSpeaker, rightSpeaker, n);
+        new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, 8, 1.0, null, true, mockAux)
+                .process(leftAux, rightAux, n);
+
+        float peakSpeaker = 0, peakAux = 0;
+        for (int i = 512; i < n; i++) {
+            peakSpeaker = Math.max(peakSpeaker, Math.abs(mockSpeaker.lastLeft[i]));
+            peakAux     = Math.max(peakAux,     Math.abs(mockAux.lastLeft[i]));
+        }
+        assertTrue(peakAux > peakSpeaker * 2.0f,
+                "Apple II aux mode should be louder at 8 kHz. speaker=" + peakSpeaker + " aux=" + peakAux);
     }
 }

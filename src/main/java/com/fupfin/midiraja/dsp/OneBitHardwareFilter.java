@@ -56,6 +56,7 @@ public class OneBitHardwareFilter implements AudioProcessor
     private static final double INTERNAL_RATE = 44100.0 * OVERSAMPLE; // 176400.0 Hz
 
     private final boolean enabled;
+    private final boolean auxOut;
     private final AudioProcessor next;
     private final String mode;
 
@@ -131,13 +132,16 @@ public class OneBitHardwareFilter implements AudioProcessor
      * @param resonancePeaks flat array of {f0Hz, dBgain, Q} triplets for peaking biquads,
      *                       or null/empty for no resonance (apple2, pc). At most two triplets
      *                       (six elements) are used; extras are ignored per YAGNI.
+     * @param auxOut         when true, bypass the 6 cone IIR poles and biquad resonance filters
+     *                       and return the voice-coil pre-filter output instead (aux jack simulation)
      * @param next           next processor in the chain
      */
     public OneBitHardwareFilter(boolean enabled, String mode,
             double carrierHz, double levels, double tauUs, int preBitDepth, double driveGain,
-            double @Nullable [] resonancePeaks, AudioProcessor next)
+            double @Nullable [] resonancePeaks, boolean auxOut, AudioProcessor next)
     {
         this.enabled = enabled;
+        this.auxOut = auxOut;
         this.next = next;
         this.mode = mode != null ? mode.toLowerCase(ROOT) : "pwm";
         this.subCarrierStep = carrierHz / INTERNAL_RATE;
@@ -230,14 +234,17 @@ public class OneBitHardwareFilter implements AudioProcessor
         if (abs(monoIn) < 1e-4) {
             for (int s = 0; s < OVERSAMPLE; s++) {
                 iirStatePre += iirAlphaPre * (0.0 - iirStatePre);
-                iirState1 += iirAlpha * (iirStatePre - iirState1);
-                iirState2 += iirAlpha * (iirState1 - iirState2);
-                iirState3 += iirAlpha * (iirState2 - iirState3);
-                iirState4 += iirAlpha * (iirState3 - iirState4);
-                iirState5 += iirAlpha * (iirState4 - iirState5);
-                iirState6 += iirAlpha * (iirState5 - iirState6);
+                if (!auxOut) {
+                    iirState1 += iirAlpha * (iirStatePre - iirState1);
+                    iirState2 += iirAlpha * (iirState1  - iirState2);
+                    iirState3 += iirAlpha * (iirState2  - iirState3);
+                    iirState4 += iirAlpha * (iirState3  - iirState4);
+                    iirState5 += iirAlpha * (iirState4  - iirState5);
+                    iirState6 += iirAlpha * (iirState5  - iirState6);
+                }
                 carrierPhase = (carrierPhase + subCarrierStep) % 1.0;
             }
+            if (auxOut) return (float)(iirStatePre * invDriveGain);
             double out = iirState6 * invDriveGain;
             double[] c1 = biquad1Coeffs, s1 = biquad1State;
             if (c1 != null && s1 != null) out = applyBiquad(c1, s1, out);
@@ -252,14 +259,17 @@ public class OneBitHardwareFilter implements AudioProcessor
         for (int s = 0; s < OVERSAMPLE; s++) {
             double bit = (carrierPhase < duty) ? 1.0 : -1.0;
             iirStatePre += iirAlphaPre * (bit - iirStatePre);
-            iirState1 += iirAlpha * (iirStatePre - iirState1);
-            iirState2 += iirAlpha * (iirState1 - iirState2);
-            iirState3 += iirAlpha * (iirState2 - iirState3);
-            iirState4 += iirAlpha * (iirState3 - iirState4);
-            iirState5 += iirAlpha * (iirState4 - iirState5);
-            iirState6 += iirAlpha * (iirState5 - iirState6);
+            if (!auxOut) {
+                iirState1 += iirAlpha * (iirStatePre - iirState1);
+                iirState2 += iirAlpha * (iirState1  - iirState2);
+                iirState3 += iirAlpha * (iirState2  - iirState3);
+                iirState4 += iirAlpha * (iirState3  - iirState4);
+                iirState5 += iirAlpha * (iirState4  - iirState5);
+                iirState6 += iirAlpha * (iirState5  - iirState6);
+            }
             carrierPhase = (carrierPhase + subCarrierStep) % 1.0;
         }
+        if (auxOut) return (float)(iirStatePre * invDriveGain);
 
         double out = iirState6 * invDriveGain;
         double[] c1 = biquad1Coeffs, s1 = biquad1State;
