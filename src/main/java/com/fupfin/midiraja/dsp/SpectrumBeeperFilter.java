@@ -22,6 +22,7 @@ public class SpectrumBeeperFilter implements AudioProcessor
     private static final float LP_ALPHA = 0.600f;
 
     private final boolean enabled;
+    private final boolean auxOut;
     private final AudioProcessor next;
 
     private float hpPrev = 0.0f;
@@ -29,10 +30,11 @@ public class SpectrumBeeperFilter implements AudioProcessor
     private float lp1 = 0.0f;
     private float lp2 = 0.0f;
 
-    public SpectrumBeeperFilter(boolean enabled, AudioProcessor next)
+    public SpectrumBeeperFilter(boolean enabled, boolean auxOut, AudioProcessor next)
     {
         this.enabled = enabled;
-        this.next = next;
+        this.auxOut  = auxOut;
+        this.next    = next;
     }
 
     @Override
@@ -82,9 +84,11 @@ public class SpectrumBeeperFilter implements AudioProcessor
     private float processSample(float monoIn)
     {
         // Z80 direct-toggle quantization: 128 discrete levels
-        float clamped = Math.max(-1.0f, Math.min(1.0f, monoIn));
-        int level = Math.round((clamped * 0.5f + 0.5f) * (LEVELS - 1));
+        float clamped   = Math.max(-1.0f, Math.min(1.0f, monoIn));
+        int level       = Math.round((clamped * 0.5f + 0.5f) * (LEVELS - 1));
         float quantized = (level / (float) (LEVELS - 1)) * 2.0f - 1.0f;
+
+        if (auxOut) return quantized;
 
         // High-pass filter (~510 Hz): removes DC and sub-bass (physical beeper limitation)
         hpOut = HP_ALPHA * (hpOut + quantized - hpPrev);
@@ -92,7 +96,7 @@ public class SpectrumBeeperFilter implements AudioProcessor
 
         // Two-stage low-pass (~4.5 kHz): models small diaphragm inertia
         lp1 += LP_ALPHA * (hpOut - lp1);
-        lp2 += LP_ALPHA * (lp1 - lp2);
+        lp2 += LP_ALPHA * (lp1  - lp2);
 
         return lp2;
     }

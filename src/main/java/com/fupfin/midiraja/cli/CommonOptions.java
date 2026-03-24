@@ -135,6 +135,12 @@ public class CommonOptions
             description = "Vintage speaker acoustic simulation (tin-can, warm-radio, none)")
     public Optional<String> speakerProfile = Optional.empty();
 
+    @Option(names = {"--aux"},
+            description = "Bypass internal speaker simulation for retro modes that model one "
+                    + "(compactmac, pc, apple2, spectrum). Outputs the raw electrical signal "
+                    + "instead of the speaker-filtered sound. Ignored by amiga, covox.")
+    public boolean auxOut = false;
+
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     public UiModeOptions uiOptions = new UiModeOptions();
 
@@ -208,20 +214,20 @@ public class CommonOptions
     {
         return switch (mode)
         {
-            case "compactmac" -> new CompactMacSimulatorFilter(true, next);
+            case "compactmac" -> new CompactMacSimulatorFilter(true, auxOut, next);
             // Empirically measured from original RealSound demos: 15.2kHz carrier
             // (1.19318MHz / 78 steps ≈ 15.3kHz), 78 discrete levels (~6.3-bit).
             // 7-pole IIR (1 electrical τ=10µs + 6 mechanical τ=37.9µs) gives -3dB at 1.4kHz
             // and -68dB carrier suppression. No resonance peaks: spectral analysis of reference
             // RealSound recordings shows no constant-frequency peaks.
             case "pc" -> new OneBitHardwareFilter(true, "pwm", 15200.0, 78.0, 37.9, 8, retroDrive,
-                    null, false, next);
+                    null, auxOut, next);
             // DAC522 technique: each audio sample is encoded as TWO 46-cycle pulses.
             // Two pulses together (92 cycles) ≈ the original 93-cycle 11kHz sample period,
             // but the carrier noise is now at 22.05kHz — above the hearing limit.
             // 32 discrete widths per pulse (6-37 out of 46 cycles, ~5-bit).
-            case "apple2" -> new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, 8, retroDrive, null, false, next);
-            case "spectrum" -> new SpectrumBeeperFilter(true, next);
+            case "apple2" -> new OneBitHardwareFilter(true, "pwm", 22050.0, 32.0, 28.4, 8, retroDrive, null, auxOut, next);
+            case "spectrum" -> new SpectrumBeeperFilter(true, auxOut, next);
             case "covox", "disneysound" -> new CovoxDacFilter(true, next);
             case "amiga", "a500" -> new AmigaPaulaFilter(true, AmigaPaulaFilter.Profile.A500,
                     resolvePaulaWidth(), next);

@@ -81,49 +81,49 @@ For `OneBitHardwareFilter`, `carrierStep = carrierHz / sampleRate`:
 The apple2 mode's exact `carrierStep=0.5` is what makes the two-pulse encoding natural: each
 carrier period spans exactly two output samples, mirroring the DAC522 hardware behaviour.
 
-## 4. The `--speaker` Option and Retro Modes
+## 4. Speaker Models and the `--aux` Flag
 
-The `--speaker` flag applies an `AcousticSpeakerFilter` — a post-processing acoustic
-coloration stage that models the frequency response of vintage speaker cabinets. It is a
-useful standalone effect for modern synthesis engines, but it interacts badly with `--retro`
-modes.
+Most `--retro` modes model their **built-in physical speaker** as the default output. The
+speaker is not a separable add-on; it defines the mode's authentic listening experience:
 
-### Why They Conflict
+| Retro Mode | Electrical Output | Speaker Model (default) |
+| :--- | :--- | :--- |
+| `compactmac` | RC integration (τ=30 µs) + 18 kHz anti-alias LPF | 2-pole Butterworth LPF at 10 kHz; models the 2-inch Mac speaker rolloff |
+| `spectrum` | Z80 amplitude quantization (128 levels) | HP (α=0.930, ~510 Hz) + 2× LP (α=0.600, ~4.5 kHz); models the 22mm 40Ω beeper |
+| `pc` | PWM duty-cycle + 1-pole electrical τ_e=10 µs | 6-pole mechanical IIR (τ_m=37.9 µs); −3 dB at 1.4 kHz |
+| `apple2` | PWM duty-cycle | 6-pole mechanical IIR (τ_m=28.4 µs); models Apple II speaker cone rolloff |
+| `covox` / `disneysound` | RC LPF (~2.12 kHz) | No built-in speaker — parallel-port audio jack |
+| `amiga` / `a500` | RC LPF (~4.5 kHz) + LED filter (~3.3 kHz) | No built-in speaker — Paula is a line-level DAC |
+| `a1200` | AGA DAC filter (~28 kHz) + LED filter (~3.3 kHz) | No built-in speaker |
 
-Every `--retro` mode already models its physical speaker as an integral part of its signal
-chain. The speaker is not a separable add-on; it defines the mode's sound:
+### `--aux` — Bypassing the Speaker Stage
 
-| Retro Mode | Speaker Model Built In |
-| :--- | :--- |
-| `compactmac` | RC integration (τ = 30 µs) models the 2-inch Mac speaker; −84 dB at 10 kHz |
-| `spectrum` | HP (α = 0.930, ~510 Hz) + 2× LP (α = 0.600, ~4.5 kHz) models the 22mm 40Ω beeper |
-| `pc` | 7-pole IIR (1 electrical: τ_e=10 µs + 6 mechanical: τ_m=37.9 µs, all at 176,400 Hz); −3 dB at 1.4 kHz, −68 dB carrier suppression |
-| `apple2` | 6-pole IIR (τ_m=28.4 µs) models the Apple II speaker cone rolloff |
-| `covox` / `disneysound` | RC LPF (α = 0.26, ~2.12 kHz) models the parallel-port analog circuit |
-| `amiga` / `a500` | Static RC LPF (~4.5 kHz) + LED 2-pole (~3.3 kHz) models Paula's analog output stage |
-| `a1200` | AGA DAC filter (~28 kHz, near-transparent) + LED 2-pole (~3.3 kHz) |
+The `--aux` flag simulates the **electrical output** (audio jack / line out) rather than the
+built-in speaker. It skips the speaker stage inside the filter while keeping all other
+simulation (quantization, carrier integration, RC filtering) intact.
 
-Applying `--speaker` on top of any of these chains a second EQ/filter stage with no physical
-basis. The result is an over-filtered signal.
+```bash
+# Default: internal speaker experience (warm, colored)
+midra compactmac song.mid
 
-### The Pipeline Execution Order
+# Aux out: electrical signal at the Mac's audio jack
+midra compactmac --aux song.mid
 
-The `wrapRetroPipeline()` method in `CommonOptions` applies `--speaker` first (innermost),
-then `--retro` (outermost). In the pull-based pipeline, processing flows from outermost inward,
-so the actual execution order is:
+# PC speaker (cone IIR active by default)
+midra pc song.mid
 
+# PC aux: voice-coil inductance only, no cone poles
+midra pc --aux song.mid
 ```
-retro filter → speaker filter → sink
-```
 
-This means the retro mode's quantization and carrier integration sees the already-speaker-
-coloured signal as its input — which is also physically incorrect. Real hardware quantized the
-raw audio signal before the speaker received it.
+`--aux` has no effect on `amiga`, `a500`, `a1200`, `covox`, or `disneysound` — these modes
+have no internal speaker model, so their output is always the electrical signal.
 
-### When `--speaker` Is Appropriate
+### The `--speaker` Option
 
-`--speaker` is designed for use **without** `--retro` — to add vintage character to a modern
-synthesis engine that produces a clean, full-range output:
+The `--speaker` flag applies `AcousticSpeakerFilter` — a post-processing acoustic coloration
+stage. It is designed for use **without** `--retro`, to add vintage character to a clean
+modern synth output:
 
 ```bash
 # Correct: adds tin-can coloring to a clean FluidSynth render
@@ -136,6 +136,7 @@ midra opl --speaker warm-radio song.mid
 midra opl --retro pc --speaker tin-can song.mid
 ```
 
-Midiraja does not automatically suppress `--speaker` when `--retro` is active — the combination
-is permitted but physically inaccurate. For authentic period sound, use `--retro` alone and
-rely on its built-in speaker model.
+Applying `--speaker` on top of `--retro` chains a second speaker EQ with no physical basis.
+Midiraja does not suppress this combination — it is permitted but physically inaccurate. For
+authentic period sound, use `--retro` alone (or `--retro --aux --speaker` if you want the
+electrical signal through a custom cabinet model).

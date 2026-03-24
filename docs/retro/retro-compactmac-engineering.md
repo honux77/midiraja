@@ -79,6 +79,7 @@ derived from a measured Mac circuit element.
 | RC τ | 30.0 µs | f₋₃dB ≈ 5,300 Hz |
 | Mac sample rate | 22,254.5 Hz | Tied to horizontal video flyback |
 | Post-RC LPF | 18 kHz, bilinear 1-pole | Suppresses aliased carrier at ~21,845 Hz |
+| Speaker LPF | 10 kHz, bilinear 2-pole Butterworth | Models Mac 2-inch speaker rolloff; bypassed by `--aux` |
 
 ## 5. Measured Characteristics (Simulation, March 2026)
 
@@ -139,15 +140,90 @@ render the alias inaudible under normal listening conditions.
 
 ## 6. Design Notes
 
-**`--speaker` interaction**: `--retro compactmac` models the RC electrical output only, not
-the 2-inch cone's mechanical response. The steep −84 dB at 10 kHz measured from a Mac Plus
-recording reflects the physical speaker's rolloff, not the RC circuit alone (which gives only
-−7.9 dB at 10 kHz). To add the speaker coloration, combine with `--speaker`.
+### 6.1 Mac Speaker Model
 
-**Mac Plus capture caveat**: The spectral measurements previously cited (−84 dB at 10 kHz)
-were taken from a music recording, not a flat-spectrum sweep. Those levels reflect the musical
-content at each frequency, not the RC filter's transfer function. The τ=30 µs parameter is
-derived from the RC component values on the Mac logic board, not from that recording.
+The default output of `--retro compactmac` simulates the **internal 2-inch speaker**, not the
+audio jack. The speaker stage is a 2-pole Butterworth LPF at 10 kHz, added after the RC + 18 kHz
+post-RC LPF:
+
+$$H(z) = \frac{B_0(1 + z^{-1})^2}{1 + A_1 z^{-1} + A_2 z^{-2}}$$
+
+where $K = \tan(\pi \cdot 10000 / 44100) \approx 2.196$, norm $= 1 + K/\sqrt{2} + K^2$:
+
+| Coefficient | Value | Formula |
+| :--- | :--- | :--- |
+| B₀ | K²/norm ≈ 0.299 | — |
+| A₁ | 2(K²−1)/norm ≈ 0.374 | — |
+| A₂ | (1−K/√2+K²)/norm ≈ 0.204 | — |
+
+The 2-pole Butterworth gives −3 dB at 10 kHz and −7.8 dB at 15 kHz. The cutoff frequency is
+calibrated to the cliff observed in a early compact Mac recording obtained for this analysis (see §6.2), but the order
+(2-pole) is provisional pending a flat-spectrum test signal (see §6.2 Limitations).
+
+**`--aux` flag**: Adding `--aux` bypasses the speaker biquad, producing the electrical output
+at the Mac's audio jack. The RC + post-RC LPF stages remain active.
+
+### 6.2 Real Mac Sample Analysis
+
+A early compact Mac music recording obtained for this analysis (48 kHz stereo, essentially mono:
+L−R = −98.7 dBFS) was compared against the simulation. Key findings (March 2026):
+
+| Frequency | Simulation (speaker on) | Real sample (rel. 1 kHz) | Note |
+| :--- | :--- | :--- | :--- |
+| 1,000 Hz | −0.2 dB | 0.0 dBr (reference) | — |
+| 5,000 Hz | −3.2 dB | +4.4 dBr | music content |
+| 8,000 Hz | −7.1 dB | −2.2 dBr | music content |
+| **10,000 Hz** | **−10.9 dB** | **−10.6 dBr** | **✅ hardware-limited, excellent match** |
+| 11,000 Hz | ~−14 dB (est.) | −32.5 dBr | music content drop |
+| 22 kHz carrier | ~−26 dB (18 kHz LPF) | −150 dBFS (noise floor) | speaker suppresses carrier |
+
+**What the comparison shows:**
+
+- **10 kHz match is excellent** (−10.9 vs −10.6 dBr, within 0.3 dB). At this frequency the
+  hardware filter dominates and the music has little intrinsic energy, making it the most
+  reliable calibration point.
+
+- **100–8,000 Hz values reflect musical content**, not hardware response. The sample's +16 dBr
+  at 200 Hz or −2.2 dBr at 8 kHz reflects the tonal distribution of the music, not the
+  hardware's frequency response. These points cannot be used to tune the simulation.
+
+- **Above 10 kHz**, the sample drops steeply (−21.9 dB from 10→11 kHz). This cliff cannot
+  be reproduced by any realistic speaker filter order: even an 8th-order Butterworth gives only
+  −4.5 dB over that interval. The cliff is best explained by the music having very little 11 kHz
+  energy rather than by a hardware filter with a 21.9 dB/octave slope.
+
+**Limitations and provisional nature of the model:**
+
+The available sample is a music recording, not a flat-spectrum test signal (sweep or white noise).
+Without such a signal it is impossible to isolate the hardware's frequency response from the
+music's spectral content above 10 kHz. **The current 2-pole Butterworth at 10 kHz is
+provisionally the best model achievable from the available evidence.** The cutoff frequency
+is well-validated at 10 kHz; the filter order (slope above 10 kHz) is a reasonable assumption
+for a small 2-inch loudspeaker, but cannot be confirmed without a dedicated test recording.
+
+To improve this model in future: obtain a recording of a early compact Mac playing white noise or a slow
+frequency sweep through its internal speaker, then use the resulting frequency response to
+calibrate the filter order and exact cutoff.
+
+### 6.3 `--speaker` Interaction
+
+`--retro compactmac` already includes the speaker stage by default. Applying `--speaker` on top
+doubles the coloration. If you want the electrical output through a custom cabinet model, combine
+`--aux` with `--speaker`:
+
+```bash
+# Default: internal Mac speaker experience
+midra compactmac song.mid
+
+# Electrical output (audio jack only)
+midra compactmac --aux song.mid
+
+# Electrical output through warm-radio cabinet (custom)
+midra compactmac --aux --speaker warm-radio song.mid
+```
+
+**τ=30 µs derivation**: The RC time constant is derived from the RC component values on the
+Mac logic board, not from any audio recording.
 
 **44.1 kHz structural limitation**: The root cause of carrier aliasing is the mismatch between
 the 44,100 Hz output rate and the 22,254.5 Hz Mac carrier (ratio ≈ 1.982, not an integer). A

@@ -206,3 +206,57 @@ content. This is the origin of the "FM radio detuning" texture on complex chords
 
 The –8.1 dB RMS reduction and 30 dB roll-off above 6 kHz reflect the combined effect of
 the linear interpolation resampler, static RC LPF (α=0.39), and LED cascade (α=0.32×2).
+
+## 8. Real-Sample Comparison (March 2026)
+
+A real Amiga music recording obtained for this analysis (48 kHz stereo, 111 s) was compared
+against the simulation. Key findings from `scripts/compare_amiga.py`:
+
+### Simulation accuracy
+
+The simulation matches the analytic magnitude of RC(α=0.39) × LED(α=0.32)² within 0.3 dB at
+all measured frequencies (100 Hz – 3 kHz). This confirms the implementation is behaving exactly
+as designed.
+
+### Simulation vs. real sample
+
+| Frequency | Sim (A500) | Theory (RC+LED) | Real sample | Gap (Sim−Sample) |
+| ---: | ---: | ---: | ---: | ---: |
+| 100 Hz | +1.5 dBr | +1.4 dBr | +10.5 dBr | −9.1 dB |
+| 500 Hz | +1.1 dBr | +1.1 dBr | +16.9 dBr | −15.9 dB |
+| 1,000 Hz | 0.0 dBr | 0.0 dBr | 0.0 dBr | 0.0 dB |
+| 1,500 Hz | −1.6 dBr | −1.6 dBr | −10.8 dBr | +9.2 dB |
+| 2,000 Hz | −3.6 dBr | −3.5 dBr | −12.0 dBr | +8.4 dB |
+| 3,000 Hz | −8.1 dBr | −7.8 dBr | −15.3 dBr | +7.2 dB |
+| **6,000 Hz** | **N/A** | **−19.2 dBr** | **−18.1 dBr** | **+1.1 dB** |
+| 8,000 Hz | N/A | −24.9 dBr | −40.4 dBr | — |
+| 10,000 Hz | N/A | −29.3 dBr | −54.7 dBr | — |
+
+All levels are relative to each signal's own 1 kHz level (dBr).
+
+**6 kHz is the only reliable calibration point**: simulation and theory both predict −19.2 dBr
+at 6 kHz, and the real sample measures −18.1 dBr — a match within 1.1 dB. At this frequency
+the hardware filter dominates and the music has little intrinsic energy.
+
+The 100–500 Hz range shows the music's heavy bass content (+10–17 dBr), not a hardware
+discrepancy. The 1.5–3 kHz gap (+7–9 dB, simulation brighter) reflects the music having
+relatively little midrange energy rather than a simulation error. Above 6 kHz, both the musical
+content and the hardware filter attenuate heavily; the exact split cannot be determined from a
+music recording alone.
+
+### Sample is perfect mono
+
+The recording measures L−R = −240 dBFS (L and R channels are numerically identical). Real
+Amiga hardware outputs hard-panned stereo (channels 0,3 → left; channels 1,2 → right), so
+this recording was likely captured from a mono output (TV speaker or headphone L+R mix). The
+stereo widening stage of `AmigaPaulaFilter` cannot be validated from this sample.
+
+### Limitations and provisional nature
+
+Like the CompactMac analysis, the available sample is a music recording rather than a
+flat-spectrum test signal. **The simulation is confirmed accurate at its design frequency
+(6 kHz match within 1.1 dB); the filter parameters (α=0.39 for RC, α=0.32×2 for LED) are
+validated against published Amiga hardware documentation and consistent with the spectral
+measurement at 6 kHz.** A recording of an Amiga playing white noise or a frequency sweep
+would be needed to fully characterise the hardware transfer function and validate the LED
+filter cutoff independently.

@@ -82,7 +82,7 @@ public class DspAnalyzer
     static CaptureSink runCompactMac(float[] signal)
     {
         var sink = new CaptureSink();
-        new CompactMacSimulatorFilter(true, sink)
+        new CompactMacSimulatorFilter(true, false, sink)
                 .process(signal.clone(), signal.clone(), FRAMES);
         return sink;
     }

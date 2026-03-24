@@ -36,31 +36,35 @@ rather than reverberation that the beeper would then distort.
 `--compress` and `--speaker` sit outside the float conversion layer and operate on the final
 output mix, independent of which synth or retro mode is active.
 
-> **Note on `--speaker`:** Applying `--speaker` on top of `--retro` doubles the speaker model
-> (each retro mode already includes its hardware speaker). See
-> [retro-common-engineering.md §4](retro-common-engineering.md#4-the---speaker-option-and-retro-modes)
+> **`--aux`:** Retro modes that model an internal speaker (`compactmac`, `pc`, `apple2`,
+> `spectrum`) default to speaker-on. Add `--aux` to hear the raw electrical output instead
+> (audio jack / line out). See
+> [retro-common-engineering.md §4](retro-common-engineering.md#4-speaker-models-and-the---aux-flag).
+>
+> **Note on `--speaker`:** Applying `--speaker` on top of `--retro` doubles the speaker model.
+> See [retro-common-engineering.md §4](retro-common-engineering.md#4-speaker-models-and-the---aux-flag)
 > for details.
 
 ---
 
 ## Mode Summary
 
-| CLI Flag | Aliases | Filter Class | Carrier | Levels | Character |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `--retro compactmac` | — | `CompactMacSimulatorFilter` | 22.25 kHz PWM | 256 (8-bit) | Warm, muffled, heavy mono |
-| `--retro apple2` | — | `OneBitHardwareFilter` | 22.05 kHz PWM | 32 (5-bit) | 5-bit harmonic texture, cone rolloff |
-| `--retro pc` | — | `OneBitHardwareFilter` | 15.2 kHz PWM | 78 (6.3-bit) | Gritty crunch, 6-pole cone IIR, carrier at −68 dB |
-| `--retro spectrum` | — | `SpectrumBeeperFilter` | N/A (direct toggle) | 128 (7-bit) | Buzzy Z80 texture, beeper resonance |
-| `--retro covox` | — | `CovoxDacFilter` | 11 kHz linear interp | 256 (8-bit) | R-2R harmonic warmth |
-| `--retro disneysound` | — | `CovoxDacFilter` | 11 kHz linear interp | 256 (8-bit) | Parallel port DAC (LPT) |
-| `--retro amiga`, `--retro a500` | — | `AmigaPaulaFilter` | 22 kHz linear interp | 256 (8-bit) | Warm stereo, LED-filtered, hard-pan |
-| `--retro a1200` | — | `AmigaPaulaFilter` | 22 kHz linear interp | 256 (8-bit) | Bright stereo, AGA near-transparent |
+| CLI Flag | Aliases | Filter Class | Carrier | Levels | Speaker | Character |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `--retro compactmac` | — | `CompactMacSimulatorFilter` | 22.25 kHz PWM | 256 (8-bit) | 2-pole LP at 10 kHz (`--aux` to bypass) | Warm, muffled, heavy mono |
+| `--retro apple2` | — | `OneBitHardwareFilter` | 22.05 kHz PWM | 32 (5-bit) | 6-pole cone IIR (`--aux` to bypass) | 5-bit harmonic texture, cone rolloff |
+| `--retro pc` | — | `OneBitHardwareFilter` | 15.2 kHz PWM | 78 (6.3-bit) | 6-pole cone IIR (`--aux` to bypass) | Gritty crunch, carrier at −68 dB |
+| `--retro spectrum` | — | `SpectrumBeeperFilter` | N/A (direct toggle) | 128 (7-bit) | HP + 2× LP beeper model (`--aux` to bypass) | Buzzy Z80 texture, beeper resonance |
+| `--retro covox` | — | `CovoxDacFilter` | 11 kHz linear interp | 256 (8-bit) | None (line out only) | R-2R harmonic warmth |
+| `--retro disneysound` | — | `CovoxDacFilter` | 11 kHz linear interp | 256 (8-bit) | None (line out only) | Parallel port DAC (LPT) |
+| `--retro amiga`, `--retro a500` | — | `AmigaPaulaFilter` | 22 kHz linear interp | 256 (8-bit) | None (line out only) | Warm stereo, LED-filtered, hard-pan |
+| `--retro a1200` | — | `AmigaPaulaFilter` | 22 kHz linear interp | 256 (8-bit) | None (line out only) | Bright stereo, AGA near-transparent |
 
 ## Per-Mode Documents
 
 | Document | Covers |
 | :--- | :--- |
-| [retro-compactmac-engineering.md](retro-compactmac-engineering.md) | Mac 128k / Mac Plus (`--retro compactmac`) |
+| [retro-compactmac-engineering.md](retro-compactmac-engineering.md) | Early compact Mac (128k, 512k, Plus, SE) (`--retro compactmac`) |
 | [retro-apple2-engineering.md](retro-apple2-engineering.md) | Apple II DAC522 (`--retro apple2`) |
 | [retro-pc(realsound)-engineering.md](retro-pc(realsound)-engineering.md) | IBM PC Speaker / RealSound (`--retro pc`) |
 | [retro-spectrum-engineering.md](retro-spectrum-engineering.md) | ZX Spectrum beeper (`--retro spectrum`) |

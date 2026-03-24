@@ -29,7 +29,7 @@ public class DetailedDspTest {
     @Test
     public void testCompactMacSimulatorFilter_Disabled() {
         DummyProcessor dummy = new DummyProcessor();
-        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(false, dummy);
+        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(false, false, dummy);
 
         float[] left = new float[10];
         float[] right = new float[10];
@@ -44,7 +44,7 @@ public class DetailedDspTest {
     @Test
     public void testCompactMacSimulatorFilter_EnabledProcess() {
         DummyProcessor dummy = new DummyProcessor();
-        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, dummy);
+        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, false, dummy);
 
         // Generate enough frames to trigger the currentTimeUs wrap around
         int frames = 44100 * 2; // 2 seconds
@@ -68,7 +68,7 @@ public class DetailedDspTest {
     @Test
     public void testCompactMacSimulatorFilter_EnabledProcessInterleavedMono() {
         DummyProcessor dummy = new DummyProcessor();
-        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, dummy);
+        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, false, dummy);
 
         int frames = 44100 * 2; // 2 seconds
         short[] pcm = new short[frames]; // Mono
@@ -83,7 +83,7 @@ public class DetailedDspTest {
     @Test
     public void testCompactMacSimulatorFilter_EnabledProcessInterleavedStereo() {
         DummyProcessor dummy = new DummyProcessor();
-        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, dummy);
+        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, false, dummy);
 
         int frames = 44100 * 2; // 2 seconds
         short[] pcm = new short[frames * 2]; // Stereo

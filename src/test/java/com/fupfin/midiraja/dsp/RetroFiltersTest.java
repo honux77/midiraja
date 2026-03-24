@@ -116,7 +116,7 @@ class RetroFiltersTest {
 
     @Test
     void testSpectrumBeeperBasic() {
-        SpectrumBeeperFilter filter = new SpectrumBeeperFilter(true, mock);
+        SpectrumBeeperFilter filter = new SpectrumBeeperFilter(true, false, mock);
         float[] left = new float[512];
         float[] right = new float[512];
         for (int i = 0; i < 512; i++) {
@@ -139,7 +139,7 @@ class RetroFiltersTest {
 
     @Test
     void testSpectrumBeeperDisabled() {
-        SpectrumBeeperFilter filter = new SpectrumBeeperFilter(false, mock);
+        SpectrumBeeperFilter filter = new SpectrumBeeperFilter(false, false, mock);
         float[] left = {0.5f, 0.3f, -0.4f};
         float[] right = {0.5f, 0.3f, -0.4f};
 
@@ -150,6 +150,77 @@ class RetroFiltersTest {
         assertEquals(0.5f, mock.lastLeft[0], 0.001f);
         assertEquals(0.3f, mock.lastLeft[1], 0.001f);
         assertEquals(-0.4f, mock.lastLeft[2], 0.001f);
+    }
+
+    @Test
+    void testSpectrumAuxOutSkipsSpeakerFilters() {
+        int n = 4096;
+        float[] leftSpeaker = new float[n], rightSpeaker = new float[n];
+        float[] leftAux     = new float[n], rightAux     = new float[n];
+        for (int i = 0; i < n; i++)
+            leftSpeaker[i] = rightSpeaker[i] = leftAux[i] = rightAux[i] =
+                    (float) Math.sin(2.0 * Math.PI * 8000.0 * i / 44100.0);
+
+        MockProcessor mockSpeaker = new MockProcessor();
+        MockProcessor mockAux     = new MockProcessor();
+        new SpectrumBeeperFilter(true, false, mockSpeaker).process(leftSpeaker, rightSpeaker, n);
+        new SpectrumBeeperFilter(true, true,  mockAux    ).process(leftAux,     rightAux,     n);
+
+        // Speaker LP at 4.5 kHz cuts 8 kHz heavily; aux mode bypasses it
+        float peakSpeaker = 0, peakAux = 0;
+        for (int i = 512; i < n; i++) {
+            peakSpeaker = Math.max(peakSpeaker, Math.abs(mockSpeaker.lastLeft[i]));
+            peakAux     = Math.max(peakAux,     Math.abs(mockAux.lastLeft[i]));
+        }
+        assertTrue(peakAux > peakSpeaker * 2.0f,
+                "Spectrum aux should be louder at 8 kHz. speaker=" + peakSpeaker + " aux=" + peakAux);
+    }
+
+    @Test
+    void testCompactMacSpeakerAttenuatesHighFreq() {
+        // Speaker mode (2-pole Butterworth -3dB at 10kHz) should attenuate 15kHz
+        // more than aux mode. Use DFT to isolate the 15kHz component.
+        int n = 44100; // 1 second for frequency resolution
+        float[] leftSpeaker  = new float[n], rightSpeaker  = new float[n];
+        float[] leftAux      = new float[n], rightAux      = new float[n];
+        for (int i = 0; i < n; i++)
+            leftSpeaker[i] = rightSpeaker[i] = leftAux[i] = rightAux[i] =
+                    (float) Math.sin(2.0 * Math.PI * 15000.0 * i / 44100.0) * 0.5f;
+
+        MockProcessor mockSpeaker = new MockProcessor();
+        MockProcessor mockAux     = new MockProcessor();
+        new CompactMacSimulatorFilter(true, false, mockSpeaker).process(leftSpeaker, rightSpeaker, n);
+        new CompactMacSimulatorFilter(true, true,  mockAux    ).process(leftAux,     rightAux,     n);
+
+        double speakerAt15k = fftMagnitudeAt(mockSpeaker.lastLeft, 15000.0);
+        double auxAt15k     = fftMagnitudeAt(mockAux.lastLeft, 15000.0);
+        assertTrue(auxAt15k > speakerAt15k * 2.0,
+                "Speaker mode should attenuate 15kHz more than aux (DFT). speaker=" + speakerAt15k + " aux=" + auxAt15k);
+    }
+
+    @Test
+    void testCompactMacAuxPreservesLowFreq() {
+        // Both modes should pass 1kHz with similar amplitude (speaker -3dB is at 10kHz)
+        int n = 4096;
+        float[] leftSpeaker = new float[n], rightSpeaker = new float[n];
+        float[] leftAux     = new float[n], rightAux     = new float[n];
+        for (int i = 0; i < n; i++)
+            leftSpeaker[i] = rightSpeaker[i] = leftAux[i] = rightAux[i] =
+                    (float) Math.sin(2.0 * Math.PI * 1000.0 * i / 44100.0) * 0.5f;
+
+        MockProcessor mockSpeaker = new MockProcessor();
+        MockProcessor mockAux     = new MockProcessor();
+        new CompactMacSimulatorFilter(true, false, mockSpeaker).process(leftSpeaker, rightSpeaker, n);
+        new CompactMacSimulatorFilter(true, true,  mockAux    ).process(leftAux,     rightAux,     n);
+
+        float peakSpeaker = 0, peakAux = 0;
+        for (int i = 512; i < n; i++) {
+            peakSpeaker = Math.max(peakSpeaker, Math.abs(mockSpeaker.lastLeft[i]));
+            peakAux     = Math.max(peakAux,     Math.abs(mockAux.lastLeft[i]));
+        }
+        // Both should be within 30% of each other at 1kHz (speaker at 1kHz ≈ -0.1dB)
+        assertTrue(peakSpeaker > peakAux * 0.7f,
+                "Speaker 1kHz should be within 30% of aux. speaker=" + peakSpeaker + " aux=" + peakAux);
     }
 
     // --- AmigaPaulaFilter tests ---

@@ -35,6 +35,16 @@ public class CompactMacSimulatorFilter implements AudioProcessor
     private static final double LPF_A1 = (LPF_K - 1.0) / (LPF_K + 1.0);       // ≈ 0.536
     // difference equation: y[n] = B0*(x[n] + x[n-1]) - A1*y[n-1]
 
+    // Mac internal speaker: 2-pole Butterworth LPF at 10 kHz
+    // Based on measured hard rolloff in compact_mac_sample.wav (cliff at 10–11 kHz).
+    // Bilinear transform at 44,100 Hz. Q = 1/√2 ≈ 0.7071 (Butterworth).
+    private static final double SPK_K    = Math.tan(Math.PI * 10000.0 / 44100.0);
+    private static final double SPK_NORM = 1.0 + SPK_K / 0.7071 + SPK_K * SPK_K;
+    private static final double SPK_B0   = (SPK_K * SPK_K) / SPK_NORM;
+    private static final double SPK_A1   = 2.0 * (SPK_K * SPK_K - 1.0) / SPK_NORM;
+    private static final double SPK_A2   = (1.0 - SPK_K / 0.7071 + SPK_K * SPK_K) / SPK_NORM;
+    // b1 = 2*SPK_B0, b2 = SPK_B0 (standard 2-pole LP biquad)
+
     // Simulation state (mono — single RC path)
     private double currentTimeUs      = 0.0;
     private double nextMacSampleTimeUs = 0.0;
@@ -44,10 +54,14 @@ public class CompactMacSimulatorFilter implements AudioProcessor
     private double transitionTimeUs   = 0.0;
     private double lpfX               = 0.0;   // LPF: previous input
     private double lpfY               = 0.0;   // LPF: previous output
+    private final boolean auxOut;
+    private double spkX1 = 0.0, spkX2 = 0.0;
+    private double spkY1 = 0.0, spkY2 = 0.0;
 
-    public CompactMacSimulatorFilter(boolean enabled, AudioProcessor next)
+    public CompactMacSimulatorFilter(boolean enabled, boolean auxOut, AudioProcessor next)
     {
         this.enabled = enabled;
+        this.auxOut  = auxOut;
         this.next    = next;
     }
 
@@ -67,8 +81,16 @@ public class CompactMacSimulatorFilter implements AudioProcessor
             double yLpf = LPF_B0 * (x + lpfX) - LPF_A1 * lpfY;
             lpfX = x;
             lpfY = yLpf;
-            left[i]  = (float) yLpf;
-            right[i] = (float) yLpf;
+            double out = yLpf;
+            if (!auxOut) {
+                double y = SPK_B0 * out + 2.0 * SPK_B0 * spkX1 + SPK_B0 * spkX2
+                                        - SPK_A1 * spkY1 - SPK_A2 * spkY2;
+                spkX2 = spkX1; spkX1 = out;
+                spkY2 = spkY1; spkY1 = y;
+                out = y;
+            }
+            left[i]  = (float) out;
+            right[i] = (float) out;
         }
 
         wrapTime();
@@ -97,7 +119,15 @@ public class CompactMacSimulatorFilter implements AudioProcessor
             lpfX = x;
             lpfY = yLpf;
 
-            short out = (short) Math.max(-32768, Math.min(32767, yLpf * 32768.0));
+            double outD = yLpf;
+            if (!auxOut) {
+                double y = SPK_B0 * outD + 2.0 * SPK_B0 * spkX1 + SPK_B0 * spkX2
+                                         - SPK_A1 * spkY1 - SPK_A2 * spkY2;
+                spkX2 = spkX1; spkX1 = outD;
+                spkY2 = spkY1; spkY1 = y;
+                outD = y;
+            }
+            short out = (short) Math.max(-32768, Math.min(32767, outD * 32768.0));
             interleavedPcm[leftIdx] = out;
             if (channels > 1) interleavedPcm[rightIdx] = out;
         }
@@ -165,5 +195,7 @@ public class CompactMacSimulatorFilter implements AudioProcessor
         transitionTimeUs    = 0.0;
         lpfX                = 0.0;
         lpfY                = 0.0;
+        spkX1 = 0.0; spkX2 = 0.0;
+        spkY1 = 0.0; spkY2 = 0.0;
     }
 }

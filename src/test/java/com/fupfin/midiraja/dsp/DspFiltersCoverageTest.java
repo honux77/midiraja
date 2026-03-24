@@ -24,7 +24,7 @@ class DspFiltersCoverageTest {
     @Test
     void testCompactMacSimulatorFilter() {
         CaptureSink sink = new CaptureSink();
-        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, sink);
+        CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, false, sink);
         
         float[] left = new float[256];
         float[] right = new float[256];
@@ -35,7 +35,7 @@ class DspFiltersCoverageTest {
         assertTrue(sink.capturedFrames == 256);
         assertNotNull(sink.capturedLeft);
         
-        CompactMacSimulatorFilter filterDisabled = new CompactMacSimulatorFilter(false, sink);
+        CompactMacSimulatorFilter filterDisabled = new CompactMacSimulatorFilter(false, false, sink);
         assertDoesNotThrow(() -> filterDisabled.process(left, right, 256));
     }
 
