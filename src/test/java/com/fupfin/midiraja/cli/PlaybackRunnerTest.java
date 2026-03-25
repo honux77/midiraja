@@ -24,6 +24,7 @@ import com.fupfin.midiraja.io.MockTerminalIO;
 import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.ui.DumbUI;
 
 class PlaybackRunnerTest {
 
@@ -88,6 +89,20 @@ class PlaybackRunnerTest {
 
         // Ensure that the output stream was used (meaning UI or at least init text was written)
         // Test passed if it reached here without hanging
+    }
+
+    @Test
+    void buildUI_quiet_returnsDumbUI_evenWhenMiniRequested()
+    {
+        var runner = new PlaybackRunner(
+                new PrintStream(outBytes), new PrintStream(errBytes), mockIO, true);
+        var uiOpts = new UiModeOptions();
+        uiOpts.miniMode = true;
+
+        PlaybackRunner.UIResult result = runner.buildUI(true, uiOpts, true, 80);
+
+        assertInstanceOf(DumbUI.class, result.ui());
+        assertFalse(result.useAltScreen());
     }
 
     @Test

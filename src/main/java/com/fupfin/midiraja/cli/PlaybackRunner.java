@@ -184,7 +184,7 @@ public class PlaybackRunner
             boolean isInteractive = activeIO.isInteractive();
 
             // ── UI mode ───────────────────────────────────────────────────────
-            var uiResult = buildUI(common.uiOptions, isInteractive, activeIO.getHeight());
+            var uiResult = buildUI(false, common.uiOptions, isInteractive, activeIO.getHeight());
             PlaybackUI ui = uiResult.ui();
             boolean useAltScreen = uiResult.useAltScreen();
 
@@ -374,12 +374,13 @@ public class PlaybackRunner
 
     record UIResult(PlaybackUI ui, boolean useAltScreen) {}
 
-    UIResult buildUI(UiModeOptions uiOpts, boolean isInteractive, int activeIOHeight)
+    UIResult buildUI(boolean quietMode, UiModeOptions uiOpts, boolean isInteractive, int activeIOHeight)
     {
-        if (uiOpts.classicMode)  return new UIResult(new DumbUI(),      false);
+        if (quietMode)           return new UIResult(new DumbUI(true),  false);
+        if (uiOpts.classicMode)  return new UIResult(new DumbUI(false), false);
         if (uiOpts.miniMode)     return new UIResult(new LineUI(),      false);
         if (uiOpts.fullMode)     return new UIResult(new DashboardUI(), true);
-        if (!isInteractive)      return new UIResult(new DumbUI(),      false);
+        if (!isInteractive)      return new UIResult(new DumbUI(false), false);
         if (activeIOHeight < 10) return new UIResult(new LineUI(),      false);
         return                        new UIResult(new DashboardUI(), true);
     }

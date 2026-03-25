@@ -38,7 +38,7 @@ class PlaybackRunnerNavigationTest
     {
         var opts = new UiModeOptions();
         opts.classicMode = true;
-        var result = runner().buildUI(opts, true, 24);
+        var result = runner().buildUI(false, opts, true, 24);
         assertInstanceOf(DumbUI.class, result.ui());
         assertFalse(result.useAltScreen());
     }
@@ -48,7 +48,7 @@ class PlaybackRunnerNavigationTest
     {
         var opts = new UiModeOptions();
         opts.miniMode = true;
-        var result = runner().buildUI(opts, true, 24);
+        var result = runner().buildUI(false, opts, true, 24);
         assertInstanceOf(LineUI.class, result.ui());
         assertFalse(result.useAltScreen());
     }
@@ -58,7 +58,7 @@ class PlaybackRunnerNavigationTest
     {
         var opts = new UiModeOptions();
         opts.fullMode = true;
-        var result = runner().buildUI(opts, true, 24);
+        var result = runner().buildUI(false, opts, true, 24);
         assertInstanceOf(DashboardUI.class, result.ui());
         assertTrue(result.useAltScreen());
     }
@@ -66,7 +66,7 @@ class PlaybackRunnerNavigationTest
     @Test
     void buildUI_nonInteractive_returnsDumbUI_noAltScreen()
     {
-        var result = runner().buildUI(new UiModeOptions(), false, 24);
+        var result = runner().buildUI(false, new UiModeOptions(), false, 24);
         assertInstanceOf(DumbUI.class, result.ui());
         assertFalse(result.useAltScreen());
     }
@@ -74,7 +74,7 @@ class PlaybackRunnerNavigationTest
     @Test
     void buildUI_interactive_shortTerminal_returnsLineUI_noAltScreen()
     {
-        var result = runner().buildUI(new UiModeOptions(), true, 9);
+        var result = runner().buildUI(false, new UiModeOptions(), true, 9);
         assertInstanceOf(LineUI.class, result.ui());
         assertFalse(result.useAltScreen());
     }
@@ -82,7 +82,7 @@ class PlaybackRunnerNavigationTest
     @Test
     void buildUI_interactive_tallTerminal_returnsDashboardUI_withAltScreen()
     {
-        var result = runner().buildUI(new UiModeOptions(), true, 10);
+        var result = runner().buildUI(false, new UiModeOptions(), true, 10);
         assertInstanceOf(DashboardUI.class, result.ui());
         assertTrue(result.useAltScreen());
     }
