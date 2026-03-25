@@ -142,4 +142,15 @@ else
         -Wl,--no-as-needed -lm
 fi
 
+# 6. Build macOS media keys wrapper (MPRemoteCommandCenter / MPNowPlayingInfoCenter)
+if [ "$OS_FAMILY" = "macos" ]; then
+    echo "==> Building libmidiraja_mediakeys..."
+    MEDIAKEYS_OUT="$NATIVE_LIBS/mediakeys"
+    mkdir -p "$MEDIAKEYS_OUT"
+    clang -fobjc-arc -dynamiclib -O2 \
+        -framework MediaPlayer -framework Foundation \
+        -o "$MEDIAKEYS_OUT/libmidiraja_mediakeys.$LIB_EXT" \
+        "$PROJECT_ROOT/src/main/c/mediakeys/macos_media_session.m"
+fi
+
 echo "Native libraries built successfully → $NATIVE_LIBS"
