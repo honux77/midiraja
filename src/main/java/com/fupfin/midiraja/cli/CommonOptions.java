@@ -145,6 +145,10 @@ public class CommonOptions
     @ArgGroup(exclusive = true, multiplicity = "0..1")
     public UiModeOptions uiOptions = new UiModeOptions();
 
+    @Option(names = {"--quiet"},
+            description = "Suppress all terminal output. Useful for scripting and background playback.")
+    public boolean quietMode;
+
     // ── DSP chain construction ────────────────────────────────────────────────
 
     /**

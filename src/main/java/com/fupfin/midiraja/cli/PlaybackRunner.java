@@ -157,7 +157,7 @@ public class PlaybackRunner
         }
 
         // ── Port selection ────────────────────────────────────────────────────
-        int portIndex = resolvePortIndex(ports, isSoftSynth, portQuery, common.uiOptions);
+        int portIndex = resolvePortIndex(ports, isSoftSynth, portQuery, common.uiOptions, common.quietMode);
         if (portIndex == -2) return 1; // Error finding port
         if (portIndex == -1) return 0; // User quit
 
@@ -184,7 +184,7 @@ public class PlaybackRunner
             boolean isInteractive = activeIO.isInteractive();
 
             // ── UI mode ───────────────────────────────────────────────────────
-            var uiResult = buildUI(false, common.uiOptions, isInteractive, activeIO.getHeight());
+            var uiResult = buildUI(common.quietMode, common.uiOptions, isInteractive, activeIO.getHeight());
             PlaybackUI ui = uiResult.ui();
             boolean useAltScreen = uiResult.useAltScreen();
 
@@ -303,7 +303,7 @@ public class PlaybackRunner
         return -1;
     }
 
-    private int interactivePortSelection(List<MidiPort> ports, UiModeOptions uiOpts)
+    private int interactivePortSelection(List<MidiPort> ports, UiModeOptions uiOpts, boolean quietMode)
             throws Exception
     {
         if (ports.isEmpty()) return -1;
@@ -312,7 +312,7 @@ public class PlaybackRunner
                 .toList();
         var config = new TerminalSelector.FullScreenConfig(" SELECT MIDI TARGET ", 50, 50);
         Integer result = TerminalSelector.select(items, config, uiOpts.fullMode, uiOpts.miniMode,
-                uiOpts.classicMode, err);
+                quietMode || uiOpts.classicMode, err);
         return result != null ? result : -1;
     }
 
@@ -346,7 +346,7 @@ public class PlaybackRunner
     }
 
     private int resolvePortIndex(List<MidiPort> ports, boolean isSoftSynth,
-            Optional<String> portQuery, UiModeOptions uiOpts) throws Exception
+            Optional<String> portQuery, UiModeOptions uiOpts, boolean quietMode) throws Exception
     {
         if (isSoftSynth)
         {
@@ -364,7 +364,7 @@ public class PlaybackRunner
         }
         else if (!isTestMode)
         {
-            return interactivePortSelection(ports, uiOpts);
+            return interactivePortSelection(ports, uiOpts, quietMode);
         }
         else
         {
