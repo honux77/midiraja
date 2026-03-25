@@ -62,6 +62,27 @@ class PlaybackCommandsProxyTest
         assertDoesNotThrow(() -> proxy.seekRelative(10_000_000L));
     }
 
+    @Test void delegates_seekRelative_withCorrectDelta()
+    {
+        var captured = new long[]{Long.MIN_VALUE};
+        PlaybackCommands fake = new PlaybackCommands() {
+            @Override public boolean isPlaying() { return false; }
+            @Override public void togglePause() {}
+            @Override public void requestStop(PlaybackStatus s) {}
+            @Override public void adjustVolume(double d) {}
+            @Override public void adjustSpeed(double d) {}
+            @Override public void adjustTranspose(int d) {}
+            @Override public void seekRelative(long d) { captured[0] = d; }
+            @Override public void toggleLoop() {}
+            @Override public void toggleShuffle() {}
+            @Override public void fireBookmark() {}
+            @Override public void firePlayOrderChanged(PlaylistContext c) {}
+        };
+        var ref = new AtomicReference<>(fake);
+        new PlaybackCommandsProxy(ref).seekRelative(10_000_000L);
+        assertEquals(10_000_000L, captured[0]);
+    }
+
     private static PlaybackCommands fakeCmds(Runnable onTogglePause)
     {
         return new PlaybackCommands() {

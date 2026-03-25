@@ -10,6 +10,10 @@ package com.fupfin.midiraja.media;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
 
+import com.fupfin.midiraja.engine.PlaybackCommands;
+import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
+import com.fupfin.midiraja.engine.PlaylistContext;
+
 class MediaKeyIntegrationTest
 {
     @Test void nowPlayingInfo_equality()
@@ -28,10 +32,27 @@ class MediaKeyIntegrationTest
     @Test void noOp_allMethodsAreNoOp()
     {
         var noOp = NoOpMediaIntegration.INSTANCE;
-        assertDoesNotThrow(() -> noOp.start(null));
+        assertDoesNotThrow(() -> noOp.start(noopCommands()));
         assertDoesNotThrow(() -> noOp.drainAndUpdate(new NowPlayingInfo("T", "", 0, 0, true)));
         assertDoesNotThrow(() -> noOp.close());
         assertDoesNotThrow(NoOpMediaIntegration.INSTANCE::close); // close before start
+    }
+
+    private static PlaybackCommands noopCommands()
+    {
+        return new PlaybackCommands() {
+            @Override public boolean isPlaying() { return false; }
+            @Override public void requestStop(PlaybackStatus s) {}
+            @Override public void adjustVolume(double d) {}
+            @Override public void adjustSpeed(double d) {}
+            @Override public void adjustTranspose(int d) {}
+            @Override public void seekRelative(long d) {}
+            @Override public void togglePause() {}
+            @Override public void toggleLoop() {}
+            @Override public void toggleShuffle() {}
+            @Override public void fireBookmark() {}
+            @Override public void firePlayOrderChanged(PlaylistContext c) {}
+        };
     }
 
     @Test void noOp_drainAndUpdate_beforeStart_isNoOp()
