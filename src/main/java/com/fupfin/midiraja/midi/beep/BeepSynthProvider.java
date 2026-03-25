@@ -8,13 +8,15 @@
 package com.fupfin.midiraja.midi.beep;
 
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.midi.AbstractOneBitSynthProvider;
-import com.fupfin.midiraja.midi.MidiPort;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.midi.AbstractOneBitSynthProvider;
+import com.fupfin.midiraja.midi.MidiPort;
 
 /**
  * A purist 1-bit digital cluster soft-synth provider.

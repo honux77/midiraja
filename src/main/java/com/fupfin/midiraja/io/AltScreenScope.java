@@ -7,8 +7,9 @@
 
 package com.fupfin.midiraja.io;
 
-import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintWriter;
+
+import com.fupfin.midiraja.ui.Theme;
 
 /**
  * Manages the alt-screen and cursor-visibility lifecycle for a full-screen TUI.

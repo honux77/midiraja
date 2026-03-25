@@ -1,9 +1,9 @@
 package com.fupfin.midiraja.midi.psg;
 
+import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class SccChipTest {
 
@@ -34,11 +34,11 @@ class SccChipTest {
         // Program 0 is Piano
         chip.setProgram(0, 0);
         double output1 = chip.render();
-        
+
         // Program 80 is Lead
         chip.setProgram(0, 80);
         double output2 = chip.render();
-        
+
         // Waveforms should be different
         assertNotEquals(output1, output2);
     }
@@ -57,7 +57,7 @@ class SccChipTest {
         for (int i = 0; i < 5; i++) {
             chip.tryAllocateFree(i, 60 + i, 100);
         }
-        
+
         // Steal a channel
         boolean stolen = chip.tryStealChannel(0, 72, 127);
         assertTrue(stolen);

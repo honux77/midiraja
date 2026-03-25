@@ -7,6 +7,13 @@
 
 package com.fupfin.midiraja.cli;
 
+import java.io.File;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Optional;
+
+import org.jspecify.annotations.Nullable;
+
 import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
 import com.fupfin.midiraja.engine.PlaybackEngineFactory;
@@ -17,11 +24,6 @@ import com.fupfin.midiraja.midi.MidiPort;
 import com.fupfin.midiraja.midi.MidiUtils;
 import com.fupfin.midiraja.ui.DashboardUI;
 import com.fupfin.midiraja.ui.PlaybackUI;
-import java.io.File;
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Executes a playlist of MIDI files using a given provider and port.

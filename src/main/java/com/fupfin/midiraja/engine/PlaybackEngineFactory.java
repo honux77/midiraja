@@ -7,10 +7,11 @@
 
 package com.fupfin.midiraja.engine;
 
-import com.fupfin.midiraja.midi.MidiOutProvider;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import javax.sound.midi.Sequence;
+
+import com.fupfin.midiraja.midi.MidiOutProvider;
 
 /**
  * Factory for constructing a {@link PlaybackEngine} instance per track.

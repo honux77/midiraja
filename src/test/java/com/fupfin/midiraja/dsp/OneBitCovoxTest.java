@@ -1,11 +1,11 @@
 package com.fupfin.midiraja.dsp;
 
-import org.junit.jupiter.api.Test;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import org.junit.jupiter.api.Test;
 
 public class OneBitCovoxTest {
 
@@ -70,7 +70,7 @@ public class OneBitCovoxTest {
         // Test mono interleaved
         short[] monoInterleaved = new short[]{10000, -10000, 0};
         filter.processInterleaved(monoInterleaved, 3, 1);
-        
+
         filter.reset();
         assertTrue(next.resetCalled);
     }
@@ -107,7 +107,7 @@ public class OneBitCovoxTest {
         filter.reset();
         assertTrue(next.resetCalled);
     }
-    
+
     @Test
     public void testOneBitHardwareFilterPWM_Mono() {
         DummyAudioProcessor next = new DummyAudioProcessor();
@@ -132,7 +132,7 @@ public class OneBitCovoxTest {
         filter.processInterleaved(interleaved, 3, 2);
         assertTrue(next.processInterleavedCalled);
     }
-    
+
     @Test
     public void testOneBitAcousticSimulatorFilterDisabled() {
         DummyAudioProcessor next = new DummyAudioProcessor();
@@ -142,7 +142,7 @@ public class OneBitCovoxTest {
         float[] r = new float[]{0.5f, -0.5f};
         filter.process(l, r, 2);
         assertFalse(next.processCalled); // "if (!enabled) return;" so it actually doesn't call next.process
-        
+
         short[] interleaved = new short[]{10000, -10000};
         filter.processInterleaved(interleaved, 1, 2);
         assertTrue(next.processInterleavedCalled); // "next.processInterleaved(...);" is called regardless
@@ -171,7 +171,7 @@ public class OneBitCovoxTest {
         float[] r = new float[]{0.0f, 0.5f, -0.5f};
         filter.process(l, r, 3);
         assertTrue(next.processCalled);
-        
+
         filter.reset();
         assertTrue(next.resetCalled);
     }

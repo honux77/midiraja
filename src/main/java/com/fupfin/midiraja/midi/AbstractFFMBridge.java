@@ -2,14 +2,16 @@ package com.fupfin.midiraja.midi;
 
 import static java.lang.System.err;
 
-import com.fupfin.midiraja.LibraryPaths;
 import java.io.File;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.LibraryPaths;
 
 public abstract class AbstractFFMBridge implements AutoCloseable
 {
@@ -87,9 +89,9 @@ public abstract class AbstractFFMBridge implements AutoCloseable
                 renderBuffer = arena.allocate(requiredBytes);
                 currentRenderBufferSize = requiredBytes;
             }
-            catch (Throwable ignored)
+            catch (Throwable e)
             {
-                err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " + e.getMessage());
                 return;
             }
         }
@@ -99,9 +101,9 @@ public abstract class AbstractFFMBridge implements AutoCloseable
             int ignored = (int) generateHandle.invokeExact(device, buffer.length, renderBuffer);
             MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -255,7 +257,7 @@ public abstract class AbstractFFMBridge implements AutoCloseable
                     SymbolLookup.libraryLookup(path, probeArena);
                     return new LibProbeResult(true, path);
                 }
-                catch (IllegalArgumentException ignored)
+                catch (IllegalArgumentException e)
                 {
                 }
             }

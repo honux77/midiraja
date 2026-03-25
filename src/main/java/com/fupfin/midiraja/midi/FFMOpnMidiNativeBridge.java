@@ -239,9 +239,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             int ignored = (int) opn2_setNumChips.invokeExact(device, numChips);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -253,9 +253,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             int ignored = (int) opn2_switchEmulator.invokeExact(device, emulatorId);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -267,9 +267,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             opn2_reset.invokeExact(device);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -281,9 +281,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             opn2_panic.invokeExact(device);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -296,9 +296,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
             int ignored = (int) opn2_rt_noteOn.invokeExact(device, (byte) channel, (byte) note,
                     (byte) velocity);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -310,9 +310,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             opn2_rt_noteOff.invokeExact(device, (byte) channel, (byte) note);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -324,9 +324,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             opn2_rt_controllerChange.invokeExact(device, (byte) channel, (byte) type, (byte) value);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -338,9 +338,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             opn2_rt_patchChange.invokeExact(device, (byte) channel, (byte) patch);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -353,9 +353,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
         {
             opn2_rt_pitchBend.invokeExact(device, (byte) channel, (short) pitch);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -369,9 +369,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
             int ignored =
                     (int) opn2_rt_systemExclusive.invokeExact(device, seg, (long) data.length);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -391,9 +391,9 @@ public class FFMOpnMidiNativeBridge extends AbstractFFMBridge implements OpnMidi
             {
                 opn2_close.invokeExact(device);
             }
-            catch (Throwable ignored)
+            catch (Throwable e)
             {
-                err.println("[NativeBridge Error] " +ignored.getMessage());
+                err.println("[NativeBridge Error] " +e.getMessage());
             }
             device = MemorySegment.NULL;
         }

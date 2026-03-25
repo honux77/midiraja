@@ -2,9 +2,11 @@ package com.fupfin.midiraja.cli;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fupfin.midiraja.midi.AbstractFFMBridge;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
+
+import com.fupfin.midiraja.midi.AbstractFFMBridge;
 
 class InfoCommandTest {
 

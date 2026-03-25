@@ -11,11 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.PrintStream;
+
+import org.junit.jupiter.api.Test;
+
 import com.fupfin.midiraja.ui.DashboardUI;
 import com.fupfin.midiraja.ui.DumbUI;
 import com.fupfin.midiraja.ui.LineUI;
-import java.io.PrintStream;
-import org.junit.jupiter.api.Test;
 
 /**
  * Unit tests for UI mode selection ({@code buildUI}) in {@link PlaybackRunner}.

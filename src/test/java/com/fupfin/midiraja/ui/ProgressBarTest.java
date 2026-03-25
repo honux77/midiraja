@@ -1,10 +1,10 @@
 package com.fupfin.midiraja.ui;
 
-import org.junit.jupiter.api.Test;
-
 import static com.fupfin.midiraja.ui.ProgressBar.Style.DOTTED_BACKGROUND;
 import static com.fupfin.midiraja.ui.ProgressBar.Style.SOLID_BACKGROUND;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 class ProgressBarTest
 {

@@ -1,8 +1,9 @@
 package com.fupfin.midiraja.dsp;
 
 import static org.junit.jupiter.api.Assertions.*;
-import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class RetroFiltersTest {
 
@@ -47,12 +48,12 @@ class RetroFiltersTest {
         CovoxDacFilter filter = new CovoxDacFilter(true, mock);
         float[] left = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
         float[] right = {0.0f, 1.0f, -1.0f, 2.0f, -2.0f};
-        
+
         filter.process(left, right, 5);
-        
+
         assertTrue(mock.processCalled);
         assertEquals(5, mock.lastFrames);
-        
+
         // Clipping check: values should be within [-1.1, 1.1] approx (due to LPF and non-linearity)
         for (int i = 0; i < 5; i++) {
             assertTrue(Math.abs(mock.lastLeft[i]) <= 1.1f, "Value at index " + i + " was " + mock.lastLeft[i]);
@@ -97,7 +98,7 @@ class RetroFiltersTest {
     @Test
     void testAcousticSpeakerProfile() {
         AcousticSpeakerFilter filter = new AcousticSpeakerFilter(true, AcousticSpeakerFilter.Profile.TIN_CAN, mock);
-        
+
         // 10Hz sine wave (subsonic, should be killed by 400Hz HPF)
         float[] left = new float[1000];
         float[] right = new float[1000];
@@ -105,9 +106,9 @@ class RetroFiltersTest {
             left[i] = (float) Math.sin(2.0 * Math.PI * 10.0 * i / 44100.0);
             right[i] = left[i];
         }
-        
+
         filter.process(left, right, 1000);
-        
+
         // Check attenuation
         float maxVal = 0;
         for (float v : mock.lastLeft) maxVal = Math.max(maxVal, Math.abs(v));

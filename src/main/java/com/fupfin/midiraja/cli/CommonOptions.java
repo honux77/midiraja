@@ -7,15 +7,16 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.dsp.*;
-
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Function;
+
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Option;
+
+import com.fupfin.midiraja.dsp.*;
 
 /**
  * Shared playback options mixed into every command (root and all subcommands).

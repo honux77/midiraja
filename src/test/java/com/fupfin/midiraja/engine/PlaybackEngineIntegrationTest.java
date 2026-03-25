@@ -9,23 +9,23 @@ package com.fupfin.midiraja.engine;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fupfin.midiraja.engine.MidiPlaybackEngine;
-import com.fupfin.midiraja.engine.PlaybackPipeline;
-import com.fupfin.midiraja.io.MockTerminalIO;
-import com.fupfin.midiraja.io.TerminalIO;
-import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.midi.MuntNativeBridge;
-import com.fupfin.midiraja.midi.MuntSynthProvider;
-import com.fupfin.midiraja.ui.DumbUI;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
+
+import com.fupfin.midiraja.io.MockTerminalIO;
+import com.fupfin.midiraja.io.TerminalIO;
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.midi.MuntNativeBridge;
+import com.fupfin.midiraja.midi.MuntSynthProvider;
+import com.fupfin.midiraja.ui.DumbUI;
 
 /**
  * Integration test that verifies every MIDI event in monkey_island.mid is correctly

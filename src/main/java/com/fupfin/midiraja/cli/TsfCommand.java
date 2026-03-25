@@ -9,10 +9,6 @@ package com.fupfin.midiraja.cli;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
-import com.fupfin.midiraja.midi.TsfSynthProvider;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -28,6 +25,11 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.io.AppLogger;
+import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
+import com.fupfin.midiraja.midi.TsfSynthProvider;
 
 /**
  * Plays MIDI files using the built-in TinySoundFont SF2 synthesizer.

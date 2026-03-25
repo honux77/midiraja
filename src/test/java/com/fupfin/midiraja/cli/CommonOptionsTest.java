@@ -9,10 +9,12 @@ package com.fupfin.midiraja.cli;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.util.Optional;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fupfin.midiraja.dsp.AudioProcessor;
 
 /**
  * Tests for the DSP pipeline construction logic in CommonOptions.

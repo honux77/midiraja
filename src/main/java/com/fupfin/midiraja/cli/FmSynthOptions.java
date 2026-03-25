@@ -7,10 +7,11 @@
 
 package com.fupfin.midiraja.cli;
 
+import picocli.CommandLine.Option;
+
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.dsp.FloatToShortSink;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
-import picocli.CommandLine.Option;
 
 /**
  * Shared FM-synthesizer options mixed into OplCommand and OpnCommand.

@@ -9,12 +9,14 @@ package com.fupfin.midiraja.cli;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.junit.jupiter.api.Test;
+
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.MidiPort;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import org.junit.jupiter.api.Test;
 
 class ShutdownCleanerTest
 {

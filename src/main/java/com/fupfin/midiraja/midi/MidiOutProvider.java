@@ -7,11 +7,11 @@
 
 package com.fupfin.midiraja.midi;
 
-import com.fupfin.midiraja.dsp.MasterGainFilter;
-
 import java.util.List;
 import java.util.Optional;
 import javax.sound.midi.Sequence;
+
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 
 /**
  * Abstraction layer for native OS MIDI capabilities. Decouples the playback engine from operating
@@ -95,9 +95,9 @@ public interface MidiOutProvider extends MidiSink
             {
                 sendMessage(new byte[] {(byte) (0xB0 | ch), 7, (byte) volume});
             }
-            catch (Exception ignored)
+            catch (Exception e)
             {
-                log.warning("NativeBridge error: " + ignored.getMessage()); /* Ignore during panic */
+                log.warning("NativeBridge error: " + e.getMessage()); /* Ignore during panic */
             }
         }
     }
@@ -126,9 +126,9 @@ public interface MidiOutProvider extends MidiSink
                     sendMessage(new byte[] {(byte) (0x80 | ch), (byte) note, 0});
                 }
             }
-            catch (Exception ignored)
+            catch (Exception e)
             {
-                log.warning("NativeBridge error: " + ignored.getMessage()); /* Ignore during panic */
+                log.warning("NativeBridge error: " + e.getMessage()); /* Ignore during panic */
             }
         }
     }
@@ -161,9 +161,9 @@ public interface MidiOutProvider extends MidiSink
             {
                 Thread.sleep(Math.max(1, endWait - System.currentTimeMillis()));
             }
-            catch (Exception ignored)
+            catch (Exception e)
             {
-                log.warning("NativeBridge error: " + ignored.getMessage()); /* force wait */
+                log.warning("NativeBridge error: " + e.getMessage()); /* force wait */
             }
         }
     }

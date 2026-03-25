@@ -1,10 +1,12 @@
 package com.fupfin.midiraja.cli;
 
-import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import java.io.*;
 import java.nio.file.*;
 import java.util.List;
-import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.*;
 
 class SessionHistoryTest {
     private Path tmpDir;

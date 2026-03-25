@@ -1,10 +1,11 @@
 package com.fupfin.midiraja.dsp;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
 import java.util.Collections;
+
+import org.junit.jupiter.api.Test;
 
 class DspFiltersCoverageTest {
 
@@ -25,16 +26,16 @@ class DspFiltersCoverageTest {
     void testCompactMacSimulatorFilter() {
         CaptureSink sink = new CaptureSink();
         CompactMacSimulatorFilter filter = new CompactMacSimulatorFilter(true, false, sink);
-        
+
         float[] left = new float[256];
         float[] right = new float[256];
         Arrays.fill(left, 0.5f);
         Arrays.fill(right, 0.5f);
-        
+
         assertDoesNotThrow(() -> filter.process(left, right, 256));
         assertTrue(sink.capturedFrames == 256);
         assertNotNull(sink.capturedLeft);
-        
+
         CompactMacSimulatorFilter filterDisabled = new CompactMacSimulatorFilter(false, false, sink);
         assertDoesNotThrow(() -> filterDisabled.process(left, right, 256));
     }
@@ -105,10 +106,10 @@ class DspFiltersCoverageTest {
     void testEightBitQuantizerFilter() {
         CaptureSink sink = new CaptureSink();
         EightBitQuantizerFilter filter = new EightBitQuantizerFilter(true, sink);
-        
+
         float[] left = {0.0f, 0.5f, 1.0f, -0.5f, -1.0f};
         float[] right = {0.0f, 0.5f, 1.0f, -0.5f, -1.0f};
-        
+
         assertDoesNotThrow(() -> filter.process(left, right, 5));
         assertTrue(sink.capturedFrames == 5);
         for (float v : sink.capturedLeft) {
@@ -120,17 +121,17 @@ class DspFiltersCoverageTest {
     void testCovoxFilter() {
         CaptureSink sink = new CaptureSink();
         CovoxFilter filter = new CovoxFilter(true, sink);
-        
+
         float[] left = new float[256];
         float[] right = new float[256];
         for(int i=0; i<256; i++) {
             left[i] = (float) Math.sin(i * 0.1);
             right[i] = (float) Math.cos(i * 0.1);
         }
-        
+
         assertDoesNotThrow(() -> filter.process(left, right, 256));
         assertTrue(sink.capturedFrames == 256);
-        
+
         CovoxFilter filterDisabled = new CovoxFilter(false, sink);
         assertDoesNotThrow(() -> filterDisabled.process(left, right, 256));
     }
@@ -159,7 +160,7 @@ class DspFiltersCoverageTest {
         assertEquals(16384f / 32768f * level, sink.capturedLeft[0], 0.001f);
         assertEquals(16384f / 32768f * level, sink.capturedRight[0], 0.001f);
     }
-    
+
     @Test
     void testHeadroomPipelineRoundtrip() {
         // ShortToFloat(×0.25) → MasterGain(×4) → CaptureSink: full-scale input should be preserved
@@ -204,7 +205,7 @@ class DspFiltersCoverageTest {
                 called[0] = true;
             }
         }, Collections.emptyList());
-        
+
         float[] left = {0.5f, 0.5f};
         float[] right = {0.5f, 0.5f};
         sink.process(left, right, 2);
@@ -215,15 +216,15 @@ class DspFiltersCoverageTest {
     void testOneBitAcousticSimulatorFilter() {
         CaptureSink sink = new CaptureSink();
         OneBitAcousticSimulatorFilter filter = new OneBitAcousticSimulatorFilter(true, "pwm", sink);
-        
+
         float[] left = new float[1024];
         float[] right = new float[1024];
         Arrays.fill(left, 1.0f);
         Arrays.fill(right, -1.0f);
-        
+
         assertDoesNotThrow(() -> filter.process(left, right, 1024));
         assertTrue(sink.capturedFrames == 1024);
-        
+
         OneBitAcousticSimulatorFilter disabled = new OneBitAcousticSimulatorFilter(false, "pwm", sink);
         assertDoesNotThrow(() -> disabled.process(left, right, 1024));
     }
@@ -233,10 +234,10 @@ class DspFiltersCoverageTest {
         OneBitAcousticSimulator sim = new OneBitAcousticSimulator(44100, "pwm");
         float[] in = {1.0f, 1.0f, -1.0f, -1.0f};
         float[] out = new float[4];
-        
+
         assertDoesNotThrow(() -> sim.process(in, out, 4));
         assertDoesNotThrow(() -> sim.reset());
-        
+
         OneBitAcousticSimulator sim2 = new OneBitAcousticSimulator(44100, "dsd");
         assertDoesNotThrow(() -> sim2.process(in, out, 4));
     }

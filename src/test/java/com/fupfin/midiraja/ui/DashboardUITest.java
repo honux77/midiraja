@@ -1,7 +1,8 @@
 package com.fupfin.midiraja.ui;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
 
 class DashboardUITest {
     @Test void playlistTag_bothOff_bothDim() {

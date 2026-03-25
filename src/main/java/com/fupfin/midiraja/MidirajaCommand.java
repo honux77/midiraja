@@ -7,34 +7,15 @@
 
 package com.fupfin.midiraja;
 
-import com.fupfin.midiraja.cli.*;
-
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.ui.Logo;
-import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.io.File;
-import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
-import com.fupfin.midiraja.midi.TsfSynthProvider;
-import com.fupfin.midiraja.dsp.FloatToShortSink;
-import com.fupfin.midiraja.midi.beep.BeepSynthProvider;
-import com.fupfin.midiraja.midi.gus.GusSynthProvider;
-import com.fupfin.midiraja.midi.psg.PsgSynthProvider;
-import com.fupfin.midiraja.io.TerminalIO;
-import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
-import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
-import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.midi.MidiProviderFactory;
-import com.fupfin.midiraja.midi.NativeAudioEngine;
-import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import java.io.PrintStream;
 import java.io.PrintWriter;
-import org.jline.terminal.TerminalBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+
+import org.jline.terminal.TerminalBuilder;
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -43,6 +24,26 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.cli.*;
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.FloatToShortSink;
+import com.fupfin.midiraja.io.AppLogger;
+import com.fupfin.midiraja.io.TerminalIO;
+import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
+import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
+import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
+import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.midi.MidiProviderFactory;
+import com.fupfin.midiraja.midi.NativeAudioEngine;
+import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
+import com.fupfin.midiraja.midi.TsfSynthProvider;
+import com.fupfin.midiraja.midi.beep.BeepSynthProvider;
+import com.fupfin.midiraja.midi.gus.GusSynthProvider;
+import com.fupfin.midiraja.midi.psg.PsgSynthProvider;
+import com.fupfin.midiraja.ui.Logo;
 
 @Command(name = "midra", mixinStandardHelpOptions = true,
         version = {"MIDIraja " + Version.VERSION + " (" + Version.COMMIT + ")"},

@@ -9,39 +9,39 @@ package com.fupfin.midiraja.cli;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
-import com.fupfin.midiraja.ui.Theme;
+import java.io.File;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+
+import org.jspecify.annotations.Nullable;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.ParentCommand;
+
+import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.dsp.FloatToShortSink;
-import com.fupfin.midiraja.dsp.ShortToFloatFilter;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
+import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
+import com.fupfin.midiraja.io.AppLogger;
 import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
 import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
 import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
 import com.fupfin.midiraja.midi.FFMTsfNativeBridge;
-import com.fupfin.midiraja.dsp.MasterGainFilter;
 import com.fupfin.midiraja.midi.MidiOutProvider;
-import java.util.function.Consumer;
 import com.fupfin.midiraja.midi.NativeAudioEngine;
 import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import com.fupfin.midiraja.midi.TsfSynthProvider;
 import com.fupfin.midiraja.midi.beep.BeepSynthProvider;
 import com.fupfin.midiraja.midi.gus.GusSynthProvider;
 import com.fupfin.midiraja.midi.psg.PsgSynthProvider;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.Callable;
-import org.jspecify.annotations.Nullable;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.ParentCommand;
+import com.fupfin.midiraja.ui.Theme;
 
 @Command(name = "demo", description = "Play the curated demo playlist showcasing all synthesis engines.",
         mixinStandardHelpOptions = true)

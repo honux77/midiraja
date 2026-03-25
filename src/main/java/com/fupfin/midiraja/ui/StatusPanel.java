@@ -9,8 +9,9 @@ package com.fupfin.midiraja.ui;
 
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
 
-import com.fupfin.midiraja.engine.PlaylistContext;
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.engine.PlaylistContext;
 
 /**
  * Responsive status panel showing tempo, progress, transpose, and volume.

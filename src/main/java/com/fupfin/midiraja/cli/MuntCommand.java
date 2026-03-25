@@ -9,18 +9,12 @@ package com.fupfin.midiraja.cli;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.dsp.FloatToShortSink;
-import com.fupfin.midiraja.midi.FFMMuntNativeBridge;
-import com.fupfin.midiraja.midi.MuntSynthProvider;
-import com.fupfin.midiraja.midi.NativeAudioEngine;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -28,6 +22,14 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.FloatToShortSink;
+import com.fupfin.midiraja.io.AppLogger;
+import com.fupfin.midiraja.midi.FFMMuntNativeBridge;
+import com.fupfin.midiraja.midi.MuntSynthProvider;
+import com.fupfin.midiraja.midi.NativeAudioEngine;
 
 /**
  * Plays MIDI files through the built-in Munt MT-32 emulator.

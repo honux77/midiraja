@@ -7,16 +7,18 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.io.JLineTerminalIO;
-import com.fupfin.midiraja.io.NavKeyMapFactory;
-import com.fupfin.midiraja.ui.ScreenBuffer;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiConsumer;
+
 import org.jline.keymap.KeyMap;
 import org.jline.terminal.Terminal;
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.io.JLineTerminalIO;
+import com.fupfin.midiraja.io.NavKeyMapFactory;
+import com.fupfin.midiraja.ui.ScreenBuffer;
 
 /**
  * Generic interactive selection menu supporting full-screen, mini (in-place), and classic

@@ -9,6 +9,15 @@ package com.fupfin.midiraja.cli;
 
 import static java.util.Objects.requireNonNull;
 
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.Callable;
+
+import org.jspecify.annotations.Nullable;
+import picocli.CommandLine.Command;
+import picocli.CommandLine.Mixin;
+import picocli.CommandLine.ParentCommand;
+
 import com.fupfin.midiraja.LibraryPaths;
 import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.Version;
@@ -16,13 +25,6 @@ import com.fupfin.midiraja.io.AppLogger;
 import com.fupfin.midiraja.midi.AbstractFFMBridge;
 import com.fupfin.midiraja.midi.MidiProviderFactory;
 import com.fupfin.midiraja.midi.gus.GusSynthProvider;
-import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.Callable;
-import org.jspecify.annotations.Nullable;
-import picocli.CommandLine.Command;
-import picocli.CommandLine.Mixin;
-import picocli.CommandLine.ParentCommand;
 
 @Command(name = "info", mixinStandardHelpOptions = true,
         description = "Print system and environment diagnostics for bug reports.")

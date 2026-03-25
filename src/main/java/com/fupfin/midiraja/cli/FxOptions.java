@@ -1,15 +1,16 @@
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.dsp.*;
-
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.dsp.*;
 
 /**
  * Shared DSP effect options (EQ, Reverb, Chorus, Tube).

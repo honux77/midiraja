@@ -7,8 +7,9 @@
 
 package com.fupfin.midiraja.ui;
 
-import com.fupfin.midiraja.engine.PlaylistContext;
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.engine.PlaylistContext;
 
 /**
  * Renders the song title and global file metadata.

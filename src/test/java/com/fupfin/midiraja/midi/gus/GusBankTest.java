@@ -11,7 +11,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -24,7 +24,7 @@ class GusBankTest {
             bank 0
             0 acpiano.pat
             1 britepno.pat volume=110
-            
+
             bank 1
             0 synth-bass.pat
             """;

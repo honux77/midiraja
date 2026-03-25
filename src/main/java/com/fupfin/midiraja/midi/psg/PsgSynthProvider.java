@@ -7,12 +7,14 @@
 
 package com.fupfin.midiraja.midi.psg;
 
+import java.util.List;
+
+import org.jspecify.annotations.Nullable;
+
 import com.fupfin.midiraja.dsp.AudioProcessor;
 import com.fupfin.midiraja.midi.AbstractOneBitSynthProvider;
 import com.fupfin.midiraja.midi.AbstractSoftSynthProvider;
 import com.fupfin.midiraja.midi.MidiPort;
-import java.util.List;
-import org.jspecify.annotations.Nullable;
 
 /**
  * A Multi-Chip Programmable Sound Generator (PSG) emulator. Simulates multiple AY-3-8910 / YM2149F

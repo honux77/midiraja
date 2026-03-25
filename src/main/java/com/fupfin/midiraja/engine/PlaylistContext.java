@@ -7,10 +7,12 @@
 
 package com.fupfin.midiraja.engine;
 
-import com.fupfin.midiraja.midi.MidiPort;
 import java.io.File;
 import java.util.List;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.midi.MidiPort;
 
 /**
  * Encapsulates the playback context needed by the UI loop to draw the full-screen terminal

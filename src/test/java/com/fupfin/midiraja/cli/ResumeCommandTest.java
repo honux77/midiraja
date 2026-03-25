@@ -1,12 +1,15 @@
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.MidirajaCommand;
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.io.*;
+import java.nio.file.Path;
+
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
-import java.io.*;
-import java.nio.file.Path;
-import static org.junit.jupiter.api.Assertions.*;
+
+import com.fupfin.midiraja.MidirajaCommand;
 
 class ResumeCommandTest {
 

@@ -1,7 +1,9 @@
 package com.fupfin.midiraja.ui;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+
+import org.junit.jupiter.api.Test;
+
 import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
 
 class TitledPanelTest {

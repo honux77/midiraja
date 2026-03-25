@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
+
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -120,7 +121,7 @@ public class PlaylistParser
                                 acc.volume = Integer.parseInt(rawVolume);
                                 logVerbose("Applied directive from playlist: --volume " + acc.volume);
                             }
-                            catch (NumberFormatException ignored)
+                            catch (NumberFormatException e)
                             {
                             }
                             i = vIdx[0];
@@ -135,7 +136,7 @@ public class PlaylistParser
                                 acc.speed = Double.parseDouble(rawSpeed);
                                 logVerbose("Applied directive from playlist: --speed " + acc.speed);
                             }
-                            catch (NumberFormatException ignored)
+                            catch (NumberFormatException e)
                             {
                             }
                             i = xIdx[0];

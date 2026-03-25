@@ -10,6 +10,7 @@ package com.fupfin.midiraja.io;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import java.io.IOException;
+
 import org.jline.terminal.Attributes;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;

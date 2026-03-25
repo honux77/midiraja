@@ -11,6 +11,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Scanner;
+
 import org.jspecify.annotations.Nullable;
 
 final class ClassicMode

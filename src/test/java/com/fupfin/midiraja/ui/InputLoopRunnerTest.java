@@ -9,12 +9,13 @@ package com.fupfin.midiraja.ui;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import java.io.IOException;
+
+import org.junit.jupiter.api.Test;
+
 import com.fupfin.midiraja.io.MockTerminalIO;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
-import java.io.IOException;
-import java.util.List;
-import org.junit.jupiter.api.Test;
 
 class InputLoopRunnerTest
 {

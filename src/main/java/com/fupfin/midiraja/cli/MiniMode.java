@@ -7,14 +7,16 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.io.TerminalModeManager;
-import com.fupfin.midiraja.ui.Theme;
 import java.util.List;
+
 import org.jline.keymap.BindingReader;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.jline.utils.NonBlockingReader;
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.io.TerminalModeManager;
+import com.fupfin.midiraja.ui.Theme;
 
 final class MiniMode
 {

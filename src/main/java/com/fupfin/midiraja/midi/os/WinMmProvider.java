@@ -8,13 +8,15 @@
 package com.fupfin.midiraja.midi.os;
 
 
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.midi.MidiPort;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiPort;
 
 /**
  * FFM API (Project Panama) based WinMM provider for Windows. Replaces the legacy JNA implementation

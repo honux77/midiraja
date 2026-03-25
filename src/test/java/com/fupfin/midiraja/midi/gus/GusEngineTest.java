@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.lang.foreign.Arena;
 import java.lang.foreign.MemorySegment;
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 class GusEngineTest {
@@ -85,7 +86,7 @@ System.out.println(java.util.Arrays.toString(left));
     // At ratio 1.0, it should perfectly map to the first 5 bytes: 10, 20, 30,
     // 40, 50 (Assuming simple Nearest-Neighbor interpolation for this initial
     // test)
-                    
+
     // The voice should still be active because it hasn't reached the end of the
     // 10-byte sample
     assertEquals(1, engine.getActiveVoices().size());

@@ -11,17 +11,16 @@ package com.fupfin.midiraja.engine;
 import static java.lang.Math.*;
 import static java.util.Locale.ROOT;
 
-import org.jspecify.annotations.Nullable;
-
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.ui.PlaybackEventListener;
-import java.util.function.BooleanSupplier;
-import com.fupfin.midiraja.ui.PlaybackUI;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
+import java.util.function.BooleanSupplier;
 import java.util.stream.IntStream;
 import javax.sound.midi.*;
+
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.ui.PlaybackEventListener;
+import com.fupfin.midiraja.ui.PlaybackUI;
 
 /**
  * Orchestrates real-time MIDI playback, managing timing, user input, and UI updates. Utilizes
@@ -238,7 +237,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 clock.sleepMillis(RESET_SETTLE_MS); // Give the hardware synthesizer time to
                                                    // process the reset before slamming it with notes
             }
-            catch (Exception ignored)
+            catch (Exception e)
             {
             }
         }
@@ -334,7 +333,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 {
                     provider.onPlaybackStarted();
                 }
-                catch (Exception ignored)
+                catch (Exception e)
                 {
                     /* Safe to ignore: optional listener */ }
                 continue;
@@ -442,7 +441,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
             {
                 clock.sleepMillis(END_OF_TRACK_MS);
             }
-            catch (Exception ignored)
+            catch (Exception e)
             { /* Allow UI to render 100% frame */
             }
         }
@@ -474,7 +473,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
             {
                 pipeline.sendMessage(raw);
             }
-            catch (Exception ignored)
+            catch (Exception e)
             {
                 /* Ignore */
             }
@@ -497,7 +496,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
                 {
                     pipeline.sendMessage(raw);
                 }
-                catch (Exception ignored)
+                catch (Exception e)
                 {
                     /* Ignore */
                 }
@@ -685,7 +684,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
             {
                 provider.softPause();
             }
-            catch (Exception ignored)
+            catch (Exception e)
             { /* Ignore */
             }
         }
@@ -696,7 +695,7 @@ public class MidiPlaybackEngine implements PlaybackEngine
             {
                 provider.onPlaybackStarted();
             }
-            catch (Exception ignored)
+            catch (Exception e)
             {
                 /* Safe to ignore: optional listener */ }
         }

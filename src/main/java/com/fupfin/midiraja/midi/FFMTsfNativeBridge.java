@@ -212,9 +212,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
         {
             tsf_reset.invokeExact(device);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -226,9 +226,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
         {
             tsf_note_off_all.invokeExact(device);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -242,9 +242,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
             float vel = velocity / 127.0f;
             int ignored = (int) tsf_channel_note_on.invokeExact(device, channel, note, vel);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -256,9 +256,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
         {
             tsf_channel_note_off.invokeExact(device, channel, note);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -270,9 +270,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
         {
             int ignored = (int) tsf_channel_midi_control.invokeExact(device, channel, type, value);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -287,9 +287,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
             int ignored =
                     (int) tsf_channel_set_presetnumber.invokeExact(device, channel, patch, isDrums);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -302,9 +302,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
         {
             int ignored = (int) tsf_channel_set_pitchwheel.invokeExact(device, channel, pitch);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -327,9 +327,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
                 renderBuffer = arena.allocate(requiredBytes);
                 currentRenderBufferShorts = stereoFrames * 2;
             }
-            catch (Throwable ignored)
+            catch (Throwable e)
             {
-                err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " + e.getMessage());
                 return;
             }
         }
@@ -342,9 +342,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
             MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0,
                     stereoFrames * 2);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " + ignored.getMessage());
+            err.println("[NativeBridge Error] " + e.getMessage());
         }
     }
 
@@ -357,9 +357,9 @@ public class FFMTsfNativeBridge extends AbstractFFMBridge implements TsfNativeBr
             {
                 tsf_close.invokeExact(device);
             }
-            catch (Throwable ignored)
+            catch (Throwable e)
             {
-                err.println("[NativeBridge Error] " + ignored.getMessage());
+                err.println("[NativeBridge Error] " + e.getMessage());
             }
             device = MemorySegment.NULL;
         }

@@ -10,13 +10,15 @@ package com.fupfin.midiraja.cli;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import com.fupfin.midiraja.midi.MidiPort;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fupfin.midiraja.midi.MidiPort;
 
 class PlaybackRunnerFindPortIndexTest
 {

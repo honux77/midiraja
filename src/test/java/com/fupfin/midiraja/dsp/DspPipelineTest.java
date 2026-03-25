@@ -1,9 +1,10 @@
 package com.fupfin.midiraja.dsp;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.Arrays;
+
+import org.junit.jupiter.api.Test;
 
 class DspPipelineTest {
 
@@ -69,14 +70,14 @@ class DspPipelineTest {
         assertEquals(0.8f, sink.capturedLeft[0], 0.001f, "Bypass should not alter signal");
 
         tube.setEnabled(true);
-        tube.setDrive(200f); 
+        tube.setDrive(200f);
         tube.process(left.clone(), right.clone(), 2);
         float extremeOut = sink.capturedLeft[0];
 
-        tube.setDrive(100f); 
+        tube.setDrive(100f);
         tube.process(left.clone(), right.clone(), 2);
         float maxOut = sink.capturedLeft[0];
-        
+
         assertEquals(maxOut, extremeOut, 0.001f, "Drive > 100% should be clamped to 100%");
         assertTrue(maxOut < 0.8f, "Auto-gain should reduce peak amplitude of heavy saturation");
     }
@@ -87,18 +88,18 @@ class DspPipelineTest {
         EqFilter eq = new EqFilter(sink);
 
         eq.setParams(50f, 50f, 50f);
-        
+
         float[] left = { 1.0f, 1.0f, 1.0f, 1.0f };
         float[] right = { 1.0f, 1.0f, 1.0f, 1.0f };
         eq.process(left.clone(), right.clone(), 4);
-        
+
         assertTrue(sink.capturedLeft[3] > 0.9f && sink.capturedLeft[3] < 1.1f, "Neutral EQ should not drastically alter amplitude");
 
         eq.setParams(0f, 50f, 50f);
-        float[] dcLeft = new float[100]; 
+        float[] dcLeft = new float[100];
         Arrays.fill(dcLeft, 1.0f);
         eq.process(dcLeft, dcLeft.clone(), 100);
-        
+
         assertTrue(Math.abs(sink.capturedLeft[99]) < 0.1f, "0% Bass should heavily attenuate low frequency (DC) signals");
     }
 
@@ -107,14 +108,14 @@ class DspPipelineTest {
         CaptureSink sink = new CaptureSink();
         EqFilter eq = new EqFilter(sink);
 
-        eq.setLpf(999999f); 
-        eq.setHpf(-100f);   
-        
+        eq.setLpf(999999f);
+        eq.setHpf(-100f);
+
         float[] left = { 0.5f, -0.5f };
         assertDoesNotThrow(() -> {
             eq.process(left.clone(), left.clone(), 2);
         }, "Extreme cutoffs should not throw exceptions or generate NaNs");
-        
+
         assertFalse(Float.isNaN(sink.capturedLeft[0]), "Output should not be NaN");
     }
 
@@ -125,33 +126,33 @@ class DspPipelineTest {
 
         float[] left = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f };
         float[] right = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
-        
+
         reverb.process(left, right, 5);
-        
+
         float[] silence = new float[2000];
         reverb.process(silence, silence.clone(), 2000);
-        
+
         double energy = 0;
         for (float v : sink.capturedLeft) energy += Math.abs(v);
-        
+
         assertTrue(energy > 0.0f, "Reverb should produce a tail after the input stops");
-        
+
         reverb.setPreset(ReverbFilter.Preset.ROOM, 0f);
         silence = new float[10];
         reverb.process(silence, silence.clone(), 10);
         assertEquals(0.0f, sink.capturedLeft[9], 0.0001f, "0% Reverb level should yield pure silence if input is silent");
     }
-    
+
     @Test
     void testEmptyBufferGracefulHandling() {
         CaptureSink sink = new CaptureSink();
         ChorusFilter chorus = new ChorusFilter(sink, 50f);
-        
+
         float[] empty = new float[0];
         assertDoesNotThrow(() -> {
             chorus.process(empty, empty, 0);
         }, "Filters must gracefully handle 0-length frame requests");
-        
+
         assertEquals(0, sink.capturedFrames, "Sink should receive 0 frames");
     }
 }

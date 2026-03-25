@@ -7,17 +7,13 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.dsp.*;
-import com.fupfin.midiraja.midi.NativeAudioEngine;
-import com.fupfin.midiraja.midi.gus.GusSynthProvider;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -25,6 +21,12 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.dsp.*;
+import com.fupfin.midiraja.io.AppLogger;
+import com.fupfin.midiraja.midi.NativeAudioEngine;
+import com.fupfin.midiraja.midi.gus.GusSynthProvider;
 
 @Command(name = "patch", aliases = {"gus", "pat", "guspatch"}, mixinStandardHelpOptions = true,
         description = "GUS wavetable patches (.pat), FreePats bundled.",

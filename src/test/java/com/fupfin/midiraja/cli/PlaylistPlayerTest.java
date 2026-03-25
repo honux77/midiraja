@@ -2,15 +2,6 @@ package com.fupfin.midiraja.cli;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fupfin.midiraja.engine.PlaybackEngine;
-import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
-import com.fupfin.midiraja.engine.PlaybackEngineFactory;
-import com.fupfin.midiraja.engine.PlaybackPipeline;
-import com.fupfin.midiraja.engine.PlaylistContext;
-import com.fupfin.midiraja.io.MockTerminalIO;
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.ui.DumbUI;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -24,9 +15,20 @@ import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.Track;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
+import com.fupfin.midiraja.engine.PlaybackEngine;
+import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
+import com.fupfin.midiraja.engine.PlaybackEngineFactory;
+import com.fupfin.midiraja.engine.PlaybackPipeline;
+import com.fupfin.midiraja.engine.PlaylistContext;
+import com.fupfin.midiraja.io.MockTerminalIO;
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.ui.DumbUI;
 
 class PlaylistPlayerTest {
 

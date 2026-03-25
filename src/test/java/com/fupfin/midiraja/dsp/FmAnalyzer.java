@@ -1,15 +1,16 @@
 
 package com.fupfin.midiraja.dsp;
 
-import com.fupfin.midiraja.midi.beep.BeepSynthProvider;
-import com.fupfin.midiraja.midi.NativeAudioEngine;
 import java.io.FileOutputStream;
+
+import com.fupfin.midiraja.midi.NativeAudioEngine;
+import com.fupfin.midiraja.midi.beep.BeepSynthProvider;
 
 public class FmAnalyzer {
     public static void main(String[] args) throws Exception {
         // Create a dummy library file to satisfy System.load temporarily
         java.io.File dummyLib = java.io.File.createTempFile("dummy", ".dylib");
-        
+
         NativeAudioEngine engine = new NativeAudioEngine(dummyLib.getAbsolutePath()) {
             FileOutputStream fos = new FileOutputStream("fm_test.raw");
             @Override public void init(int rate, int ch, int buf) {}
@@ -26,14 +27,14 @@ public class FmAnalyzer {
             }
             @Override public void close() {}
         };
-        
+
         // Single Voice, XOR Synth, DSD Mux
         BeepSynthProvider provider = new BeepSynthProvider(new com.fupfin.midiraja.dsp.FloatToShortSink(engine, 1), 1, 1.0, 1.1, 32, "dsd", "xor");
         provider.openPort(0);
-        
+
         byte[] noteOn = new byte[] { (byte)0x90, 60, 100 };
         provider.sendMessage(noteOn);
-        
+
         Thread.sleep(1000);
         System.exit(0);
     }

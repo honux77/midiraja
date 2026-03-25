@@ -2,9 +2,10 @@ package com.fupfin.midiraja.ui;
 
 import static java.lang.Math.*;
 
-import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
 
 public class DashboardLayoutManager
 {

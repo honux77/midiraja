@@ -7,12 +7,13 @@
 
 package com.fupfin.midiraja.ui;
 
+import java.io.IOException;
+import java.util.function.BiConsumer;
+
 import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
-import java.io.IOException;
-import java.util.function.BiConsumer;
 
 public class InputLoopRunner
 {

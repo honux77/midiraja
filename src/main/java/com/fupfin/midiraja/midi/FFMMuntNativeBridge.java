@@ -354,7 +354,7 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             if (descPtr.equals(MemorySegment.NULL)) return null;
             return descPtr.reinterpret(256).getString(0);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
             return null;
         }
@@ -428,9 +428,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             int ignored2 =
                     (int) mt32emu_play_msg_at.invokeExact(context, packed, computeTimestamp());
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -480,9 +480,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             int ignored2 = (int) mt32emu_play_sysex_at.invokeExact(context, seg, sysexData.length,
                     timestamp);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
     }
 
@@ -548,9 +548,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 renderBuffer = arena.allocate(requiredBytes);
                 currentRenderBufferSize = requiredBytes;
             }
-            catch (Throwable ignored)
+            catch (Throwable e)
             {
-                err.println("[NativeBridge Error] " +ignored.getMessage());
+                err.println("[NativeBridge Error] " +e.getMessage());
                 return; // Cannot allocate render buffer; skip this cycle
             }
         }
@@ -560,9 +560,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             mt32emu_render_bit16s.invokeExact(context, renderBuffer, frames);
             MemorySegment.copy(renderBuffer, ValueLayout.JAVA_SHORT, 0, buffer, 0, buffer.length);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
 
         // Update the timing reference AFTER rendering so computeTimestamp() in the
@@ -572,9 +572,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             lastRenderedSampleCount =
                     (int) mt32emu_get_internal_rendered_sample_count.invokeExact(context);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
         }
         lastRenderCompletedNanos = System.nanoTime();
     }
@@ -587,9 +587,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         {
             return (byte) mt32emu_has_active_partials.invokeExact(context) != 0;
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
             return false;
         }
     }
@@ -602,9 +602,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
         {
             return (int) mt32emu_get_part_states.invokeExact(context);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
             return 0;
         }
     }
@@ -633,9 +633,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
             }
             return count;
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            err.println("[NativeBridge Error] " +ignored.getMessage());
+            err.println("[NativeBridge Error] " +e.getMessage());
             return 0;
         }
     }
@@ -650,9 +650,9 @@ public class FFMMuntNativeBridge extends AbstractFFMBridge implements MuntNative
                 mt32emu_close_synth.invokeExact(context);
                 mt32emu_free_context.invokeExact(context);
             }
-            catch (Throwable ignored)
+            catch (Throwable e)
             {
-                err.println("[NativeBridge Error] " +ignored.getMessage());
+                err.println("[NativeBridge Error] " +e.getMessage());
             }
             context = MemorySegment.NULL;
         }

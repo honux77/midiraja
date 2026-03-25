@@ -2,10 +2,12 @@ package com.fupfin.midiraja.dsp;
 
 import static java.lang.Math.*;
 
-import com.fupfin.midiraja.midi.AudioEngine;
 import java.util.concurrent.locks.LockSupport;
 import java.util.logging.Logger;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.midi.AudioEngine;
 
 /**
  * A terminal sink that converts float[] (-1.0 to 1.0) into interleaved short[] PCM and pushes it to

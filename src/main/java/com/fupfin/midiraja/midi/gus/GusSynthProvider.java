@@ -8,21 +8,22 @@
 package com.fupfin.midiraja.midi.gus;
 
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.dsp.MasterGainFilter;
-
-import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.midi.SoftSynthProvider;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import javax.sound.midi.Sequence;
 import java.util.Optional;
+import javax.sound.midi.Sequence;
 import javax.sound.midi.Track;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
+import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.midi.SoftSynthProvider;
 
 /**
  * A Gravis Ultrasound (GUS) soft-synth provider.
@@ -145,7 +146,7 @@ public class GusSynthProvider implements SoftSynthProvider
         {
             if (embeddedCfg != null) return "(embedded FreePats)";
         }
-        catch (IOException ignored)
+        catch (IOException e)
         {
         }
         return null;
@@ -301,7 +302,7 @@ public class GusSynthProvider implements SoftSynthProvider
         {
             Thread.sleep(20);
         }
-        catch (InterruptedException ignored)
+        catch (InterruptedException e)
         {
         }
         if (audioOut != null) audioOut.reset();
@@ -383,7 +384,7 @@ public class GusSynthProvider implements SoftSynthProvider
             {
                 renderThread.join(500);
             }
-            catch (InterruptedException ignored)
+            catch (InterruptedException e)
             {
             }
         }

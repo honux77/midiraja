@@ -8,7 +8,6 @@
 package com.fupfin.midiraja.io;
 
 import java.io.IOException;
-import org.jspecify.annotations.Nullable;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.file.Files;
@@ -21,6 +20,8 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 import java.util.logging.StreamHandler;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * Configures application-wide file logging via {@code java.util.logging}.

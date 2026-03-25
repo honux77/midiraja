@@ -10,8 +10,10 @@ package com.fupfin.midiraja.io;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.io.IOException;
+
 import org.jline.terminal.TerminalBuilder;
 import org.junit.jupiter.api.Test;
+
 import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
 
 class JLineTerminalIOTest

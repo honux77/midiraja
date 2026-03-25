@@ -7,6 +7,13 @@
 
 package com.fupfin.midiraja.cli;
 
+import java.io.PrintStream;
+
+import org.jline.keymap.BindingReader;
+import org.jline.keymap.KeyMap;
+import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.NonBlockingReader;
+
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
 import com.fupfin.midiraja.io.AltScreenScope;
 import com.fupfin.midiraja.io.NavKeyMapFactory;
@@ -14,11 +21,6 @@ import com.fupfin.midiraja.io.TerminalModeManager;
 import com.fupfin.midiraja.ui.Logo;
 import com.fupfin.midiraja.ui.ScreenBuffer;
 import com.fupfin.midiraja.ui.Theme;
-import java.io.PrintStream;
-import org.jline.keymap.BindingReader;
-import org.jline.keymap.KeyMap;
-import org.jline.terminal.TerminalBuilder;
-import org.jline.utils.NonBlockingReader;
 
 /**
  * Full-screen transition screen shown between demo tracks. Displays the upcoming track's title and

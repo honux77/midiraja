@@ -7,17 +7,18 @@
 
 package com.fupfin.midiraja.ui;
 
+import static java.lang.Math.max;
+import static java.util.Objects.requireNonNull;
+
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+import javax.sound.midi.*;
+
 import com.fupfin.midiraja.Version;
 import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackState;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.ui.LayoutListener.LayoutConstraints;
-import java.nio.charset.StandardCharsets;
-import static java.lang.Math.max;
-import static java.util.Objects.requireNonNull;
-
-import java.util.*;
-import javax.sound.midi.*;
 
 public class DashboardUI implements PlaybackUI
 {
@@ -167,7 +168,7 @@ public class DashboardUI implements PlaybackUI
                 Thread.sleep(50);
             }
         }
-        catch (InterruptedException ignored)
+        catch (InterruptedException _)
         {
             Thread.currentThread().interrupt();
         }

@@ -9,17 +9,6 @@ package com.fupfin.midiraja.engine;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fupfin.midiraja.io.MockTerminalIO;
-import com.fupfin.midiraja.io.TerminalIO;
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.midi.SysexFilter;
-import com.fupfin.midiraja.midi.TransposeFilter;
-import com.fupfin.midiraja.midi.VolumeFilter;
-import com.fupfin.midiraja.engine.MidiPlaybackEngine;
-import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
-import com.fupfin.midiraja.engine.PlaybackPipeline;
-import com.fupfin.midiraja.ui.DumbUI;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,10 +21,21 @@ import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
 import javax.sound.midi.SysexMessage;
 import javax.sound.midi.Track;
-import com.fupfin.midiraja.ui.PlaybackEventListener;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+
+import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
+import com.fupfin.midiraja.io.MockTerminalIO;
+import com.fupfin.midiraja.io.TerminalIO;
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.midi.SysexFilter;
+import com.fupfin.midiraja.midi.TransposeFilter;
+import com.fupfin.midiraja.midi.VolumeFilter;
+import com.fupfin.midiraja.ui.DumbUI;
+import com.fupfin.midiraja.ui.PlaybackEventListener;
 
 class PlaybackEngineTest
 {

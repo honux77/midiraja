@@ -7,11 +7,13 @@
 
 package com.fupfin.midiraja.midi;
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.dsp.MasterGainFilter;
 import java.util.Optional;
 import javax.sound.midi.Sequence;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 
 /**
  * Base class for 1-bit/legacy hardware synth providers (Beep, PSG).

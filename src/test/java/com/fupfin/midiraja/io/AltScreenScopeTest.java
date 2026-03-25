@@ -9,10 +9,12 @@ package com.fupfin.midiraja.io;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+
 import org.junit.jupiter.api.Test;
+
+import com.fupfin.midiraja.ui.Theme;
 
 class AltScreenScopeTest
 {

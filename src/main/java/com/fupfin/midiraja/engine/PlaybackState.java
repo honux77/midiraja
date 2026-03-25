@@ -7,8 +7,9 @@
 
 package com.fupfin.midiraja.engine;
 
-import com.fupfin.midiraja.ui.PlaybackEventListener;
 import javax.sound.midi.Sequence;
+
+import com.fupfin.midiraja.ui.PlaybackEventListener;
 
 /** Read-only view of engine state — consumed by the render loop. */
 public interface PlaybackState

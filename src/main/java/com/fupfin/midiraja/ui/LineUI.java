@@ -9,7 +9,6 @@ package com.fupfin.midiraja.ui;
 
 import static com.fupfin.midiraja.ui.UIUtils.formatTime;
 import static com.fupfin.midiraja.ui.UIUtils.truncateAnsi;
-
 import static java.lang.Math.*;
 
 import com.fupfin.midiraja.Version;

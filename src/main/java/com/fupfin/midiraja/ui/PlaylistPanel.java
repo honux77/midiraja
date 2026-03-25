@@ -10,14 +10,16 @@ package com.fupfin.midiraja.ui;
 import static java.lang.Math.*;
 import static java.lang.System.err;
 
-import com.fupfin.midiraja.engine.PlaylistContext;
-import com.fupfin.midiraja.midi.MidiUtils;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.*;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.engine.PlaylistContext;
+import com.fupfin.midiraja.midi.MidiUtils;
 
 public class PlaylistPanel implements Panel
 {
@@ -58,10 +60,10 @@ public class PlaylistPanel implements Panel
                                 titleCache.put(file, ""); // Empty string means no title
                             }
                         }
-                        catch (Exception ignored)
+                        catch (Exception e)
                         {
                             err.println("[Error in " + getClass().getSimpleName() + "] "
-                                    + ignored.getMessage());
+                                    + e.getMessage());
                             titleCache.put(file, "");
                         }
                     });

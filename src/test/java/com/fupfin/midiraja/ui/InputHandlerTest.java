@@ -9,10 +9,12 @@ package com.fupfin.midiraja.ui;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
 import java.util.List;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import com.fupfin.midiraja.io.TerminalIO.TerminalKey;
 
 class InputHandlerTest
 {

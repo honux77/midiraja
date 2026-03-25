@@ -1,13 +1,14 @@
 package com.fupfin.midiraja.midi.psg;
 
-import com.fupfin.midiraja.midi.AudioEngine;
-import com.fupfin.midiraja.midi.MidiPort;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import com.fupfin.midiraja.midi.AudioEngine;
+import com.fupfin.midiraja.midi.MidiPort;
 
 class PsgSynthProviderTest {
 
@@ -79,7 +80,7 @@ class PsgSynthProviderTest {
         // Ch 0, CC 7 (Volume), Value 100
         byte[] ctrlChange = new byte[]{(byte) 0xB0, 7, 100};
         provider.sendMessage(ctrlChange);
-        
+
         // All Notes Off
         byte[] allNotesOff = new byte[]{(byte) 0xB0, 123, 0};
         provider.sendMessage(allNotesOff);

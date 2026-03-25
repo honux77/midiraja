@@ -6,11 +6,12 @@
  */
 package com.fupfin.midiraja.ui;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackEngine;
 import com.fupfin.midiraja.engine.PlaylistContext;
-import java.util.ArrayList;
-import java.util.List;
 
 /** Test helper: records PlaybackCommands calls for assertion in tests. */
 class RecordingCommands implements PlaybackCommands

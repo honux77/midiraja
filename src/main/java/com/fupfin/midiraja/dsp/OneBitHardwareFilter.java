@@ -2,8 +2,10 @@ package com.fupfin.midiraja.dsp;
 
 import static java.lang.Math.*;
 import static java.util.Locale.ROOT;
+
 import java.util.Arrays;
 import java.util.Random;
+
 import org.jspecify.annotations.Nullable;
 
 /**

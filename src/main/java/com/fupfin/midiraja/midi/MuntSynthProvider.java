@@ -7,10 +7,12 @@
 
 package com.fupfin.midiraja.midi;
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
 import java.util.List;
 import javax.sound.midi.Sequence;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.dsp.AudioProcessor;
 
 @SuppressWarnings("ThreadPriorityCheck")
 public class MuntSynthProvider implements SoftSynthProvider
@@ -161,7 +163,7 @@ public class MuntSynthProvider implements SoftSynthProvider
         {
             Thread.sleep(20);
         }
-        catch (InterruptedException ignored)
+        catch (InterruptedException _)
         {
         }
 
@@ -260,7 +262,7 @@ public class MuntSynthProvider implements SoftSynthProvider
             {
                 renderThread.join(500);
             }
-            catch (InterruptedException ignored)
+            catch (InterruptedException _)
             {
                 // Expected during shutdown
             }

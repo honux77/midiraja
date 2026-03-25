@@ -11,6 +11,7 @@ package com.fupfin.midiraja.midi;
 import java.lang.foreign.*;
 import java.lang.invoke.MethodHandle;
 import java.util.List;
+
 import org.jspecify.annotations.Nullable;
 
 @SuppressWarnings({"EmptyCatch", "UnusedVariable"})
@@ -336,9 +337,9 @@ public class FluidSynthProvider implements SoftSynthProvider
         {
             int _dummy = (int) fluid_synth_noteon_mh.invokeExact(synth, channel, key, velocity);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            log.warning("NativeBridge error: " + ignored.getMessage());
+            log.warning("NativeBridge error: " + e.getMessage());
         }
     }
 
@@ -349,9 +350,9 @@ public class FluidSynthProvider implements SoftSynthProvider
         {
             int _dummy = (int) fluid_synth_noteoff_mh.invokeExact(synth, channel, key);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            log.warning("NativeBridge error: " + ignored.getMessage());
+            log.warning("NativeBridge error: " + e.getMessage());
         }
     }
 
@@ -362,9 +363,9 @@ public class FluidSynthProvider implements SoftSynthProvider
         {
             int _dummy = (int) fluid_synth_cc_mh.invokeExact(synth, channel, num, val);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            log.warning("NativeBridge error: " + ignored.getMessage());
+            log.warning("NativeBridge error: " + e.getMessage());
         }
     }
 
@@ -375,9 +376,9 @@ public class FluidSynthProvider implements SoftSynthProvider
         {
             int _dummy = (int) fluid_synth_program_change_mh.invokeExact(synth, channel, program);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            log.warning("NativeBridge error: " + ignored.getMessage());
+            log.warning("NativeBridge error: " + e.getMessage());
         }
     }
 
@@ -388,9 +389,9 @@ public class FluidSynthProvider implements SoftSynthProvider
         {
             int _dummy = (int) fluid_synth_pitch_bend_mh.invokeExact(synth, channel, val);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            log.warning("NativeBridge error: " + ignored.getMessage());
+            log.warning("NativeBridge error: " + e.getMessage());
         }
     }
 
@@ -405,9 +406,9 @@ public class FluidSynthProvider implements SoftSynthProvider
             int _dummy = (int) fluid_synth_sysex_mh.invokeExact(synth, dataSeg, data.length,
                     MemorySegment.NULL, MemorySegment.NULL, MemorySegment.NULL, 0);
         }
-        catch (Throwable ignored)
+        catch (Throwable e)
         {
-            log.warning("NativeBridge error: " + ignored.getMessage());
+            log.warning("NativeBridge error: " + e.getMessage());
         }
     }
 

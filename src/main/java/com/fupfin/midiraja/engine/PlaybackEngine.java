@@ -7,9 +7,10 @@
 
 package com.fupfin.midiraja.engine;
 
-import com.fupfin.midiraja.ui.PlaybackUI;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import com.fupfin.midiraja.ui.PlaybackUI;
 
 /**
  * Full playback control interface. Extends {@link PlaybackState} (render loop) and
