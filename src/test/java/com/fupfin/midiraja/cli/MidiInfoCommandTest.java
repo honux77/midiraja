@@ -164,6 +164,13 @@ class MidiInfoCommandTest {
 
     // ── error handling ────────────────────────────────────────────────────────
 
+    @Test void unknownFormat_exits2(@TempDir Path tmp) throws Exception {
+        java.io.File f = createMidi(tmp, "song.mid");
+        RunResult r = run("midi-info", "--format", "xml", f.toString());
+        assertEquals(2, r.exitCode());
+        assertTrue(r.err().contains("unknown --format"), "error message expected");
+    }
+
     @Test void exitCode1_onMissingFile() {
         RunResult r = run("midi-info", "/nonexistent/path/song.mid");
         assertEquals(1, r.exitCode());

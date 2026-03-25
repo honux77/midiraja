@@ -62,6 +62,16 @@ public class MidiInfoCommand implements Callable<Integer>
     {
         AppLogger.configure(logLevel.orElse(null));
 
+        if (!format.equals("text") && !format.equals("csv") && !format.equals("tsv"))
+        {
+            PrintWriter err = spec != null
+                    ? spec.commandLine().getErr()
+                    : new PrintWriter(System.err, true); // NOSONAR fallback
+            err.println("Error: unknown --format '" + format + "'. Valid values: text, csv, tsv");
+            err.flush();
+            return 2;
+        }
+
         // picocli-routed output (supports setOut/setErr in tests)
         PrintWriter out = spec != null
                 ? spec.commandLine().getOut()
@@ -179,7 +189,7 @@ public class MidiInfoCommand implements Callable<Integer>
     /** RFC 4180 CSV field quoting. Works for both CSV (sep=',') and TSV (sep='\t'). */
     static String csvField(String value, char sep)
     {
-        if (value == null || value.isEmpty()) return "";
+        if (value.isEmpty()) return "";
         if (value.indexOf(sep) < 0 && value.indexOf('"') < 0
                 && value.indexOf('\n') < 0 && value.indexOf('\r') < 0)
             return value;
