@@ -38,8 +38,9 @@ class PlaylistPlayerMediaKeysTest
     @Test void drainAndUpdate_calledAtTrackStart() throws Exception
     {
         var updates = new CopyOnWriteArrayList<NowPlayingInfo>();
+        boolean[] startWasCalled = {false};
         var testKeys = new MediaKeyIntegration() {
-            @Override public void start(PlaybackCommands c) {}
+            @Override public void start(PlaybackCommands c) { startWasCalled[0] = true; }
             @Override public void drainAndUpdate(NowPlayingInfo info) { updates.add(info); }
             @Override public void close() {}
         };
@@ -70,11 +71,11 @@ class PlaylistPlayerMediaKeysTest
                 new com.fupfin.midiraja.midi.MidiPort(0, "test"), new CommonOptions(),
                 new DumbUI(), mockIO, Optional.empty(), List.of());
 
+        assertTrue(startWasCalled[0], "start() should be called");
         assertFalse(updates.isEmpty(), "drainAndUpdate should be called at least once");
         assertEquals("TestSong", updates.get(0).title());
     }
 
-    @FunctionalInterface
     interface MinimalEngineFactory extends com.fupfin.midiraja.engine.PlaybackEngineFactory
     {
         @Override

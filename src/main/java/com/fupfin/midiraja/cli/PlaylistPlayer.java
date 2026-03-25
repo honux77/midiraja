@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 
 import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
 import com.fupfin.midiraja.engine.PlaybackEngineFactory;
 import com.fupfin.midiraja.engine.PlaylistContext;
@@ -79,7 +80,7 @@ class PlaylistPlayer {
         boolean wasPaused = false;
         PlaybackStatus lastRawStatus = PlaybackStatus.FINISHED;
 
-        var activeCommands = new AtomicReference<com.fupfin.midiraja.engine.PlaybackCommands>();
+        var activeCommands = new AtomicReference<PlaybackCommands>();
         var commandsProxy = new PlaybackCommandsProxy(activeCommands);
         mediaKeys.start(commandsProxy);
 
@@ -127,6 +128,8 @@ class PlaylistPlayer {
                                 trackTitle, "", durationMicros, currentMicroseconds, !engine.isPaused()));
                     }
 
+                    // isPaused() and getCurrentMicroseconds() are backed by AtomicBoolean/AtomicLong,
+                    // so reads from this listener thread are safe without additional synchronization.
                     @Override public void onPlaybackStateChanged()
                     {
                         mediaKeys.drainAndUpdate(new NowPlayingInfo(
