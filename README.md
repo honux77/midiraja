@@ -4,7 +4,7 @@
 
 ## Features
 
-- **Terminal-native MIDI player** — plain CLI output for scripting and pipelines, up to a fully interactive TUI with 16-channel VU meters and live controls for speed, transpose, and volume
+- **Terminal-native MIDI player** — from minimal line output to a fully interactive TUI with 16-channel VU meters and live controls for speed, transpose, and volume
 - **Flexible synthesis** — route to OS MIDI ports (CoreMIDI, Windows GS, ALSA) or hardware synthesizers; or synthesize internally using built-in engines (OPL2/OPL3 FM, OPN2, PSG/MSX+SCC, 1-bit, GUS patches, TinySoundFont); or link to external engines (FluidSynth, Munt/Roland MT-32)
 - **Retro hardware simulation (`--retro`)** — reconstructs the DAC quantization, analog filtering, and speaker acoustics of vintage hardware: Amiga Paula, Compact Mac, ZX Spectrum beeper, IBM PC Speaker, Covox, and more
 - **DSP effects rack** — tube saturation, stereo chorus, algorithmic reverb (room/hall/plate/chamber/spring/cave), 3-band EQ, LPF/HPF, compressor — applies to all built-in engines
