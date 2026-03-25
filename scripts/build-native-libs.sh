@@ -165,4 +165,16 @@ if [ "$OS_FAMILY" = "linux" ]; then
     echo "  → $MEDIAKEYS_OUT/libmidiraja_mediakeys.so"
 fi
 
+# 8. Build Windows media keys wrapper (SystemMediaTransportControls)
+if [ "$OS_FAMILY" = "windows" ]; then
+    echo "==> Building midiraja_mediakeys.dll (Windows SMTC)..."
+    MEDIAKEYS_OUT="$NATIVE_LIBS/mediakeys"
+    mkdir -p "$MEDIAKEYS_OUT"
+    cl /std:c++17 /EHsc \
+        "$PROJECT_ROOT/src/main/c/mediakeys/windows_media_session.cpp" \
+        /link WindowsApp.lib Ole32.lib \
+        /DLL /OUT:"$MEDIAKEYS_OUT/midiraja_mediakeys.dll"
+    echo "  → $MEDIAKEYS_OUT/midiraja_mediakeys.dll"
+fi
+
 echo "Native libraries built successfully → $NATIVE_LIBS"

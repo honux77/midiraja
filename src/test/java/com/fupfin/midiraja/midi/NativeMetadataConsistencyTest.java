@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Test;
 
 import com.fupfin.midiraja.media.LinuxMediaSession;
 import com.fupfin.midiraja.media.MacOSMediaSession;
+import com.fupfin.midiraja.media.WindowsMediaSession;
 
 /**
  * Verifies that every FFM downcall {@link FunctionDescriptor} used in
@@ -313,6 +314,39 @@ class NativeMetadataConsistencyTest
         {
             fail("""
                 The following FFM downcall descriptors are used in MacOSMediaSession \
+                but are NOT registered in reachability-metadata.json.
+                GraalVM native image will throw MissingForeignRegistrationError at runtime.
+
+                Add each missing entry to the 'foreign.downcalls' array in:
+                  %s
+
+                Missing entries:
+                %s
+                """.formatted(METADATA_FILE, String.join("\n", missing)));
+        }
+    }
+
+    @Test void testWindowsMediaSessionFFMDescriptorsRegistered() throws IOException
+    {
+        String json = Files.readString(METADATA_FILE);
+        Set<String> registeredKeys = parseDowncallKeys(json);
+
+        List<String> missing = new ArrayList<>();
+        for (FunctionDescriptor fd : WindowsMediaSession.allDowncallDescriptors())
+        {
+            String key = toMetadataKey(fd);
+            if (!registeredKeys.contains(key))
+            {
+                missing.add("  parameterTypes: " + paramTypesJson(fd) + ", returnType: \""
+                    + returnType(fd) + "\""
+                    + "\n    (from FunctionDescriptor: " + fd + ")");
+            }
+        }
+
+        if (!missing.isEmpty())
+        {
+            fail("""
+                The following FFM downcall descriptors are used in WindowsMediaSession \
                 but are NOT registered in reachability-metadata.json.
                 GraalVM native image will throw MissingForeignRegistrationError at runtime.
 

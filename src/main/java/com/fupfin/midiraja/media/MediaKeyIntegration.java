@@ -64,6 +64,17 @@ public interface MediaKeyIntegration extends AutoCloseable
                 System.err.println("Warning: Linux media key integration unavailable: " + e.getMessage());
             }
         }
+        if (os.contains("win"))
+        {
+            try
+            {
+                return new WindowsMediaSession();
+            }
+            catch (Throwable e)
+            {
+                System.err.println("Warning: Windows media key integration unavailable: " + e.getMessage());
+            }
+        }
         return NoOpMediaIntegration.INSTANCE;
     }
 }

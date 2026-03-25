@@ -245,6 +245,12 @@
             "allDeclaredMethods": true
         },
         {
+            "type": "com.fupfin.midiraja.media.WindowsMediaSession",
+            "allDeclaredFields": true,
+            "allDeclaredConstructors": true,
+            "allDeclaredMethods": true
+        },
+        {
             "type": "com.fupfin.midiraja.media.MediaKeyIntegration",
             "allDeclaredFields": true,
             "allDeclaredConstructors": true,
