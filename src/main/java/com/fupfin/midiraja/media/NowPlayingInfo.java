@@ -18,4 +18,10 @@ public record NowPlayingInfo(
         long durationMicros,
         long positionMicros,
         boolean isPlaying
-) {}
+) {
+    public NowPlayingInfo
+    {
+        java.util.Objects.requireNonNull(title, "title");
+        java.util.Objects.requireNonNull(artist, "artist");
+    }
+}
