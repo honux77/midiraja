@@ -7,14 +7,16 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.midi.MidiPort;
-import com.fupfin.midiraja.ui.Logo;
-import com.fupfin.midiraja.ui.Theme;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.midi.MidiPort;
+import com.fupfin.midiraja.ui.Logo;
+import com.fupfin.midiraja.ui.Theme;
 
 /**
  * Interactive engine selection menu shown when {@code midra} is run without a subcommand.
@@ -70,7 +72,7 @@ public class EngineSelector
                     .start()
                     .waitFor(1, TimeUnit.SECONDS);
         }
-        catch (Exception ignored)
+        catch (Exception _)
         {
         }
     }

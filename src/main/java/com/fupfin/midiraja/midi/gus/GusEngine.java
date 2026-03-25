@@ -53,7 +53,7 @@ public class GusEngine
             return;
         }
 
-        GusPatch.Instrument inst = patch.instruments().get(0);
+        GusPatch.Instrument inst = patch.instruments().getFirst();
         if (inst.samples().isEmpty()) return;
 
         // Calculate frequency of the requested MIDI note

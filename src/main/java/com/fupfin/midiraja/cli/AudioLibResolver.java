@@ -55,7 +55,7 @@ public final class AudioLibResolver
                         return p;
                     }
                 }
-                catch (Exception ignored)
+                catch (Exception _)
                 {
                 }
             }

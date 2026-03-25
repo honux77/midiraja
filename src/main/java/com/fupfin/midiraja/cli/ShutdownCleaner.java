@@ -9,12 +9,13 @@ package com.fupfin.midiraja.cli;
 
 import static java.lang.Math.max;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.logging.Logger;
+
 import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.ui.Theme;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
 
 /**
  * Runnable for the JVM shutdown hook: restores the terminal and closes the MIDI port.
@@ -60,13 +61,13 @@ class ShutdownCleaner implements Runnable
             System.out.print(safeRestore);
             System.out.flush();
         }
-        catch (Exception ignored) {}
+        catch (Exception _) {}
         try (var tty = new java.io.FileOutputStream("/dev/tty"))
         {
             tty.write(safeRestore.getBytes(java.nio.charset.StandardCharsets.UTF_8));
             tty.flush();
         }
-        catch (Exception ignored) {}
+        catch (Exception _) {}
     }
 
     private void closeIO()
@@ -99,7 +100,7 @@ class ShutdownCleaner implements Runnable
             {
                 Thread.sleep(max(1, endWait - System.currentTimeMillis()));
             }
-            catch (InterruptedException ignored)
+            catch (InterruptedException e)
             {
                 Thread.currentThread().interrupt();
                 break;

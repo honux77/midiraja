@@ -5,6 +5,7 @@ import java.nio.file.*;
 import java.time.Instant;
 import java.util.*;
 import java.util.logging.Logger;
+
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -183,7 +184,7 @@ public class SessionHistory {
                 String savedAtStr = parseStringValue(obj, "savedAt");
                 Instant savedAt = savedAtStr != null ? Instant.parse(savedAtStr) : Instant.now();
                 if (args != null) result.add(new SessionEntry(args, savedAt));
-            } catch (Exception ignored) {}
+            } catch (Exception _) {}
             pos = objEnd + 1;
         }
         return result;

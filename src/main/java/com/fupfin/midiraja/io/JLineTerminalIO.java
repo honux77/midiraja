@@ -10,6 +10,7 @@ package com.fupfin.midiraja.io;
 import static java.lang.IO.*;
 
 import java.io.IOException;
+
 import org.jline.keymap.BindingReader;
 import org.jline.keymap.KeyMap;
 import org.jline.terminal.Terminal;
@@ -169,7 +170,7 @@ public class JLineTerminalIO implements TerminalIO
                 new ProcessBuilder("/bin/kill", "-TSTP",
                         String.valueOf(ProcessHandle.current().pid())).start().waitFor();
             }
-            catch (Exception ignored)
+            catch (Exception _)
             {
             }
             // Execution resumes here after SIGCONT.

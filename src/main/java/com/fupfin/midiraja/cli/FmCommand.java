@@ -9,17 +9,12 @@ package com.fupfin.midiraja.cli;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
-import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
-import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
-import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -28,6 +23,13 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.io.AppLogger;
+import com.fupfin.midiraja.midi.AdlMidiSynthProvider;
+import com.fupfin.midiraja.midi.FFMAdlMidiNativeBridge;
+import com.fupfin.midiraja.midi.FFMOpnMidiNativeBridge;
+import com.fupfin.midiraja.midi.OpnMidiSynthProvider;
 
 /**
  * Plays MIDI files using FM synthesis (OPL or OPN chip emulation).
@@ -94,9 +96,9 @@ public class FmCommand implements Callable<Integer>
     /** Returns the explicit engine name from the first positional arg, or null if not given. */
     private @Nullable String explicitEngine()
     {
-        if (!rawArgs.isEmpty() && ALL_ENGINE_NAMES.contains(rawArgs.get(0)))
+        if (!rawArgs.isEmpty() && ALL_ENGINE_NAMES.contains(rawArgs.getFirst()))
         {
-            return rawArgs.get(0);
+            return rawArgs.getFirst();
         }
         return null;
     }

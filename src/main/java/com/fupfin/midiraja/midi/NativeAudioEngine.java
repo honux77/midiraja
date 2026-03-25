@@ -4,6 +4,7 @@ package com.fupfin.midiraja.midi;
 import java.io.File;
 import java.lang.foreign.*;
 import java.lang.invoke.*;
+
 import org.jspecify.annotations.Nullable;
 
 
@@ -93,7 +94,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             {
                 wavWriter.close();
             }
-            catch (Exception ignored)
+            catch (Exception _)
             {
                 /* Safe to ignore: optional listener */
             }
@@ -118,7 +119,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             {
                 wavWriter.close();
             }
-            catch (Exception ignored)
+            catch (Exception _)
             {
                 /* Safe to ignore: optional listener */
             }
@@ -126,7 +127,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             {
                 wavWriter = new WavFileWriter("dump.wav", sampleRate, channels);
             }
-            catch (Exception ignored)
+            catch (Exception _)
             {
                 /* Safe to ignore: optional listener */
             }
@@ -161,7 +162,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
         {
             return (int) midiraja_audio_get_queued_frames.invokeExact(ctx);
         }
-        catch (Throwable ignored)
+        catch (Throwable _)
         {
             return 0;
         }
@@ -176,7 +177,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
         {
             return (int) midiraja_audio_get_device_latency_frames.invokeExact(ctx);
         }
-        catch (Throwable ignored)
+        catch (Throwable _)
         {
             return 0;
         }
@@ -224,7 +225,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             int pushedFrames = (int) midiraja_audio_push.invokeExact(ctx, pushBuffer, frameCount);
             return pushedFrames * channels;
         }
-        catch (Throwable ignored)
+        catch (Throwable _)
         {
             return 0;
         }
@@ -245,7 +246,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
         {
             midiraja_audio_flush.invokeExact(ctx);
         }
-        catch (Throwable ignored)
+        catch (Throwable _)
         {
         }
     }
@@ -259,7 +260,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
             {
                 midiraja_audio_close.invokeExact(ctx);
             }
-            catch (Throwable ignored)
+            catch (Throwable _)
             {
             }
             ctx = MemorySegment.NULL;
@@ -269,7 +270,7 @@ public class NativeAudioEngine extends AbstractFFMBridge implements AudioEngine
         {
             super.close();
         }
-        catch (Exception ignored)
+        catch (Exception _)
         {
         }
     }

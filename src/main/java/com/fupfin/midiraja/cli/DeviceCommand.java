@@ -2,15 +2,12 @@ package com.fupfin.midiraja.cli;
 
 import static java.util.Objects.requireNonNull;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.io.AppLogger;
-import com.fupfin.midiraja.midi.MidiOutProvider;
-import com.fupfin.midiraja.midi.MidiProviderFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Mixin;
@@ -19,6 +16,11 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.io.AppLogger;
+import com.fupfin.midiraja.midi.MidiOutProvider;
+import com.fupfin.midiraja.midi.MidiProviderFactory;
 
 @Command(name = "device", aliases = {"dev"}, mixinStandardHelpOptions = true,
         description = "OS native MIDI ports (CoreMIDI / ALSA / Windows GS).",
@@ -69,11 +71,11 @@ public class DeviceCommand implements Callable<Integer>
         Optional<String> portQuery = Optional.empty();
         List<File> files = new ArrayList<>();
 
-        File firstArg = new File(args.get(0));
+        File firstArg = new File(args.getFirst());
         // If the first argument does NOT exist on the filesystem, assume it's a device ID or name
         if (!firstArg.exists())
         {
-            portQuery = Optional.of(args.get(0));
+            portQuery = Optional.of(args.getFirst());
             for (int i = 1; i < args.size(); i++)
             {
                 files.add(new File(args.get(i)));

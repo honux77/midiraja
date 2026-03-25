@@ -7,14 +7,16 @@
 
 package com.fupfin.midiraja.midi;
 
-import com.fupfin.midiraja.dsp.AudioProcessor;
-import com.fupfin.midiraja.dsp.MasterGainFilter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import javax.sound.midi.Sequence;
+
 import org.jspecify.annotations.Nullable;
+
+import com.fupfin.midiraja.dsp.AudioProcessor;
+import com.fupfin.midiraja.dsp.MasterGainFilter;
 
 /**
  * Base class for synthesizers that use a native bridge and a dedicated render thread.
@@ -102,7 +104,7 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
                 eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 120, 0});
                 eventQueue.offer(new byte[] {(byte) (0xB0 | ch), 121, 0});
             }
-            catch (Exception ignored)
+            catch (Exception _)
             {
             }
         }
@@ -116,7 +118,7 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
         {
             Thread.sleep(20);
         }
-        catch (InterruptedException ignored)
+        catch (InterruptedException _)
         {
         }
 
@@ -148,7 +150,7 @@ public abstract class AbstractSoftSynthProvider<T extends MidiNativeBridge>
             {
                 renderThread.join(500);
             }
-            catch (InterruptedException ignored)
+            catch (InterruptedException _)
             {
             }
         }

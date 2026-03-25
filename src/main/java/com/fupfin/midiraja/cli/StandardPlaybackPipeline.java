@@ -7,13 +7,13 @@
 
 package com.fupfin.midiraja.cli;
 
+import static java.lang.Math.*;
+
 import com.fupfin.midiraja.engine.PlaybackPipeline;
 import com.fupfin.midiraja.midi.MidiOutProvider;
 import com.fupfin.midiraja.midi.SysexFilter;
 import com.fupfin.midiraja.midi.TransposeFilter;
 import com.fupfin.midiraja.midi.VolumeFilter;
-
-import static java.lang.Math.*;
 
 /** Standard pipeline: TransposeFilter → VolumeFilter → SysexFilter → MidiOutProvider. */
 final class StandardPlaybackPipeline implements PlaybackPipeline
@@ -56,7 +56,7 @@ final class StandardPlaybackPipeline implements PlaybackPipeline
             for (int ch = 0; ch < 16; ch++)
             {
                 byte[] msg = new byte[] {(byte) (0xB0 | ch), 7, (byte) 100};
-                try { transposeFilter.sendMessage(msg); } catch (Exception ignored) { /* best-effort */ }
+                try { transposeFilter.sendMessage(msg); } catch (Exception _) { /* best-effort */ }
             }
         }
     }
@@ -73,7 +73,7 @@ final class StandardPlaybackPipeline implements PlaybackPipeline
     public void adjustTranspose(int semitones)
     {
         transposeFilter.adjust(semitones);
-        try { provider.panic(); } catch (Exception ignored) { /* best-effort: silence notes at old pitch */ }
+        try { provider.panic(); } catch (Exception _) { /* best-effort: silence notes at old pitch */ }
     }
 
     @Override

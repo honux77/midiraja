@@ -10,11 +10,19 @@ package com.fupfin.midiraja.cli;
 import static java.lang.Math.max;
 import static java.util.Locale.ROOT;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.PrintStream;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.jspecify.annotations.Nullable;
+
 import com.fupfin.midiraja.MidirajaCommand;
 import com.fupfin.midiraja.engine.MidiPlaybackEngine;
-import com.fupfin.midiraja.engine.PlaybackEngine;
-import com.fupfin.midiraja.engine.PlaybackEngineFactory;
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
+import com.fupfin.midiraja.engine.PlaybackEngineFactory;
 import com.fupfin.midiraja.io.JLineTerminalIO;
 import com.fupfin.midiraja.io.TerminalIO;
 import com.fupfin.midiraja.midi.MidiOutProvider;
@@ -25,14 +33,6 @@ import com.fupfin.midiraja.ui.DumbUI;
 import com.fupfin.midiraja.ui.LineUI;
 import com.fupfin.midiraja.ui.PlaybackUI;
 import com.fupfin.midiraja.ui.Theme;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
-import javax.sound.midi.Sequence;
-import org.jspecify.annotations.Nullable;
 
 /**
  * Orchestrates MIDI playback: builds the playlist, selects a port, opens the provider, sets up the
@@ -257,7 +257,7 @@ public class PlaybackRunner
                     {
                         Thread.sleep(max(1, endWait - System.currentTimeMillis()));
                     }
-                    catch (InterruptedException ignored)
+                    catch (InterruptedException e)
                     {
                         Thread.currentThread().interrupt();
                         break;
@@ -285,7 +285,7 @@ public class PlaybackRunner
             int idx = Integer.parseInt(query);
             if (ports.stream().anyMatch(p -> p.index() == idx)) return idx;
         }
-        catch (NumberFormatException _)
+        catch (NumberFormatException e)
         {
         }
 
@@ -294,7 +294,7 @@ public class PlaybackRunner
                 .filter(p -> p.name().toLowerCase(ROOT).contains(lowerQuery))
                 .toList();
 
-        if (matches.size() == 1) return matches.get(0).index();
+        if (matches.size() == 1) return matches.getFirst().index();
         if (matches.size() > 1)
         {
             err.println("Ambiguous port name. Matches:");

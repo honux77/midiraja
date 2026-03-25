@@ -7,7 +7,6 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.MidirajaCommand;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Path;
@@ -16,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -23,6 +23,8 @@ import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
 import picocli.CommandLine.ParentCommand;
 import picocli.CommandLine.Spec;
+
+import com.fupfin.midiraja.MidirajaCommand;
 
 @Command(name = "resume",
         mixinStandardHelpOptions = true,
@@ -123,33 +125,37 @@ public class ResumeCommand implements Callable<Integer>
                 return 1;
             }
 
-            if (result instanceof TerminalSelector.SelectResult.Cancelled<Integer>) return 0;
-
-            if (result instanceof TerminalSelector.SelectResult.Chosen<Integer> chosen) {
-                var entry = all.get(chosen.value());
-                err().println("Launching: " + String.join(" ", entry.args()));
-                err().flush();
-                return new CommandLine(new MidirajaCommand())
-                        .execute(entry.args().toArray(new String[0]));
-            }
-
-            if (result instanceof TerminalSelector.SelectResult.Delete<Integer> del) {
-                int idx = del.value();
-                int deletedItemsIdx = nearestItemsIdx(items, idx);
-                if (idx < autoCount) history.deleteAuto(idx);
-                else history.deleteBookmark(idx - autoCount);
-                all = history.getAll();
-                autoCount = history.getAutoCount();
-                if (all.isEmpty()) {
-                    err().println("No session history.");
+            switch (result)
+            {
+                case TerminalSelector.SelectResult.Cancelled<Integer> _ -> { return 0; }
+                case TerminalSelector.SelectResult.Chosen<Integer> chosen ->
+                {
+                    var entry = all.get(chosen.value());
+                    err().println("Launching: " + String.join(" ", entry.args()));
                     err().flush();
-                    return 0;
+                    return new CommandLine(new MidirajaCommand())
+                            .execute(entry.args().toArray(new String[0]));
                 }
-                items = buildItems(all, autoCount);
-                int nextIdx = Math.min(deletedItemsIdx, items.size() - 1);
-                while (nextIdx > 0 && items.get(nextIdx).isSeparator()) nextIdx--;
-                config = config.withInitialIndex(nextIdx);
-                continue;
+                case TerminalSelector.SelectResult.Delete<Integer> del ->
+                {
+                    int idx = del.value();
+                    int deletedItemsIdx = nearestItemsIdx(items, idx);
+                    if (idx < autoCount) history.deleteAuto(idx);
+                    else history.deleteBookmark(idx - autoCount);
+                    all = history.getAll();
+                    autoCount = history.getAutoCount();
+                    if (all.isEmpty()) {
+                        err().println("No session history.");
+                        err().flush();
+                        return 0;
+                    }
+                    items = buildItems(all, autoCount);
+                    int nextIdx = Math.min(deletedItemsIdx, items.size() - 1);
+                    while (nextIdx > 0 && items.get(nextIdx).isSeparator()) nextIdx--;
+                    config = config.withInitialIndex(nextIdx);
+                    continue;
+                }
+                case TerminalSelector.SelectResult.Promote<Integer> _ -> { /* no-op */ }
             }
         }
     }
