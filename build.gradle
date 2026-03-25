@@ -364,6 +364,7 @@ tasks.named('installDist').configure {
 
 tasks.named('test').configure {
     dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib
+    dependsOn checkstyleMain
 }
 
 checkstyle {
@@ -382,9 +383,9 @@ pmd {
 
 spotless {
     java {
-        target 'src/main/java/**/*.java'
-        // googleJavaFormat('1.25.2').aosp() // This might fail due to Java 25
-        eclipse().configFile('eclipse-java-google-style.xml')
+        target 'src/**/*.java'
+        // Import order: static (top) → java/javax → external → project
+        importOrder('\\#', 'java|javax', '', 'com.fupfin')
         removeUnusedImports()
         trimTrailingWhitespace()
         endWithNewline()

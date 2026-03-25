@@ -33,8 +33,15 @@
             <property name="lineWrappingIndentation" value="8"/>
         </module>
 
-        <!-- 4. Imports & Names (Google Style base) -->
-        
+        <!-- 4. Imports & Names -->
+
+        <!-- Import order: static (top) → java/javax → external → project -->
+        <module name="ImportOrder">
+            <property name="groups" value="/^javax?\./,/^(?!com\.fupfin)/,com.fupfin"/>
+            <property name="separated" value="true"/>
+            <property name="option" value="top"/>
+        </module>
+
         <module name="UnusedImports"/>
         <module name="PackageName">
             <property name="format" value="^[a-z]+(\.[a-z][a-z0-9]*)*$"/>
