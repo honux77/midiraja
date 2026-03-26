@@ -153,7 +153,21 @@ public abstract class AbstractFFMBridge implements AutoCloseable
             }
         }
 
-        // Then bare filenames (resolved by the OS dynamic linker)
+        // Distribution layout: lib/ dir next to the JAR (installDist / packaged release).
+        // getProtectionDomain() is non-null in both JVM and GraalVM native image.
+        try
+        {
+            var src = AbstractFFMBridge.class.getProtectionDomain().getCodeSource();
+            if (src != null)
+            {
+                var jarDir = new File(src.getLocation().toURI()).getParentFile();
+                for (String path : paths)
+                    allPaths.add(jarDir.getAbsolutePath() + "/" + path);
+            }
+        }
+        catch (Exception | Error ignored) {}
+
+        // Then bare filenames (resolved by the OS dynamic linker, including rpath)
         allPaths.addAll(List.of(paths));
 
         // Finally, explicit OS-specific fallback dirs (e.g. /opt/homebrew/lib/libfoo.dylib)

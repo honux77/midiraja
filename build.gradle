@@ -319,6 +319,32 @@ task buildTsfLib(type: Exec) {
     """
 }
 
+task buildMediakeysLib(type: Exec) {
+    description = 'Builds libmidiraja_mediakeys (macOS/Linux only).'
+    onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
+
+    def sourceFileMac   = file("src/main/c/mediakeys/macos_media_session.m")
+    def sourceFileLinux = file("src/main/c/mediakeys/linux_media_session.c")
+    def outputDir = file("build/native-libs/${nativeTarget}/mediakeys")
+    def os = org.gradle.internal.os.OperatingSystem.current()
+    def libName = os.isMacOsX() ? "libmidiraja_mediakeys.dylib" : "libmidiraja_mediakeys.so"
+    outputs.file(file("${outputDir}/${libName}"))
+    inputs.files(sourceFileMac, sourceFileLinux)
+
+    doFirst { outputDir.mkdirs() }
+    commandLine 'bash', '-c', """
+        if [[ "\$(uname -s)" == "Darwin" ]]; then
+            clang -shared -fPIC -O2 -fobjc-arc \\
+                -framework Foundation -framework MediaPlayer \\
+                -o ${outputDir}/${libName} ${sourceFileMac.absolutePath}
+        else
+            gcc -shared -fPIC -O2 \\
+                \$(pkg-config --cflags --libs dbus-1 gio-2.0 2>/dev/null || echo '') \\
+                -o ${outputDir}/${libName} ${sourceFileLinux.absolutePath}
+        fi
+    """
+}
+
 task buildMiniaudioLib(type: Exec) {
     description = 'Builds libmidiraja_audio as both a static (.a) and shared library.'
     onlyIf { !org.gradle.internal.os.OperatingSystem.current().isWindows() }
@@ -354,17 +380,40 @@ task buildMiniaudioLib(type: Exec) {
 
 // nativeCompile must have native libraries present before linking
 tasks.named('nativeCompile').configure {
-    dependsOn buildAdlMidiLib, buildOpnMidiLib, buildMiniaudioLib, buildTsfLib
+    dependsOn buildAdlMidiLib, buildOpnMidiLib, buildMiniaudioLib, buildTsfLib, buildMediakeysLib
+    doLast {
+        // Copy mediakeys dylib next to the native binary so rpath (@executable_path/../lib) finds it
+        def os = org.gradle.internal.os.OperatingSystem.current()
+        if (!os.isWindows()) {
+            def libExt = os.isMacOsX() ? "dylib" : "so"
+            def src = file("build/native-libs/${nativeTarget}/mediakeys/libmidiraja_mediakeys.${libExt}")
+            def destDir = file("build/native/lib")
+            if (src.exists()) { destDir.mkdirs(); copy { from src; into destDir } }
+        }
+    }
 }
 
 // Make local dev builds also compile the C libraries automatically
 tasks.named('installDist').configure {
-    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib
+    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib, buildMediakeysLib
 }
 
 tasks.named('test').configure {
-    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib
+    dependsOn buildMiniaudioLib, buildAdlMidiLib, buildOpnMidiLib, buildTsfLib, buildMediakeysLib
     dependsOn checkstyleMain
+}
+
+// Include the mediakeys dylib in the JVM distribution lib/ directory.
+// AbstractFFMBridge.tryLoadLibrary searches the JAR's parent dir, which is lib/.
+distributions {
+    main {
+        contents {
+            from("build/native-libs/${nativeTarget}/mediakeys") {
+                into 'lib'
+                include '*.dylib', '*.so'
+            }
+        }
+    }
 }
 
 checkstyle {
