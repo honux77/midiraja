@@ -35,14 +35,10 @@ void macos_register_commands(void (*callback)(int command))
     [cc.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         if (g_callback) g_callback(0); return MPRemoteCommandHandlerStatusSuccess;
     }];
-    // nextTrack/previousTrack keyboard keys (⏭/⏮) and skipForward/skipBackward (Control Center)
-    // all map to seek ±10s. There is no dedicated "change track" media key gesture.
-    [cc.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
-        if (g_callback) g_callback(3); return MPRemoteCommandHandlerStatusSuccess;
-    }];
-    [cc.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
-        if (g_callback) g_callback(4); return MPRemoteCommandHandlerStatusSuccess;
-    }];
+    // Do NOT register nextTrackCommand/previousTrackCommand: when those are present,
+    // macOS shows ⏮/⏭ (track-change) buttons and hides the skip buttons.
+    // With only skipForward/skipBackward registered, macOS shows the skip buttons (⏩/⏪)
+    // in Control Center, and the keyboard ⏭/⏮ keys are routed to skip as well.
     // preferredIntervals must be set or macOS renders these buttons as disabled.
     cc.skipForwardCommand.preferredIntervals = @[@10];
     cc.skipBackwardCommand.preferredIntervals = @[@10];
@@ -83,8 +79,6 @@ void macos_unregister(void)
     [cc.playCommand removeTarget:nil];
     [cc.pauseCommand removeTarget:nil];
     [cc.togglePlayPauseCommand removeTarget:nil];
-    [cc.nextTrackCommand removeTarget:nil];
-    [cc.previousTrackCommand removeTarget:nil];
     [cc.skipForwardCommand removeTarget:nil];
     [cc.skipBackwardCommand removeTarget:nil];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nil;
