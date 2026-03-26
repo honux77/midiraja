@@ -35,10 +35,12 @@ void macos_register_commands(void (*callback)(int command))
     [cc.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         if (g_callback) g_callback(0); return MPRemoteCommandHandlerStatusSuccess;
     }];
-    // Do NOT register nextTrackCommand/previousTrackCommand: when those are present,
-    // macOS shows ⏮/⏭ (track-change) buttons and hides the skip buttons.
-    // With only skipForward/skipBackward registered, macOS shows the skip buttons (⏩/⏪)
-    // in Control Center, and the keyboard ⏭/⏮ keys are routed to skip as well.
+    // MPRemoteCommand.enabled defaults to YES even without a handler.
+    // Explicitly disable nextTrack/previousTrack so macOS knows this app does not
+    // support track navigation and switches to the skip-interval button layout.
+    cc.nextTrackCommand.enabled = NO;
+    cc.previousTrackCommand.enabled = NO;
+
     // preferredIntervals must be set or macOS renders these buttons as disabled.
     cc.skipForwardCommand.preferredIntervals = @[@10];
     cc.skipBackwardCommand.preferredIntervals = @[@10];
@@ -76,6 +78,8 @@ void macos_unregister(void)
     g_guard = 0;
     g_callback = NULL;
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
+    cc.nextTrackCommand.enabled = YES;
+    cc.previousTrackCommand.enabled = YES;
     [cc.playCommand removeTarget:nil];
     [cc.pauseCommand removeTarget:nil];
     [cc.togglePlayPauseCommand removeTarget:nil];
