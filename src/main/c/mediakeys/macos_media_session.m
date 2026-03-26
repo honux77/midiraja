@@ -42,8 +42,10 @@ void macos_register_commands(void (*callback)(int command))
     cc.previousTrackCommand.enabled = NO;
 
     // preferredIntervals must be set or macOS renders these buttons as disabled.
-    cc.skipForwardCommand.preferredIntervals = @[@10];
-    cc.skipBackwardCommand.preferredIntervals = @[@10];
+    cc.skipForwardCommand.preferredIntervals = @[@(10.0)];
+    cc.skipBackwardCommand.preferredIntervals = @[@(10.0)];
+    cc.skipForwardCommand.enabled = YES;
+    cc.skipBackwardCommand.enabled = YES;
     [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         if (g_callback) g_callback(3); return MPRemoteCommandHandlerStatusSuccess;
     }];
@@ -69,6 +71,7 @@ void macos_update_now_playing(const char *title, const char *artist,
     info[MPMediaItemPropertyPlaybackDuration] = @(duration_sec);
     info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = @(position_sec);
     info[MPNowPlayingInfoPropertyPlaybackRate] = @(is_playing ? 1.0 : 0.0);
+    info[MPNowPlayingInfoPropertyDefaultPlaybackRate] = @(1.0);
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = info;
 }
 
