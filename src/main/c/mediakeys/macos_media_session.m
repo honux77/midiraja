@@ -35,21 +35,13 @@ void macos_register_commands(void (*callback)(int command))
     [cc.togglePlayPauseCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         if (g_callback) g_callback(0); return MPRemoteCommandHandlerStatusSuccess;
     }];
-    // MPRemoteCommand.enabled defaults to YES even without a handler.
-    // Explicitly disable nextTrack/previousTrack so macOS knows this app does not
-    // support track navigation and switches to the skip-interval button layout.
-    cc.nextTrackCommand.enabled = NO;
-    cc.previousTrackCommand.enabled = NO;
-
-    // preferredIntervals must be set or macOS renders these buttons as disabled.
-    cc.skipForwardCommand.preferredIntervals = @[@(10.0)];
-    cc.skipBackwardCommand.preferredIntervals = @[@(10.0)];
-    cc.skipForwardCommand.enabled = YES;
-    cc.skipBackwardCommand.enabled = YES;
-    [cc.skipForwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    // Map ⏭/⏮ (nextTrack/previousTrack) to seek ±10s.
+    // skipForwardCommand/skipBackwardCommand remain unregistered: macOS disables them for
+    // CLI processes without an audio session, while nextTrack/previousTrack always activate.
+    [cc.nextTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         if (g_callback) g_callback(3); return MPRemoteCommandHandlerStatusSuccess;
     }];
-    [cc.skipBackwardCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
+    [cc.previousTrackCommand addTargetWithHandler:^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent *e) {
         if (g_callback) g_callback(4); return MPRemoteCommandHandlerStatusSuccess;
     }];
 
@@ -81,13 +73,11 @@ void macos_unregister(void)
     g_guard = 0;
     g_callback = NULL;
     MPRemoteCommandCenter *cc = [MPRemoteCommandCenter sharedCommandCenter];
-    cc.nextTrackCommand.enabled = YES;
-    cc.previousTrackCommand.enabled = YES;
     [cc.playCommand removeTarget:nil];
     [cc.pauseCommand removeTarget:nil];
     [cc.togglePlayPauseCommand removeTarget:nil];
-    [cc.skipForwardCommand removeTarget:nil];
-    [cc.skipBackwardCommand removeTarget:nil];
+    [cc.nextTrackCommand removeTarget:nil];
+    [cc.previousTrackCommand removeTarget:nil];
     [MPNowPlayingInfoCenter defaultCenter].nowPlayingInfo = nil;
     [g_thread cancel];
     g_thread = nil;
