@@ -41,7 +41,7 @@ jobs:
       run: |
         sudo apt-get update
         # Install ALSA libs for compilation
-        sudo apt-get install -y libasound2-dev
+        sudo apt-get install -y libasound2-dev libdbus-1-dev
         # Attempt to load the virtual ALSA sequencer module (requires sudo)
         sudo modprobe snd-virmidi || sudo modprobe snd-dummy || echo "Kernel module load failed, relying on user-space ALSA."
 

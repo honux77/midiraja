@@ -68,7 +68,7 @@ jobs:
 
       - name: Install ALSA dependencies (Linux only)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libasound2-dev
+        run: sudo apt-get update && sudo apt-get install -y libasound2-dev libdbus-1-dev
 
       - name: Setup MSYS2 (Windows only)
         if: runner.os == 'Windows'
