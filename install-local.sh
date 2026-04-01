@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-BIN_DIR="$HOME/bin"
+BIN_DIR="$HOME/.local/bin"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
