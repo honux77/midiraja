@@ -5,7 +5,6 @@
 set -euo pipefail
 
 BIN_DIR="$HOME/bin"
-JAVA_HOME_OVERRIDE="C:/Program Files/Java/jdk-25.0.2"
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -37,21 +36,21 @@ cp -r "$DIST_DIR" "$TARGET_DIR"
 # 3. Write launcher
 echo "[3/3] Writing launcher $LAUNCHER..."
 mkdir -p "$BIN_DIR"
-cat > "$LAUNCHER" << EOF
+cat > "$LAUNCHER" << 'EOF'
 #!/bin/sh
-JAVA_HOME="$JAVA_HOME_OVERRIDE"
-MIDRAX_HOME="\$(dirname "\$0")/midrax"
+MIDRAX_HOME="$(dirname "$0")/midrax"
 CP=""
-for jar in "\$MIDRAX_HOME/lib/"*.jar; do
-    CP="\$CP:\$jar"
+for jar in "$MIDRAX_HOME/lib/"*.jar; do
+    CP="$CP:$jar"
 done
-CP="\${CP#:}"
-exec "\$JAVA_HOME/bin/java" \\
-  --enable-native-access=ALL-UNNAMED \\
-  --enable-preview \\
-  -cp "\$CP" \\
-  com.fupfin.midiraja.MidirajaCommand \\
-  "\$@"
+CP="${CP#:}"
+JAVA_CMD="${JAVA_HOME:+$JAVA_HOME/bin/}java"
+exec "$JAVA_CMD" \
+  --enable-native-access=ALL-UNNAMED \
+  --enable-preview \
+  -cp "$CP" \
+  com.fupfin.midiraja.MidirajaCommand \
+  "$@"
 EOF
 chmod +x "$LAUNCHER"
 

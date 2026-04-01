@@ -2,10 +2,10 @@
 set -euo pipefail
 
 # Midiraja install script
-# Usage: curl -sL https://raw.githubusercontent.com/fupfin/midiraja/master/install.sh | bash
+# Usage: curl -sL https://raw.githubusercontent.com/honux77/midiraja/master/install.sh | bash
 # Or:    bash install.sh [--prefix /usr/local] [--local /path/to/midra-*.tar.gz]
 
-REPO="fupfin/midiraja"
+REPO="honux77/midiraja"
 BINARY_NAME="midra"
 PREFIX="${HOME}/.local"
 LOCAL_FILE=""
@@ -82,16 +82,15 @@ else
 
     ASSET_NAME="midra-${OS_NAME}-${ARCH_NAME}.tar.gz"
 
-    # Fetch latest release tag via GitHub API redirect
+    # Fetch latest release tag via GitHub API
     echo "Fetching latest release..."
-    LATEST_TAG="$(curl -sI "https://github.com/${REPO}/releases/latest" \
-        | grep -i '^location:' \
-        | sed 's/.*\/tag\///' \
-        | tr -d '[:space:]')"
+    LATEST_TAG="$(curl -sf "https://api.github.com/repos/${REPO}/releases/latest" \
+        | grep '"tag_name"' \
+        | sed 's/.*"tag_name": *"\([^"]*\)".*/\1/' || true)"
 
     if [ -z "$LATEST_TAG" ]; then
         echo "Error: Could not determine the latest release tag." >&2
-        echo "Please check https://github.com/${REPO}/releases and download manually." >&2
+        echo "No releases may exist yet. Check https://github.com/${REPO}/releases" >&2
         exit 1
     fi
 
