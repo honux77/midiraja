@@ -8,7 +8,9 @@
 package com.fupfin.midiraja.media;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
@@ -16,10 +18,17 @@ import org.junit.jupiter.api.condition.OS;
 import com.fupfin.midiraja.engine.PlaybackCommands;
 import com.fupfin.midiraja.engine.PlaybackEngine.PlaybackStatus;
 import com.fupfin.midiraja.engine.PlaylistContext;
+import com.fupfin.midiraja.midi.AbstractFFMBridge;
 
 @EnabledOnOs(OS.WINDOWS)
 class WindowsMediaSessionTest
 {
+    @BeforeEach void requireNativeLibrary()
+    {
+        assumeTrue(AbstractFFMBridge.probeLibrary("mediakeys", "midiraja_mediakeys.dll").found(),
+                "midiraja_mediakeys.dll not available — skipping");
+    }
+
     @Test void lifecycle_startUpdateClose_noException()
     {
         try (var session = new WindowsMediaSession()) {

@@ -340,8 +340,9 @@ task buildMediakeysLib(type: Exec) {
                 -o ${outputDir}/${libName} ${sourceFileMac.absolutePath}
         else
             gcc -shared -fPIC -O2 \\
-                \$(pkg-config --cflags --libs dbus-1 2>/dev/null) \\
-                -o ${outputDir}/${libName} ${sourceFileLinux.absolutePath}
+                \$(pkg-config --cflags dbus-1 2>/dev/null) \\
+                -o ${outputDir}/${libName} ${sourceFileLinux.absolutePath} \\
+                \$(pkg-config --libs dbus-1 2>/dev/null)
         fi
     """
 }
@@ -404,14 +405,16 @@ tasks.named('test').configure {
     dependsOn checkstyleMain
 }
 
-// Include the mediakeys dylib in the JVM distribution lib/ directory.
+// Include all native dylibs in the JVM distribution lib/ directory.
 // AbstractFFMBridge.tryLoadLibrary searches the JAR's parent dir, which is lib/.
 distributions {
     main {
         contents {
-            from("build/native-libs/${nativeTarget}/mediakeys") {
-                into 'lib'
-                include '*.dylib', '*.so'
+            for (def subdir in ['miniaudio', 'adlmidi', 'opnmidi', 'munt', 'tsf', 'mediakeys']) {
+                from("build/native-libs/${nativeTarget}/${subdir}") {
+                    into 'lib'
+                    include '*.dylib', '*.so'
+                }
             }
         }
     }

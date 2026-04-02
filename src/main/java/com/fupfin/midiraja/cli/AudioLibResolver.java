@@ -10,6 +10,8 @@ package com.fupfin.midiraja.cli;
 import java.io.File;
 import java.lang.foreign.Arena;
 import java.lang.foreign.SymbolLookup;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -35,9 +37,22 @@ public final class AudioLibResolver
         String libName = osName.contains("mac") ? "libmidiraja_audio.dylib"
                 : osName.contains("win") ? "libmidiraja_audio.dll"
                 : "libmidiraja_audio.so";
-        String devPath = new File("").getAbsolutePath() + "/build/native-libs/" + nativeTarget
-                + "/miniaudio/" + libName;
-        String[] paths = {libName, devPath};
+
+        List<String> paths = new ArrayList<>();
+        // Dev build path
+        paths.add(new File("").getAbsolutePath() + "/build/native-libs/" + nativeTarget
+                + "/miniaudio/" + libName);
+        // Distribution layout: lib/ dir next to the JAR (installDist / packaged release)
+        try
+        {
+            var src = AudioLibResolver.class.getProtectionDomain().getCodeSource();
+            if (src != null)
+                paths.add(new File(src.getLocation().toURI()).getParentFile().getAbsolutePath()
+                        + "/" + libName);
+        }
+        catch (Exception | Error ignored) {}
+        // Bare filename (OS linker / DYLD_LIBRARY_PATH)
+        paths.add(libName);
 
         try (Arena arena = Arena.ofShared())
         {
