@@ -340,7 +340,7 @@ task buildMediakeysLib(type: Exec) {
                 -o ${outputDir}/${libName} ${sourceFileMac.absolutePath}
         else
             gcc -shared -fPIC -O2 \\
-                \$(pkg-config --cflags --libs dbus-1 gio-2.0 2>/dev/null || echo '') \\
+                \$(pkg-config --cflags --libs dbus-1 2>/dev/null) \\
                 -o ${outputDir}/${libName} ${sourceFileLinux.absolutePath}
         fi
     """
