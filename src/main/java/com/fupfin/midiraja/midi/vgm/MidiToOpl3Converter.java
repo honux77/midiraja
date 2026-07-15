@@ -15,12 +15,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
-import javax.sound.midi.MetaMessage;
 
 /**
  * Converts a MIDI file to a VGM file targeting the YMF262 (OPL3) FM chip.
@@ -333,13 +333,29 @@ public final class MidiToOpl3Converter
             Arrays.fill(DRUM_PITCH_NOTE, 60);
 
             // Bass Drum
-            for (int n : new int[]{35, 36})  { DRUM_PATCH_IDX[n] = 0; DRUM_PITCH_NOTE[n] = 36; }
+            for (int n : new int[]{35, 36})
+            {
+                DRUM_PATCH_IDX[n] = 0;
+                DRUM_PITCH_NOTE[n] = 36;
+            }
             // Snare
-            for (int n : new int[]{38, 40})  { DRUM_PATCH_IDX[n] = 1; DRUM_PITCH_NOTE[n] = 60; }
+            for (int n : new int[]{38, 40})
+            {
+                DRUM_PATCH_IDX[n] = 1;
+                DRUM_PITCH_NOTE[n] = 60;
+            }
             // Hand Clap / Rim shot
-            for (int n : new int[]{37, 39})  { DRUM_PATCH_IDX[n] = 1; DRUM_PITCH_NOTE[n] = 64; }
+            for (int n : new int[]{37, 39})
+            {
+                DRUM_PATCH_IDX[n] = 1;
+                DRUM_PITCH_NOTE[n] = 64;
+            }
             // Hi-Hat closed / pedal
-            for (int n : new int[]{42, 44})  { DRUM_PATCH_IDX[n] = 2; DRUM_PITCH_NOTE[n] = 80; }
+            for (int n : new int[]{42, 44})
+            {
+                DRUM_PATCH_IDX[n] = 2;
+                DRUM_PITCH_NOTE[n] = 80;
+            }
             // Hi-Hat open
             DRUM_PATCH_IDX[46] = 2; DRUM_PITCH_NOTE[46] = 76;
             // Toms

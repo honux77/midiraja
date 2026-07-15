@@ -7,15 +7,17 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.midi.vgm.MidiToYm2413Converter;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.midi.vgm.MidiToYm2413Converter;
 
 /**
  * {@code midra opll} — converts a MIDI file to a VGM file (YM2413 OPLL FM chip).

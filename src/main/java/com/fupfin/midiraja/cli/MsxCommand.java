@@ -7,15 +7,17 @@
 
 package com.fupfin.midiraja.cli;
 
-import com.fupfin.midiraja.MidirajaCommand;
-import com.fupfin.midiraja.midi.vgm.MidiToMsxConverter;
 import java.io.File;
 import java.io.PrintStream;
 import java.util.concurrent.Callable;
+
 import org.jspecify.annotations.Nullable;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 import picocli.CommandLine.ParentCommand;
+
+import com.fupfin.midiraja.MidirajaCommand;
+import com.fupfin.midiraja.midi.vgm.MidiToMsxConverter;
 
 /**
  * {@code midra msx} — converts a MIDI file to a VGM file using both MSX sound chips:

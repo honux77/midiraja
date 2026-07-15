@@ -15,12 +15,12 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.IntStream;
+import javax.sound.midi.MetaMessage;
 import javax.sound.midi.MidiEvent;
 import javax.sound.midi.MidiMessage;
 import javax.sound.midi.MidiSystem;
 import javax.sound.midi.Sequence;
 import javax.sound.midi.ShortMessage;
-import javax.sound.midi.MetaMessage;
 
 /**
  * Converts a MIDI file to a VGM file targeting dual AY-3-8910 / YM2149F PSG chips.
@@ -408,7 +408,10 @@ public final class MidiToVgmConverter
             else vgm.writeAy2(reg, value);
         }
 
-        private static int chipOf(int slot) { return slot < 3 ? 0 : 1; }
+        private static int chipOf(int slot)
+        {
+            return slot < 3 ? 0 : 1;
+        }
 
         private static int velocityToAmplitude(int velocity)
         {
